@@ -64,8 +64,8 @@
             color: #a3a3a3;
             transition: color 0.12s ease, background 0.12s ease;
             border-radius: 6px;
-            min-width: 36px;
-            min-height: 36px;
+            min-width: 32px;
+            min-height: 32px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
@@ -214,29 +214,22 @@
             }
             /* Hide less critical labels on very small screens */
             .hide-sm { display: none !important; }
-            /* Properties panel becomes bottom sheet style on mobile */
-            #props-panel {
+            /* Properties panel bottom sheet on mobile */
+            #props-panel.open {
                 top: auto !important;
                 bottom: 56px !important;
                 right: 6px !important;
                 left: 54px !important;
                 width: auto !important;
-                max-height: 36vh;
-                border-radius: 12px;
-                display: none;
+                max-height: 40vh !important;
+                transform: none !important;
             }
-            #props-panel.open {
-                display: flex !important;
-            }
-            /* Left toolbar sits lower and tighter */
+            /* Left toolbar lower on mobile */
             #left-toolbar {
                 left: 6px !important;
                 top: auto !important;
                 bottom: 56px !important;
                 transform: none !important;
-            }
-            #btn-props-toggle {
-                display: inline-flex !important;
             }
             /* Top bar tighter */
             #top-bar {
@@ -277,58 +270,34 @@
     <div id="text-editor-container" class="absolute pointer-events-none z-30" style="display:none;"></div>
 
     <!-- TOP BAR -->
-    <header id="top-bar" class="absolute top-2 left-2 right-2 flex items-center justify-between pointer-events-none z-20 gap-2">
-        <!-- Brand + Mode -->
-        <div class="geist-surface px-2.5 py-1.5 rounded-lg flex items-center gap-2 pointer-events-auto">
-            <div class="flex items-center gap-1.5">
-                <div class="w-5 h-5 rounded bg-white text-black flex items-center justify-center text-[10px] font-semibold">▲</div>
-                <span class="text-[13px] font-medium tracking-tight text-white hide-sm">Infinite<span class="text-geist-500 font-normal">Studio</span></span>
-            </div>
-            <div class="h-3.5 w-px bg-white/10"></div>
+    <header id="top-bar" class="absolute top-2 left-2 right-2 flex items-center justify-between pointer-events-none z-40">
+        <div class="geist-surface px-2 py-1 rounded-lg flex items-center gap-1.5 pointer-events-auto">
+            <div class="w-5 h-5 rounded bg-white text-black flex items-center justify-center text-[10px] font-semibold">▲</div>
             <div class="mode-toggle flex">
                 <button id="mode-vector-btn" class="mode-toggle-btn active flex items-center gap-1">
-                    <i class="fa-solid fa-vector-square text-[9px]"></i><span>Vector</span>
+                    <i class="fa-solid fa-vector-square text-[9px]"></i><span class="hide-sm">Vector</span>
                 </button>
                 <button id="mode-paint-btn" class="mode-toggle-btn flex items-center gap-1">
-                    <i class="fa-solid fa-paintbrush text-[9px]"></i><span>Paint</span>
+                    <i class="fa-solid fa-paintbrush text-[9px]"></i><span class="hide-sm">Paint</span>
                 </button>
             </div>
         </div>
 
-        <!-- Center: Grid + BG -->
-        <div id="center-controls" class="geist-surface px-2 py-1.5 rounded-lg flex items-center gap-1.5 pointer-events-auto">
-            <button id="btn-grid-toggle" class="geist-btn px-2 py-1 rounded-md text-[11px] flex items-center gap-1.5" title="グリッド (G)">
-                <i id="grid-icon" class="fa-solid fa-border-all text-[11px]"></i>
-                <span id="grid-label" class="font-mono text-[10px]">Grid</span>
-            </button>
-            <div class="h-3.5 w-px bg-white/10"></div>
-            <div class="flex items-center gap-1.5">
-                <span class="text-[10px] text-geist-500 font-mono hide-sm">Bg</span>
-                <button class="bg-picker w-5 h-5 rounded border border-white/20 bg-white" data-color="#ffffff" title="White"></button>
-                <button class="bg-picker w-5 h-5 rounded border border-white/15 bg-[#F8F8FA]" data-color="#F8F8FA" title="Off-white"></button>
-                <button class="bg-picker w-5 h-5 rounded border border-white/15 bg-[#F0F2F5]" data-color="#F0F2F5" title="Slate"></button>
-                <button class="bg-picker w-5 h-5 rounded border border-white/15 bg-[#E8E8EC]" data-color="#E8E8EC" title="Light gray"></button>
-                <button class="bg-picker w-5 h-5 rounded border border-white/25 bg-[#0A0A0A]" data-color="#0A0A0A" title="Dark"></button>
-            </div>
-        </div>
-
-        <!-- Actions -->
-        <div class="geist-surface px-1.5 py-1.5 rounded-lg flex items-center gap-0.5 pointer-events-auto">
+        <div class="geist-surface px-1 py-1 rounded-lg flex items-center gap-0.5 pointer-events-auto">
             <button id="btn-undo" class="geist-btn rounded-md" title="元に戻す (⌘Z)" disabled>
-                <i class="fa-solid fa-rotate-left text-[13px]"></i>
+                <i class="fa-solid fa-rotate-left text-[12px]"></i>
             </button>
             <button id="btn-redo" class="geist-btn rounded-md" title="やり直し (⌘⇧Z)" disabled>
-                <i class="fa-solid fa-rotate-right text-[13px]"></i>
+                <i class="fa-solid fa-rotate-right text-[12px]"></i>
             </button>
-            <div class="h-3.5 w-px bg-white/10 mx-0.5"></div>
-            <button id="btn-clear" class="geist-btn px-2 rounded-md text-[11px] text-rose-400 hover:text-rose-300" title="全消去">
+            <button id="btn-clear" class="geist-btn rounded-md text-rose-400" title="全消去">
                 <i class="fa-solid fa-trash-can text-[12px]"></i>
             </button>
-            <div class="relative">
-                <button id="btn-export" class="geist-btn px-2.5 rounded-md text-[11px] font-medium bg-white text-black hover:bg-geist-100 !text-black flex items-center gap-1.5">
-                    <i class="fa-solid fa-download text-[11px]"></i><span id="export-label">書き出し</span>
+            <div class="relative overflow-visible">
+                <button id="btn-export" class="geist-btn rounded-md" title="書き出し">
+                    <i class="fa-solid fa-download text-[12px]"></i>
                 </button>
-                <div id="export-menu" class="hidden absolute right-0 top-full mt-1.5 w-48 geist-surface rounded-lg py-1 z-50 text-[12px]">
+                <div id="export-menu" class="hidden absolute right-0 top-full mt-1.5 w-44 geist-surface rounded-lg py-1 z-[60] text-[12px]">
                     <button data-export="png" class="w-full text-left px-3 py-2 hover:bg-white/8 flex items-center gap-2 text-geist-200">
                         <i class="fa-regular fa-image w-4"></i>PNG
                     </button>
@@ -343,7 +312,7 @@
                         <i class="fa-solid fa-floppy-disk w-4"></i>プロジェクト保存
                     </button>
                     <button id="btn-load-project" class="w-full text-left px-3 py-2 hover:bg-white/8 flex items-center gap-2 text-geist-200">
-                        <i class="fa-solid fa-folder-open w-4"></i>読み込み (JSON/SVG)
+                        <i class="fa-solid fa-folder-open w-4"></i>読み込み
                     </button>
                     <input type="file" id="file-input" accept=".json,.svg,image/svg+xml,application/json" class="hidden">
                 </div>
@@ -352,67 +321,56 @@
     </header>
 
     <!-- LEFT TOOLBAR -->
-    <aside id="left-toolbar" class="absolute left-2 top-1/2 -translate-y-1/2 geist-surface p-1 rounded-lg flex flex-col gap-0.5 z-20 pointer-events-auto">
-        <button id="tool-hand" class="geist-btn" title="移動 (H / Space)">
-            <i class="fa-solid fa-hand text-[15px]"></i>
-        </button>
-        <button id="tool-select" class="geist-btn" title="選択 (V)">
-            <i class="fa-solid fa-arrow-pointer text-[15px]"></i>
-        </button>
+    <aside id="left-toolbar" class="absolute left-2 top-1/2 -translate-y-1/2 geist-surface p-0.5 rounded-lg flex flex-col gap-0.5 z-20 pointer-events-auto">
+        <button id="tool-hand" class="geist-btn" title="移動 (H / Space)"><i class="fa-solid fa-hand text-[14px]"></i></button>
+        <button id="tool-select" class="geist-btn" title="選択 (V)"><i class="fa-solid fa-arrow-pointer text-[14px]"></i></button>
         <div class="h-px w-full bg-white/10 my-0.5"></div>
-        <button id="tool-brush" class="geist-btn active" title="ブラシ (B)">
-            <i class="fa-solid fa-pen-nib text-[15px]"></i>
-        </button>
-        <button id="tool-text" class="geist-btn" title="テキスト (T)">
-            <i class="fa-solid fa-font text-[15px]"></i>
-        </button>
+        <button id="tool-brush" class="geist-btn active" title="ブラシ (B)"><i class="fa-solid fa-pen-nib text-[14px]"></i></button>
+        <button id="tool-text" class="geist-btn" title="テキスト (T)"><i class="fa-solid fa-font text-[14px]"></i></button>
         <div class="relative" id="shapes-wrap">
-            <button id="tool-shapes" class="geist-btn w-full" title="図形">
-                <i id="shape-icon" class="fa-regular fa-square text-[15px]"></i>
-            </button>
-            <div id="shapes-menu" class="absolute left-full top-0 ml-1.5 geist-surface p-1 rounded-lg hidden flex-col gap-0.5 z-30">
+            <button id="tool-shapes" class="geist-btn w-full" title="図形"><i id="shape-icon" class="fa-regular fa-square text-[14px]"></i></button>
+            <div id="shapes-menu" class="absolute left-full top-0 ml-1 geist-surface p-0.5 rounded-lg hidden flex-col gap-0.5 z-30">
                 <button data-shape="rect" class="geist-btn" title="四角形"><i class="fa-regular fa-square"></i></button>
                 <button data-shape="circle" class="geist-btn" title="円"><i class="fa-regular fa-circle"></i></button>
                 <button data-shape="line" class="geist-btn" title="直線"><i class="fa-solid fa-minus"></i></button>
                 <button data-shape="arrow" class="geist-btn" title="矢印"><i class="fa-solid fa-arrow-right"></i></button>
             </div>
         </div>
-        <button id="tool-eraser" class="geist-btn" title="消しゴム (E)">
-            <i class="fa-solid fa-eraser text-[15px]"></i>
-        </button>
-        <button id="tool-eyedropper" class="geist-btn" title="スポイト (I)">
-            <i class="fa-solid fa-eye-dropper text-[15px]"></i>
-        </button>
+        <button id="tool-eraser" class="geist-btn" title="消しゴム (E)"><i class="fa-solid fa-eraser text-[14px]"></i></button>
+        <button id="tool-eyedropper" class="geist-btn" title="スポイト (I)"><i class="fa-solid fa-eye-dropper text-[14px]"></i></button>
         <div class="h-px w-full bg-white/10 my-0.5"></div>
-        <button id="btn-props-toggle" class="geist-btn hidden" title="プロパティ" style="display:none;">
-            <i class="fa-solid fa-sliders text-[15px]"></i>
-        </button>
+        <button id="btn-props-toggle" class="geist-btn" title="設定"><i class="fa-solid fa-sliders text-[14px]"></i></button>
+        <button id="btn-grid-toggle" class="geist-btn" title="グリッド (G)"><i id="grid-icon" class="fa-solid fa-border-all text-[14px]"></i></button>
     </aside>
 
-    <!-- RIGHT PROPERTIES -->
-    <aside id="props-panel" class="absolute right-2 top-[60px] bottom-12 w-60 geist-surface p-2.5 rounded-lg flex flex-col gap-2.5 z-20 pointer-events-auto overflow-y-auto props-scroll">
+    <!-- PROPERTIES (hidden by default) -->
+    <aside id="props-panel" class="absolute left-14 top-1/2 -translate-y-1/2 w-56 geist-surface p-2.5 rounded-lg flex-col gap-2.5 z-30 pointer-events-auto overflow-y-auto props-scroll hidden" style="max-height:70vh;">
         <div class="flex justify-between items-center">
-            <span class="text-[10px] font-mono uppercase tracking-wider text-geist-500">Properties</span>
-            <span id="tool-badge" class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-geist-300 font-mono">BRUSH</span>
-        </div>
-
-        <!-- Paint presets -->
-        <div id="paint-presets" class="hidden flex-col gap-1.5">
-            <label class="text-[11px] text-geist-400 font-medium">ペイントタイプ</label>
-            <div class="grid grid-cols-3 gap-1">
-                <button class="paint-preset active geist-btn py-2 rounded-md text-[10px] flex flex-col items-center gap-0.5" data-preset="pen">
-                    <i class="fa-solid fa-pen text-[12px]"></i>ペン
-                </button>
-                <button class="paint-preset geist-btn py-2 rounded-md text-[10px] flex flex-col items-center gap-0.5" data-preset="marker">
-                    <i class="fa-solid fa-highlighter text-[12px]"></i>マーカー
-                </button>
-                <button class="paint-preset geist-btn py-2 rounded-md text-[10px] flex flex-col items-center gap-0.5" data-preset="airbrush">
-                    <i class="fa-solid fa-spray-can text-[12px]"></i>エア
-                </button>
+            <span class="text-[10px] font-mono uppercase tracking-wider text-geist-500">設定</span>
+            <div class="flex items-center gap-1">
+                <span id="tool-badge" class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-geist-300 font-mono">BRUSH</span>
+                <button id="btn-props-close" class="geist-btn !min-w-6 !min-h-6 text-geist-400" title="閉じる">&times;</button>
             </div>
         </div>
 
-        <!-- Size -->
+        <div id="paint-presets" class="hidden flex-col gap-1.5">
+            <label class="text-[11px] text-geist-400">ペイント</label>
+            <div class="grid grid-cols-3 gap-1">
+                <button class="paint-preset active geist-btn py-1.5 rounded-md text-[10px]" data-preset="pen">ペン</button>
+                <button class="paint-preset geist-btn py-1.5 rounded-md text-[10px]" data-preset="marker">マーカー</button>
+                <button class="paint-preset geist-btn py-1.5 rounded-md text-[10px]" data-preset="airbrush">エア</button>
+            </div>
+        </div>
+
+        <div id="eraser-presets" class="hidden flex-col gap-1.5">
+            <label class="text-[11px] text-geist-400">消しゴム</label>
+            <div class="grid grid-cols-2 gap-1">
+                <button class="eraser-mode-btn active geist-btn py-1.5 rounded-md text-[10px]" data-emode="partial">部分消し</button>
+                <button class="eraser-mode-btn geist-btn py-1.5 rounded-md text-[10px]" data-emode="object">一筆消し</button>
+            </div>
+            <p id="eraser-hint" class="text-[10px] text-geist-500">なぞった部分だけ消します</p>
+        </div>
+
         <div class="flex flex-col gap-1">
             <div class="flex justify-between">
                 <label class="text-[11px] text-geist-400">サイズ</label>
@@ -421,7 +379,6 @@
             <input id="size-slider" type="range" min="1" max="120" value="8" class="slider w-full">
         </div>
 
-        <!-- Opacity -->
         <div class="flex flex-col gap-1">
             <div class="flex justify-between">
                 <label class="text-[11px] text-geist-400">不透明度</label>
@@ -430,71 +387,68 @@
             <input id="opacity-slider" type="range" min="5" max="100" value="100" class="slider w-full">
         </div>
 
-        <!-- Color -->
         <div class="flex flex-col gap-2 pt-1 border-t border-white/8">
             <label class="text-[11px] text-geist-400">カラー</label>
             <div class="flex items-center gap-2">
                 <div class="relative shrink-0">
                     <input id="color-input" type="color" value="#171717" class="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10">
-                    <div id="color-swatch" class="w-9 h-9 rounded-md border border-white/15" style="background:#171717"></div>
+                    <div id="color-swatch" class="w-8 h-8 rounded-md border border-white/15" style="background:#171717"></div>
                 </div>
-                <div class="flex-1 flex items-center gap-1.5 bg-black/40 px-2 py-1.5 rounded-md border border-white/8">
+                <div class="flex-1 flex items-center gap-1 bg-black/40 px-2 py-1 rounded-md border border-white/8">
                     <span class="text-geist-600 text-[10px] font-mono">#</span>
-                    <input id="hex-input" type="text" value="171717" maxlength="6" class="bg-transparent text-[13px] text-white font-mono outline-none w-full uppercase tracking-wide">
+                    <input id="hex-input" type="text" value="171717" maxlength="6" class="bg-transparent text-[12px] text-white font-mono outline-none w-full uppercase">
                 </div>
             </div>
-
-            <!-- Palettes -->
-            <div class="flex flex-col gap-1.5">
-                <div class="flex justify-between items-center">
-                    <span class="text-[10px] text-geist-500 font-mono">パレット</span>
-                    <select id="palette-select" class="bg-black/40 border border-white/8 text-[10px] text-geist-300 rounded px-1.5 py-1 outline-none">
-                        <option value="mono">Monochrome</option>
-                        <option value="vercel">Vercel</option>
-                        <option value="pastel">Pastel</option>
-                        <option value="earth">Earth</option>
-                        <option value="neon">Neon</option>
-                    </select>
-                </div>
-                <div id="palette-grid" class="grid grid-cols-6 gap-1.5"></div>
+            <div class="flex flex-col gap-1">
+                <select id="palette-select" class="bg-black/40 border border-white/8 text-[10px] text-geist-300 rounded px-1.5 py-1 outline-none">
+                    <option value="mono">Monochrome</option>
+                    <option value="vercel">Vercel</option>
+                    <option value="pastel">Pastel</option>
+                    <option value="earth">Earth</option>
+                    <option value="neon">Neon</option>
+                </select>
+                <div id="palette-grid" class="grid grid-cols-6 gap-1"></div>
             </div>
         </div>
 
-        <!-- Layers -->
+        <div class="flex flex-col gap-1.5 pt-1 border-t border-white/8">
+            <label class="text-[11px] text-geist-400">背景</label>
+            <div id="center-controls" class="flex items-center gap-1.5">
+                <button class="bg-picker w-5 h-5 rounded border border-white/20 bg-white" data-color="#ffffff" title="White"></button>
+                <button class="bg-picker w-5 h-5 rounded border border-white/15 bg-[#F8F8FA]" data-color="#F8F8FA" title="Off-white"></button>
+                <button class="bg-picker w-5 h-5 rounded border border-white/15 bg-[#F0F2F5]" data-color="#F0F2F5" title="Slate"></button>
+                <button class="bg-picker w-5 h-5 rounded border border-white/15 bg-[#E8E8EC]" data-color="#E8E8EC" title="Light gray"></button>
+                <button class="bg-picker w-5 h-5 rounded border border-white/25 bg-[#0A0A0A]" data-color="#0A0A0A" title="Dark"></button>
+            </div>
+        </div>
+
         <div class="flex flex-col gap-1.5 pt-1 border-t border-white/8">
             <div class="flex justify-between items-center">
                 <label class="text-[11px] text-geist-400">レイヤー</label>
-                <button id="btn-add-layer" class="geist-btn px-1.5 py-0.5 text-[10px] rounded" title="レイヤー追加">
-                    <i class="fa-solid fa-plus text-[10px]"></i>
-                </button>
+                <button id="btn-add-layer" class="geist-btn !min-w-6 !min-h-6" title="追加"><i class="fa-solid fa-plus text-[10px]"></i></button>
             </div>
-            <div id="layer-list" class="flex flex-col gap-1 max-h-28 overflow-y-auto"></div>
+            <div id="layer-list" class="flex flex-col gap-1 max-h-24 overflow-y-auto"></div>
         </div>
 
-        <!-- Selected object actions -->
         <div id="selection-actions" class="hidden flex-col gap-1.5 pt-1 border-t border-white/8">
-            <label class="text-[11px] text-geist-400">選択中</label>
-            <button id="btn-delete-selected" class="geist-btn py-2 rounded-md text-[11px] text-rose-400 hover:text-rose-300 w-full">
-                <i class="fa-solid fa-trash-can mr-1.5"></i>削除
+            <button id="btn-delete-selected" class="geist-btn py-1.5 rounded-md text-[11px] text-rose-400 w-full">
+                <i class="fa-solid fa-trash-can mr-1"></i>削除
             </button>
         </div>
     </aside>
 
     <!-- BOTTOM HUD -->
     <footer id="bottom-hud" class="absolute bottom-2 left-2 right-2 flex items-center justify-between pointer-events-none z-20">
-        <div class="geist-surface px-2.5 py-1.5 rounded-md text-[11px] font-mono text-geist-400 flex items-center gap-2 pointer-events-auto">
+        <div class="geist-surface px-2 py-1 rounded-md text-[10px] font-mono text-geist-400 flex items-center gap-2 pointer-events-auto">
             <span id="hud-coords">0, 0</span>
-            <div class="h-3 w-px bg-white/10"></div>
-            <span id="hud-zoom" class="text-white font-medium">100%</span>
+            <span id="hud-zoom" class="text-white">100%</span>
         </div>
-        <div class="geist-surface px-1 py-0.5 rounded-md flex items-center gap-0.5 pointer-events-auto">
-            <button id="zoom-out" class="geist-btn rounded" title="縮小"><i class="fa-solid fa-minus text-[11px]"></i></button>
-            <button id="zoom-reset" class="geist-btn px-2 rounded text-[10px] font-mono" title="100%">100%</button>
-            <button id="zoom-in" class="geist-btn rounded" title="拡大"><i class="fa-solid fa-plus text-[11px]"></i></button>
+        <div class="geist-surface px-0.5 py-0.5 rounded-md flex items-center pointer-events-auto">
+            <button id="zoom-out" class="geist-btn !min-w-7 !min-h-7 rounded" title="縮小"><i class="fa-solid fa-minus text-[10px]"></i></button>
+            <button id="zoom-reset" class="geist-btn !min-w-0 px-1.5 !min-h-7 rounded text-[10px] font-mono">100%</button>
+            <button id="zoom-in" class="geist-btn !min-w-7 !min-h-7 rounded" title="拡大"><i class="fa-solid fa-plus text-[10px]"></i></button>
         </div>
-        <button id="btn-help" class="geist-surface px-2.5 py-1.5 rounded-md text-[11px] font-mono text-geist-400 hover:text-white pointer-events-auto flex items-center gap-1.5">
-            <i class="fa-solid fa-keyboard text-[12px]"></i>?
-        </button>
+        <button id="btn-help" class="geist-surface px-2 py-1 rounded-md text-[10px] font-mono text-geist-400 hover:text-white pointer-events-auto">?</button>
     </footer>
 
     <!-- Shortcuts Modal -->
@@ -550,7 +504,8 @@
             maxHistory: 50,
             currentObj: null,
             dpr: Math.min(window.devicePixelRatio || 1, 2),
-            historyLocked: false
+            historyLocked: false,
+            eraserMode: 'partial' // 'partial' | 'object'
         };
 
         const palettes = {
@@ -840,15 +795,89 @@
             return false;
         }
 
-        function eraseAt(wx, wy) {
+        function eraseObjectAt(wx, wy) {
             const before = state.objects.length;
-            // remove whole objects near cursor
             state.objects = state.objects.filter(obj => {
                 const layer = state.layers.find(l => l.id === obj.layerId);
                 if (layer && !layer.visible) return true;
                 return !hitTest(obj, wx, wy);
             });
             return state.objects.length !== before;
+        }
+
+        // Partial erase: carve out points within radius, split paths into fragments
+        function erasePartialAt(wx, wy) {
+            const radius = Math.max(state.strokeWidth * 0.55, 4);
+            let changed = false;
+            const next = [];
+
+            state.objects.forEach(obj => {
+                const layer = state.layers.find(l => l.id === obj.layerId);
+                if (layer && !layer.visible) {
+                    next.push(obj);
+                    return;
+                }
+
+                // Non-path shapes: only remove if eraser center is very close (optional soft object delete)
+                if (obj.type !== 'path' || !obj.points || obj.points.length < 2) {
+                    // shapes stay unless fully hit with object mode; partial leaves them
+                    next.push(obj);
+                    return;
+                }
+
+                // Split path into keep-segments outside the eraser circle
+                const segments = [];
+                let current = [];
+
+                for (let i = 0; i < obj.points.length; i++) {
+                    const p = obj.points[i];
+                    const inside = Math.hypot(p.x - wx, p.y - wy) <= radius;
+                    // also erase if the segment crosses the circle
+                    let segInside = inside;
+                    if (!inside && i > 0) {
+                        const prev = obj.points[i - 1];
+                        if (distToSegment(wx, wy, prev.x, prev.y, p.x, p.y) <= radius) {
+                            segInside = true;
+                        }
+                    }
+                    if (segInside) {
+                        if (current.length >= 2) segments.push(current);
+                        current = [];
+                        changed = true;
+                    } else {
+                        current.push({ x: p.x, y: p.y });
+                    }
+                }
+                if (current.length >= 2) segments.push(current);
+                else if (current.length > 0) changed = true;
+
+                if (segments.length === 0) {
+                    changed = true;
+                    return; // fully erased
+                }
+
+                // first segment reuses original id when possible
+                segments.forEach((pts, idx) => {
+                    if (idx === 0 && segments.length === 1 && pts.length === obj.points.length) {
+                        next.push(obj); // unchanged
+                    } else {
+                        next.push({
+                            ...obj,
+                            id: idx === 0 ? obj.id : uid(),
+                            points: pts
+                        });
+                        changed = true;
+                    }
+                });
+            });
+
+            if (changed) state.objects = next;
+            return changed;
+        }
+
+        function eraseAt(wx, wy) {
+            if (state.eraserMode === 'object') return eraseObjectAt(wx, wy);
+            return erasePartialAt(wx, wy);
         }
 
         // ===== TOOLS =====
@@ -862,6 +891,12 @@
             if (['rect','circle','line','arrow'].includes(name)) {
                 const icons = { rect: 'fa-regular fa-square', circle: 'fa-regular fa-circle', line: 'fa-solid fa-minus', arrow: 'fa-solid fa-arrow-right' };
                 document.getElementById('shape-icon').className = icons[name] + ' text-[15px]';
+            }
+            // show eraser mode panel
+            const ep = document.getElementById('eraser-presets');
+            if (ep) {
+                ep.classList.toggle('hidden', name !== 'eraser');
+                ep.classList.toggle('flex', name === 'eraser');
             }
             updateCursor();
         }
@@ -1488,6 +1523,20 @@
             };
         });
 
+        document.querySelectorAll('.eraser-mode-btn').forEach(b => {
+            b.onclick = () => {
+                document.querySelectorAll('.eraser-mode-btn').forEach(x => x.classList.remove('active'));
+                b.classList.add('active');
+                state.eraserMode = b.dataset.emode;
+                const hint = document.getElementById('eraser-hint');
+                if (hint) {
+                    hint.textContent = state.eraserMode === 'partial'
+                        ? 'ブラシ線をなぞった部分だけ少しずつ消します'
+                        : '触れたオブジェクトを一筆まるごと消します';
+                }
+            };
+        });
+
         document.getElementById('size-slider').oninput = (e) => {
             state.strokeWidth = +e.target.value;
             document.getElementById('size-val').textContent = state.strokeWidth;
@@ -1508,8 +1557,14 @@
 
         document.getElementById('btn-grid-toggle').onclick = () => {
             state.gridMode = state.gridMode === 'grid' ? 'dots' : state.gridMode === 'dots' ? 'off' : 'grid';
-            document.getElementById('grid-label').textContent =
-                state.gridMode === 'off' ? 'Off' : state.gridMode === 'dots' ? 'Dots' : 'Grid';
+            const icon = document.getElementById('grid-icon');
+            if (icon) {
+                icon.className = state.gridMode === 'off'
+                    ? 'fa-solid fa-border-none text-[14px]'
+                    : state.gridMode === 'dots'
+                        ? 'fa-solid fa-ellipsis text-[14px]'
+                        : 'fa-solid fa-border-all text-[14px]';
+            }
             render();
         };
 
@@ -1610,18 +1665,32 @@
             }
         });
 
-        // Mobile props toggle
+        // Props panel toggle (default closed — more canvas space)
         const propsPanel = document.getElementById('props-panel');
         const propsToggle = document.getElementById('btn-props-toggle');
+        const propsClose = document.getElementById('btn-props-close');
+        function openProps() {
+            propsPanel.classList.remove('hidden');
+            propsPanel.classList.add('flex', 'open');
+            propsToggle.classList.add('active');
+        }
+        function closeProps() {
+            propsPanel.classList.add('hidden');
+            propsPanel.classList.remove('flex', 'open');
+            propsToggle.classList.remove('active');
+        }
         if (propsToggle) {
             propsToggle.onclick = (e) => {
                 e.stopPropagation();
-                propsPanel.classList.toggle('open');
+                if (propsPanel.classList.contains('hidden')) openProps();
+                else closeProps();
             };
-            container.addEventListener('pointerdown', () => {
-                if (window.innerWidth <= 768) propsPanel.classList.remove('open');
-            });
         }
+        if (propsClose) propsClose.onclick = (e) => { e.stopPropagation(); closeProps(); };
+        // Close when starting to draw on canvas
+        container.addEventListener('pointerdown', () => {
+            if (!propsPanel.classList.contains('hidden')) closeProps();
+        });
 
         // Init
         renderPalette('mono');
