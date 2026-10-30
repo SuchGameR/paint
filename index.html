@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Infinite Studio - Vector & Paint Dual Engine</title>
+    <title>Infinite Studio - Geist Canvas</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -12,23 +12,34 @@
             theme: {
                 extend: {
                     colors: {
-                        brand: {
-                            50: '#f0f9ff',
-                            500: '#06b6d4',
-                            600: '#0891b2',
-                            700: '#0e7490',
+                        geist: {
+                            50: '#fafafa',
+                            100: '#f5f5f5',
+                            200: '#e5e5e5',
+                            300: '#d4d4d4',
+                            400: '#a3a3a3',
+                            500: '#737373',
+                            600: '#525252',
+                            700: '#404040',
+                            800: '#262626',
+                            900: '#171717',
+                            950: '#0a0a0a',
                         }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+                        mono: ['Geist Mono', 'SFMono-Regular', 'Roboto Mono', 'monospace']
                     }
                 }
             }
         }
     </script>
-    <!-- FontAwesome for Icons -->
+    <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+JP:wght@300;400;500;700&family=Pacifico&family=Roboto+Mono&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
         body, html {
             margin: 0;
@@ -38,49 +49,36 @@
             overflow: hidden;
             user-select: none;
             -webkit-user-select: none;
-            font-family: 'Inter', 'Noto Sans JP', sans-serif;
-        }
-        
-        /* Custom Scrollbars */
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: rgba(0, 0, 0, 0.1);
-        }
-        ::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 3px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: rgba(255, 255, 255, 0.4);
+            font-family: 'Inter', sans-serif;
+            background-color: #000;
         }
 
-        /* Glassmorphism Styling */
-        .glass-panel {
-            background: rgba(22, 27, 34, 0.75);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+        /* Geist / Vercel Glass Panel Styling */
+        .geist-card {
+            background: rgba(10, 10, 10, 0.82);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            box-shadow: 0 16px 32px rgba(0, 0, 0, 0.6);
         }
 
-        .glass-btn {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        .geist-btn {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #d4d4d4;
+            transition: all 0.15s ease-in-out;
         }
-        .glass-btn:hover {
-            background: rgba(255, 255, 255, 0.15);
+        .geist-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
             border-color: rgba(255, 255, 255, 0.25);
-            transform: translateY(-1px);
+            color: #ffffff;
         }
-        .glass-btn.active {
-            background: rgba(6, 182, 212, 0.25);
-            border-color: rgba(6, 182, 212, 0.6);
-            color: #38bdf8;
-            box-shadow: 0 0 12px rgba(6, 182, 212, 0.3);
+        .geist-btn.active {
+            background: #ffffff;
+            color: #000000;
+            border-color: #ffffff;
+            font-weight: 600;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
         }
 
         /* Canvas cursor dynamic styling */
@@ -93,126 +91,138 @@
         #brush-cursor {
             pointer-events: none;
             position: absolute;
-            border: 1.5px solid rgba(255, 255, 255, 0.85);
-            box-shadow: 0 0 2px rgba(0,0,0,0.8), inset 0 0 2px rgba(0,0,0,0.8);
+            border: 1.5px solid rgba(0, 0, 0, 0.7);
+            box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.9);
             border-radius: 50%;
             transform: translate(-50%, -50%);
             display: none;
             z-index: 9999;
-            transition: width 0.05s ease-out, height 0.05s ease-out;
+            transition: width 0.04s ease-out, height 0.04s ease-out;
         }
 
         /* Floating Input Editor for Vector Text */
         .text-editor-input {
             background: transparent;
-            border: 1px stroke rgba(56, 189, 248, 0.8);
+            border: 1px dashed #000;
             outline: none;
             resize: none;
             overflow: hidden;
-            color: inherit;
             font-family: inherit;
-            padding: 4px;
+            padding: 2px 4px;
             white-space: pre;
-            border-radius: 4px;
+            border-radius: 2px;
         }
 
-        /* Engine Toggle Slider */
-        .engine-switch {
-            position: relative;
-            display: inline-flex;
-            background: rgba(0, 0, 0, 0.4);
-            border-radius: 9999px;
-            padding: 3px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+        /* Mode Toggle Segmented Control */
+        .mode-toggle {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 8px;
+            padding: 2px;
         }
-        .engine-slider {
-            position: absolute;
-            top: 3px;
-            bottom: 3px;
-            width: 50%;
-            background: linear-gradient(135deg, #06b6d4, #3b82f6);
-            border-radius: 9999px;
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 2px 8px rgba(6, 182, 212, 0.4);
+        .mode-toggle-btn {
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 500;
+            transition: all 0.15s ease;
+            color: #a3a3a3;
         }
-        .engine-switch.paint-mode .engine-slider {
-            transform: translateX(96%);
-            background: linear-gradient(135deg, #ec4899, #8b5cf6);
-            box-shadow: 0 2px 8px rgba(236, 72, 153, 0.4);
+        .mode-toggle-btn.active {
+            background: #ffffff;
+            color: #000000;
+            font-weight: 600;
         }
     </style>
 </head>
-<body class="bg-gray-950 text-gray-100 h-screen w-screen relative overflow-hidden select-none">
+<body class="bg-black text-gray-100 h-screen w-screen relative overflow-hidden select-none">
 
-    <!-- Canvas Container -->
+    <!-- Infinite Canvas Container -->
     <div id="canvas-container" class="absolute inset-0 w-full h-full cursor-crosshair">
         <canvas id="main-canvas" class="w-full h-full"></canvas>
     </div>
 
-    <!-- Dynamic Brush Size Hover Cursor -->
+    <!-- Hover Brush Ring Cursor -->
     <div id="brush-cursor"></div>
 
-    <!-- Dynamic Floating Text Editor Container -->
+    <!-- Floating Text Editor Wrapper -->
     <div id="text-editor-container" class="absolute pointer-events-none z-30" style="display: none;"></div>
 
-    <!-- TOP BAR / HEADER HUD & ENGINE SWITCH -->
+    <!-- TOP HEADER / TOOLBAR (Vercel Geist Aesthetic) -->
     <header class="absolute top-4 left-4 right-4 flex items-center justify-between pointer-events-none z-20">
-        <!-- Logo & Quick Stats -->
-        <div class="glass-panel px-4 py-2.5 rounded-2xl flex items-center gap-4 pointer-events-auto">
+        <!-- Logo & Mode Switcher -->
+        <div class="geist-card px-3.5 py-2 rounded-xl flex items-center gap-3.5 pointer-events-auto">
             <div class="flex items-center gap-2">
-                <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/30">
-                    <i class="fa-solid fa-infinity text-white text-base"></i>
+                <div class="w-6 h-6 rounded-md bg-white text-black flex items-center justify-center font-bold text-xs">
+                    ▲
                 </div>
-                <span class="font-bold text-lg tracking-wider bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent">
-                    Infinite<span class="text-cyan-400 font-normal">Studio</span>
+                <span class="font-semibold text-sm tracking-tight text-white font-mono">
+                    Infinite<span class="text-gray-400 font-normal">Studio</span>
                 </span>
             </div>
 
-            <div class="h-5 w-[1px] bg-gray-700/60"></div>
+            <div class="h-4 w-[1px] bg-geist-800"></div>
 
-            <!-- Engine Mode Switcher -->
-            <div id="engine-switch-btn" class="engine-switch cursor-pointer w-44" title="クリックでエンジンを切り替え">
-                <div class="engine-slider"></div>
-                <button id="mode-vector-btn" class="relative z-10 w-1/2 text-xs font-semibold py-1 text-center transition-colors duration-200 text-white">
-                    <i class="fa-solid fa-vector-square mr-1"></i>Vector
+            <!-- Vector / Paint Mode Switch -->
+            <div class="mode-toggle flex items-center">
+                <button id="mode-vector-btn" class="mode-toggle-btn active flex items-center gap-1.5">
+                    <i class="fa-solid fa-vector-square text-[10px]"></i>Vector
                 </button>
-                <button id="mode-paint-btn" class="relative z-10 w-1/2 text-xs font-semibold py-1 text-center transition-colors duration-200 text-gray-400">
-                    <i class="fa-solid fa-paintbrush mr-1"></i>Paint
+                <button id="mode-paint-btn" class="mode-toggle-btn flex items-center gap-1.5">
+                    <i class="fa-solid fa-paintbrush text-[10px]"></i>Paint
                 </button>
             </div>
         </div>
 
-        <!-- Canvas Controls & Actions -->
-        <div class="glass-panel px-3 py-2 rounded-2xl flex items-center gap-2 pointer-events-auto">
-            <button id="btn-undo" class="glass-btn p-2 rounded-xl text-gray-300 hover:text-white" title="元に戻す (Ctrl+Z)">
-                <i class="fa-solid fa-rotate-left w-5 h-5 flex items-center justify-center"></i>
-            </button>
-            <button id="btn-redo" class="glass-btn p-2 rounded-xl text-gray-300 hover:text-white" title="やり直し (Ctrl+Y)">
-                <i class="fa-solid fa-rotate-right w-5 h-5 flex items-center justify-center"></i>
-            </button>
-
-            <div class="h-5 w-[1px] bg-gray-700/60 mx-1"></div>
-
-            <button id="btn-clear" class="glass-btn px-3 py-1.5 rounded-xl text-xs font-medium text-rose-400 hover:bg-rose-500/10 hover:border-rose-500/30" title="キャンバス消去">
-                <i class="fa-solid fa-trash-can mr-1.5"></i>全消去
+        <!-- Center Canvas Controls: Grid & Background Settings -->
+        <div class="geist-card px-3 py-1.5 rounded-xl flex items-center gap-2 pointer-events-auto">
+            <!-- Grid Toggle Button -->
+            <button id="btn-grid-toggle" class="geist-btn px-2.5 py-1 rounded-lg text-xs flex items-center gap-1.5" title="グリッド切替 [G]">
+                <i id="grid-icon" class="fa-solid fa-border-all text-xs text-geist-300"></i>
+                <span id="grid-label" class="font-mono text-[11px]">Grid</span>
             </button>
 
-            <!-- Export Dropdown Button -->
+            <div class="h-4 w-[1px] bg-geist-800 mx-0.5"></div>
+
+            <!-- Canvas Background Selector -->
+            <div class="flex items-center gap-1.5">
+                <span class="text-[10px] text-geist-400 font-mono uppercase">Bg:</span>
+                <button class="bg-picker-btn w-5 h-5 rounded-md border border-gray-300 bg-white" data-color="#ffffff" title="White"></button>
+                <button class="bg-picker-btn w-5 h-5 rounded-md border border-gray-400/30 bg-[#F9F9FB]" data-color="#F9F9FB" title="Warm Off-White"></button>
+                <button class="bg-picker-btn w-5 h-5 rounded-md border border-gray-400/30 bg-[#F0F2F5]" data-color="#F0F2F5" title="Soft Slate"></button>
+                <button class="bg-picker-btn w-5 h-5 rounded-md border border-gray-700 bg-[#0A0A0A]" data-color="#0A0A0A" title="Dark Midnight"></button>
+            </div>
+        </div>
+
+        <!-- History & Export Actions -->
+        <div class="geist-card px-2.5 py-1.5 rounded-xl flex items-center gap-1.5 pointer-events-auto">
+            <button id="btn-undo" class="geist-btn p-1.5 rounded-lg text-xs" title="元に戻す (Ctrl+Z)">
+                <i class="fa-solid fa-rotate-left w-4 h-4 flex items-center justify-center"></i>
+            </button>
+            <button id="btn-redo" class="geist-btn p-1.5 rounded-lg text-xs" title="やり直し (Ctrl+Y)">
+                <i class="fa-solid fa-rotate-right w-4 h-4 flex items-center justify-center"></i>
+            </button>
+
+            <div class="h-4 w-[1px] bg-geist-800 mx-1"></div>
+
+            <button id="btn-clear" class="geist-btn px-2.5 py-1 rounded-lg text-xs text-rose-400 hover:text-rose-300" title="全消去">
+                <i class="fa-solid fa-trash-can mr-1"></i>消去
+            </button>
+
             <div class="relative inline-block text-left">
-                <button id="btn-export-menu" class="glass-btn px-3 py-1.5 rounded-xl text-xs font-semibold bg-cyan-500/20 text-cyan-300 border-cyan-500/40 hover:bg-cyan-500/30 flex items-center gap-1.5">
-                    <i class="fa-solid fa-download"></i>書き出し
-                    <i class="fa-solid fa-chevron-down text-[10px] opacity-70"></i>
+                <button id="btn-export-menu" class="geist-btn px-2.5 py-1 rounded-lg text-xs font-medium bg-white text-black hover:bg-gray-200 border-white flex items-center gap-1">
+                    <i class="fa-solid fa-download text-[11px]"></i>書き出し
                 </button>
                 <!-- Export Menu Popup -->
-                <div id="export-popup" class="hidden absolute right-0 mt-2 w-48 glass-panel rounded-xl shadow-2xl py-2 z-50 text-xs border border-gray-700/80">
-                    <button id="export-png" class="w-full text-left px-4 py-2 hover:bg-white/10 flex items-center gap-2">
-                        <i class="fa-regular fa-image text-cyan-400"></i>PNG 画像 (.png)
+                <div id="export-popup" class="hidden absolute right-0 mt-2 w-44 geist-card rounded-xl shadow-2xl py-1.5 z-50 text-xs border border-geist-800">
+                    <button id="export-png" class="w-full text-left px-3.5 py-1.5 hover:bg-white/10 flex items-center gap-2 text-geist-200">
+                        <i class="fa-regular fa-image text-white"></i>PNG 画像 (.png)
                     </button>
-                    <button id="export-jpeg" class="w-full text-left px-4 py-2 hover:bg-white/10 flex items-center gap-2">
-                        <i class="fa-regular fa-file-image text-emerald-400"></i>JPEG 画像 (.jpg)
+                    <button id="export-jpeg" class="w-full text-left px-3.5 py-1.5 hover:bg-white/10 flex items-center gap-2 text-geist-200">
+                        <i class="fa-regular fa-file-image text-white"></i>JPEG 画像 (.jpg)
                     </button>
-                    <button id="export-svg" class="w-full text-left px-4 py-2 hover:bg-white/10 flex items-center gap-2">
-                        <i class="fa-solid fa-bezier-curve text-purple-400"></i>Vector SVG (.svg)
+                    <button id="export-svg" class="w-full text-left px-3.5 py-1.5 hover:bg-white/10 flex items-center gap-2 text-geist-200">
+                        <i class="fa-solid fa-bezier-curve text-white"></i>Vector SVG (.svg)
                     </button>
                 </div>
             </div>
@@ -220,237 +230,221 @@
     </header>
 
     <!-- LEFT SIDEBAR: MAIN TOOLBAR -->
-    <aside class="absolute left-4 top-1/2 -translate-y-1/2 glass-panel p-2 rounded-2xl flex flex-col gap-2 z-20 pointer-events-auto">
-        <!-- Move / Pan Tool -->
-        <button id="tool-hand" class="glass-btn p-3 rounded-xl text-gray-300 hover:text-white" title="キャンバス移動 [Space]">
-            <i class="fa-solid fa-hand text-lg"></i>
+    <aside class="absolute left-4 top-1/2 -translate-y-1/2 geist-card p-1.5 rounded-xl flex flex-col gap-1.5 z-20 pointer-events-auto">
+        <!-- Hand / Pan Tool -->
+        <button id="tool-hand" class="geist-btn p-2.5 rounded-lg" title="キャンバス移動 [Space / H]">
+            <i class="fa-solid fa-hand text-base"></i>
         </button>
 
         <!-- Select Tool (Vector Mode Only) -->
-        <button id="tool-select" class="glass-btn p-3 rounded-xl text-gray-300 hover:text-white" title="オブジェクト選択 [V]">
-            <i class="fa-solid fa-arrow-pointer text-lg"></i>
+        <button id="tool-select" class="geist-btn p-2.5 rounded-lg" title="選択 [V]">
+            <i class="fa-solid fa-arrow-pointer text-base"></i>
         </button>
 
-        <div class="h-[1px] w-full bg-gray-700/50 my-1"></div>
+        <div class="h-[1px] w-full bg-geist-800 my-0.5"></div>
 
-        <!-- Pen / Brush Tool -->
-        <button id="tool-brush" class="glass-btn active p-3 rounded-xl text-gray-300 hover:text-white" title="ブラシ / ペン [B]">
-            <i class="fa-solid fa-pen-nib text-lg"></i>
+        <!-- Brush Tool -->
+        <button id="tool-brush" class="geist-btn active p-2.5 rounded-lg" title="ブラシ [B]">
+            <i class="fa-solid fa-pen-nib text-base"></i>
         </button>
 
         <!-- Text Tool -->
-        <button id="tool-text" class="glass-btn p-3 rounded-xl text-gray-300 hover:text-white" title="テキスト挿入 [T]">
-            <i class="fa-solid fa-font text-lg"></i>
+        <button id="tool-text" class="geist-btn p-2.5 rounded-lg" title="テキスト [T]">
+            <i class="fa-solid fa-font text-base"></i>
         </button>
 
         <!-- Shape Tools Dropdown -->
         <div class="relative group">
-            <button id="tool-shapes" class="glass-btn p-3 rounded-xl text-gray-300 hover:text-white w-full flex items-center justify-center" title="図形ツール">
-                <i id="shape-icon-active" class="fa-regular fa-square text-lg"></i>
+            <button id="tool-shapes" class="geist-btn p-2.5 rounded-lg w-full flex items-center justify-center" title="図形">
+                <i id="shape-icon-active" class="fa-regular fa-square text-base"></i>
             </button>
-            <!-- Shapes Submenu -->
-            <div class="absolute left-14 top-0 glass-panel p-1.5 rounded-xl hidden group-hover:flex flex-col gap-1.5 shadow-2xl border border-gray-700/80">
-                <button id="shape-rect" class="glass-btn p-2 rounded-lg text-gray-200 hover:text-cyan-400" title="四角形">
-                    <i class="fa-regular fa-square text-base"></i>
+            <div class="absolute left-12 top-0 geist-card p-1 rounded-lg hidden group-hover:flex flex-col gap-1 shadow-2xl border border-geist-800">
+                <button id="shape-rect" class="geist-btn p-2 rounded-md hover:text-white" title="四角形">
+                    <i class="fa-regular fa-square"></i>
                 </button>
-                <button id="shape-circle" class="glass-btn p-2 rounded-lg text-gray-200 hover:text-cyan-400" title="円 / 楕円">
-                    <i class="fa-regular fa-circle text-base"></i>
+                <button id="shape-circle" class="geist-btn p-2 rounded-md hover:text-white" title="円">
+                    <i class="fa-regular fa-circle"></i>
                 </button>
-                <button id="shape-line" class="glass-btn p-2 rounded-lg text-gray-200 hover:text-cyan-400" title="直線">
-                    <i class="fa-solid fa-minus text-base"></i>
+                <button id="shape-line" class="geist-btn p-2 rounded-md hover:text-white" title="直線">
+                    <i class="fa-solid fa-minus"></i>
                 </button>
-                <button id="shape-arrow" class="glass-btn p-2 rounded-lg text-gray-200 hover:text-cyan-400" title="矢印">
-                    <i class="fa-solid fa-arrow-right text-base"></i>
+                <button id="shape-arrow" class="geist-btn p-2 rounded-md hover:text-white" title="矢印">
+                    <i class="fa-solid fa-arrow-right"></i>
                 </button>
             </div>
         </div>
 
         <!-- Eraser Tool -->
-        <button id="tool-eraser" class="glass-btn p-3 rounded-xl text-gray-300 hover:text-white" title="消しゴム [E]">
-            <i class="fa-solid fa-eraser text-lg"></i>
+        <button id="tool-eraser" class="geist-btn p-2.5 rounded-lg" title="消しゴム [E]">
+            <i class="fa-solid fa-eraser text-base"></i>
         </button>
 
         <!-- Eyedropper Tool -->
-        <button id="tool-eyedropper" class="glass-btn p-3 rounded-xl text-gray-300 hover:text-white" title="スポイト">
-            <i class="fa-solid fa-eye-dropper text-lg"></i>
+        <button id="tool-eyedropper" class="geist-btn p-2.5 rounded-lg" title="スポイト [I]">
+            <i class="fa-solid fa-eye-dropper text-base"></i>
         </button>
     </aside>
 
-    <!-- RIGHT SIDEBAR: PROPERTIES & COLOR PALETTE -->
-    <aside class="absolute right-4 top-20 bottom-12 w-80 glass-panel p-4 rounded-2xl flex flex-col gap-4 z-20 pointer-events-auto overflow-y-auto">
-        <!-- Sub Engine Title / Info -->
-        <div class="flex justify-between items-center pb-2 border-b border-gray-700/60">
-            <h2 class="text-xs font-bold uppercase tracking-wider text-gray-400 flex items-center gap-2">
-                <i class="fa-solid fa-sliders text-cyan-400"></i>プロパティ設定
-            </h2>
-            <span id="active-tool-badge" class="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 font-semibold uppercase">
-                BRUSH
-            </span>
+    <!-- RIGHT SIDEBAR: PROPERTIES & CURATED PALETTES -->
+    <aside class="absolute right-4 top-20 bottom-12 w-72 geist-card p-3.5 rounded-xl flex flex-col gap-3.5 z-20 pointer-events-auto overflow-y-auto">
+        <div class="flex justify-between items-center pb-2 border-b border-geist-800">
+            <h2 class="text-[11px] font-mono uppercase tracking-wider text-geist-400">プロパティ</h2>
+            <span id="active-tool-badge" class="text-[10px] px-2 py-0.5 rounded bg-geist-800 text-geist-200 font-mono">BRUSH</span>
         </div>
 
-        <!-- Paint Mode Brush Presets (Only visible in Paint Mode) -->
-        <div id="paint-presets-panel" class="hidden flex-col gap-2">
-            <label class="text-xs text-gray-300 font-medium">ペイントブラシの種類</label>
-            <div class="grid grid-cols-3 gap-1.5">
-                <button class="paint-preset-btn active glass-btn p-2 rounded-xl text-xs flex flex-col items-center gap-1" data-preset="pen">
-                    <i class="fa-solid fa-pen text-sm text-cyan-400"></i>
-                    <span>ペン</span>
+        <!-- Paint Mode Brush Presets -->
+        <div id="paint-presets-panel" class="hidden flex-col gap-1.5">
+            <label class="text-[11px] text-geist-300 font-medium">ペイントタイプ</label>
+            <div class="grid grid-cols-3 gap-1">
+                <button class="paint-preset-btn active geist-btn p-1.5 rounded-lg text-xs flex flex-col items-center gap-1" data-preset="pen">
+                    <i class="fa-solid fa-pen text-xs"></i><span>ペン</span>
                 </button>
-                <button class="paint-preset-btn glass-btn p-2 rounded-xl text-xs flex flex-col items-center gap-1" data-preset="marker">
-                    <i class="fa-solid fa-highlighter text-sm text-amber-400"></i>
-                    <span>マーカー</span>
+                <button class="paint-preset-btn geist-btn p-1.5 rounded-lg text-xs flex flex-col items-center gap-1" data-preset="marker">
+                    <i class="fa-solid fa-highlighter text-xs"></i><span>マーカー</span>
                 </button>
-                <button class="paint-preset-btn glass-btn p-2 rounded-xl text-xs flex flex-col items-center gap-1" data-preset="airbrush">
-                    <i class="fa-solid fa-spray-can text-sm text-rose-400"></i>
-                    <span>エアブラシ</span>
-                </button>
-                <button class="paint-preset-btn glass-btn p-2 rounded-xl text-xs flex flex-col items-center gap-1" data-preset="watercolor">
-                    <i class="fa-solid fa-brush text-sm text-blue-400"></i>
-                    <span>水彩</span>
-                </button>
-                <button class="paint-preset-btn glass-btn p-2 rounded-xl text-xs flex flex-col items-center gap-1" data-preset="calligraphy">
-                    <i class="fa-solid fa-signature text-sm text-emerald-400"></i>
-                    <span>カリグラフィ</span>
+                <button class="paint-preset-btn geist-btn p-1.5 rounded-lg text-xs flex flex-col items-center gap-1" data-preset="airbrush">
+                    <i class="fa-solid fa-spray-can text-xs"></i><span>エアブラシ</span>
                 </button>
             </div>
         </div>
 
-        <!-- Stroke / Brush Size Slider -->
-        <div class="flex flex-col gap-1.5">
+        <!-- Stroke Width Slider -->
+        <div class="flex flex-col gap-1">
             <div class="flex justify-between items-center">
-                <label class="text-xs text-gray-300 font-medium">ブラシ/線幅 (Ctrl + Scroll)</label>
-                <span id="stroke-width-val" class="text-xs text-cyan-400 font-mono">12px</span>
+                <label class="text-[11px] text-geist-300 font-medium">サイズ (Ctrl+Scroll)</label>
+                <span id="stroke-width-val" class="text-xs font-mono text-white">12px</span>
             </div>
-            <input id="stroke-width-slider" type="range" min="1" max="150" value="12" class="w-full accent-cyan-400 cursor-pointer h-1.5 bg-gray-700 rounded-lg">
+            <input id="stroke-width-slider" type="range" min="1" max="150" value="12" class="w-full accent-white cursor-pointer h-1 bg-geist-800 rounded-lg">
         </div>
 
         <!-- Opacity Slider -->
-        <div class="flex flex-col gap-1.5">
+        <div class="flex flex-col gap-1">
             <div class="flex justify-between items-center">
-                <label class="text-xs text-gray-300 font-medium">不透明度</label>
-                <span id="opacity-val" class="text-xs text-cyan-400 font-mono">100%</span>
+                <label class="text-[11px] text-geist-300 font-medium">不透明度</label>
+                <span id="opacity-val" class="text-xs font-mono text-white">100%</span>
             </div>
-            <input id="opacity-slider" type="range" min="1" max="100" value="100" class="w-full accent-cyan-400 cursor-pointer h-1.5 bg-gray-700 rounded-lg">
+            <input id="opacity-slider" type="range" min="1" max="100" value="100" class="w-full accent-white cursor-pointer h-1 bg-geist-800 rounded-lg">
         </div>
 
-        <!-- Text Properties Panel (Visible when Text Tool active) -->
-        <div id="text-properties-panel" class="flex flex-col gap-2.5 pt-2 border-t border-gray-700/60">
-            <label class="text-xs text-gray-300 font-medium">テキスト属性</label>
-            <div class="grid grid-cols-2 gap-2">
-                <select id="text-font-family" class="bg-gray-900 border border-gray-700 rounded-xl px-2 py-1.5 text-xs text-gray-200 outline-none">
-                    <option value="Inter">Inter</option>
-                    <option value="'Noto Sans JP'">Noto Sans</option>
-                    <option value="'Roboto Mono'">Roboto Mono</option>
-                    <option value="Pacifico">Pacifico</option>
-                    <option value="serif">Serif</option>
-                </select>
-                <div class="flex gap-1">
-                    <button id="btn-text-bold" class="glass-btn flex-1 py-1 rounded-lg text-xs font-bold" title="太字">B</button>
-                    <button id="btn-text-italic" class="glass-btn flex-1 py-1 rounded-lg text-xs italic" title="斜体">I</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Color Picker & Swatches -->
-        <div class="flex flex-col gap-3 pt-2 border-t border-gray-700/60">
-            <label class="text-xs text-gray-300 font-medium">カラー選択</label>
-            <div class="flex items-center gap-3">
-                <!-- Color Box Trigger -->
+        <!-- Color Section -->
+        <div class="flex flex-col gap-2.5 pt-2 border-t border-geist-800">
+            <label class="text-[11px] text-geist-300 font-medium">カラー</label>
+            <div class="flex items-center gap-2.5">
                 <div class="relative group cursor-pointer flex-shrink-0">
-                    <input id="color-picker-input" type="color" value="#06b6d4" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10">
-                    <div id="color-preview-box" class="w-12 h-12 rounded-2xl border-2 border-white/20 shadow-inner flex items-center justify-center transition-transform group-hover:scale-105" style="background-color: #06b6d4;">
-                        <i class="fa-solid fa-palette text-white/50 text-sm"></i>
-                    </div>
+                    <input id="color-picker-input" type="color" value="#000000" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10">
+                    <div id="color-preview-box" class="w-9 h-9 rounded-lg border border-white/20 shadow-inner flex items-center justify-center" style="background-color: #000000;"></div>
                 </div>
-                <!-- Hex & RGB Input -->
-                <div class="flex-1 flex flex-col gap-1">
-                    <div class="flex items-center gap-1.5 bg-gray-900/80 px-2.5 py-1.5 rounded-xl border border-gray-700/80">
-                        <span class="text-gray-500 text-xs font-mono">HEX</span>
-                        <input id="color-hex-input" type="text" value="#06b6d4" class="bg-transparent text-xs text-cyan-300 font-mono outline-none w-full uppercase">
-                    </div>
+                <div class="flex-1 flex items-center gap-1.5 bg-geist-900 px-2.5 py-1 rounded-lg border border-geist-800">
+                    <span class="text-geist-500 text-xs font-mono">HEX</span>
+                    <input id="color-hex-input" type="text" value="#000000" class="bg-transparent text-xs text-white font-mono outline-none w-full uppercase">
                 </div>
             </div>
 
-            <!-- Color Palette Presets -->
-            <div class="flex flex-col gap-1.5">
-                <span class="text-[11px] text-gray-400">パレットプリセット</span>
-                <div class="grid grid-cols-7 gap-1.5" id="palette-presets">
+            <!-- Curated Palette Selector -->
+            <div class="flex flex-col gap-1.5 pt-1">
+                <div class="flex justify-between items-center">
+                    <span class="text-[10px] text-geist-400 font-mono">パレットテーマ</span>
+                    <select id="palette-theme-select" class="bg-geist-900 border border-geist-800 text-[10px] text-geist-300 rounded px-1.5 py-0.5 outline-none">
+                        <option value="monochrome">Monochrome</option>
+                        <option value="neon">Vercel Neon</option>
+                        <option value="pastel">Pastel</option>
+                        <option value="earthy">Earthy</option>
+                    </select>
+                </div>
+                <div id="palette-presets" class="grid grid-cols-6 gap-1.5">
                     <!-- Dynamic Swatches -->
                 </div>
             </div>
         </div>
-
-        <!-- Layers Panel -->
-        <div class="flex flex-col gap-2 pt-2 border-t border-gray-700/60 flex-1">
-            <div class="flex items-center justify-between">
-                <span class="text-xs text-gray-300 font-medium">レイヤー管理</span>
-                <button id="btn-add-layer" class="text-xs text-cyan-400 hover:text-cyan-300 flex items-center gap-1">
-                    <i class="fa-solid fa-plus text-[10px]"></i>追加
-                </button>
-            </div>
-            <div id="layers-list" class="flex flex-col gap-1.5 overflow-y-auto max-h-36 pr-1">
-                <!-- Layers Rendered Dynamically -->
-            </div>
-        </div>
     </aside>
 
-    <!-- BOTTOM HUD (ZOOM, COORDINATES, QUICK HELP) -->
+    <!-- BOTTOM HUD (COORDINATES, ZOOM, SHORTCUT HELP) -->
     <footer class="absolute bottom-4 left-4 right-4 flex items-center justify-between pointer-events-none z-20">
         <!-- Canvas Coordinates & Scale Info -->
-        <div class="glass-panel px-3.5 py-1.5 rounded-xl text-xs font-mono text-gray-400 flex items-center gap-4 pointer-events-auto">
+        <div class="geist-card px-3 py-1 rounded-lg text-xs font-mono text-geist-400 flex items-center gap-3 pointer-events-auto">
             <span id="hud-coords">X: 0, Y: 0</span>
-            <div class="h-3 w-[1px] bg-gray-700"></div>
-            <span id="hud-zoom" class="text-cyan-400 font-semibold">100%</span>
+            <div class="h-3 w-[1px] bg-geist-800"></div>
+            <span id="hud-zoom" class="text-white font-semibold">100%</span>
         </div>
 
         <!-- Zoom Control Buttons -->
-        <div class="glass-panel px-2 py-1 rounded-xl flex items-center gap-1 pointer-events-auto">
-            <button id="btn-zoom-out" class="glass-btn p-1.5 rounded-lg text-gray-300 hover:text-white" title="縮小">
-                <i class="fa-solid fa-minus text-xs"></i>
+        <div class="geist-card px-1.5 py-0.5 rounded-lg flex items-center gap-1 pointer-events-auto">
+            <button id="btn-zoom-out" class="geist-btn p-1 rounded-md text-geist-300 hover:text-white" title="縮小">
+                <i class="fa-solid fa-minus text-[10px]"></i>
             </button>
-            <button id="btn-zoom-reset" class="glass-btn px-2 py-1 rounded-lg text-xs font-mono text-gray-300 hover:text-white" title="リセット">
+            <button id="btn-zoom-reset" class="geist-btn px-1.5 py-0.5 rounded-md text-[10px] font-mono text-geist-300 hover:text-white" title="リセット">
                 100%
             </button>
-            <button id="btn-zoom-in" class="glass-btn p-1.5 rounded-lg text-gray-300 hover:text-white" title="拡大">
-                <i class="fa-solid fa-plus text-xs"></i>
+            <button id="btn-zoom-in" class="geist-btn p-1 rounded-md text-geist-300 hover:text-white" title="拡大">
+                <i class="fa-solid fa-plus text-[10px]"></i>
             </button>
         </div>
 
-        <!-- Quick Shortcut Tip -->
-        <div class="glass-panel px-3.5 py-1.5 rounded-xl text-[11px] text-gray-400 hidden md:block">
-            <i class="fa-solid fa-circle-info text-cyan-400 mr-1.5"></i>Space: キャンバス移動 | Ctrl+Wheel: ブラシサイズ調整
-        </div>
+        <!-- Shortcut Modal Trigger -->
+        <button id="btn-shortcuts-modal" class="geist-card px-2.5 py-1 rounded-lg text-[11px] font-mono text-geist-300 hover:text-white pointer-events-auto flex items-center gap-1.5">
+            <i class="fa-solid fa-keyboard"></i>[?] ショートカット
+        </button>
     </footer>
 
-    <!-- JAVASCRIPT APP LOGIC -->
+    <!-- SHORTCUTS MODAL DIALOG -->
+    <div id="shortcuts-modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="geist-card max-w-md w-full rounded-2xl p-5 border border-geist-800 shadow-2xl">
+            <div class="flex justify-between items-center pb-3 border-b border-geist-800">
+                <h3 class="text-sm font-semibold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-keyboard text-geist-400"></i>キーボードショートカット
+                </h3>
+                <button id="btn-close-modal" class="text-geist-400 hover:text-white text-base">&times;</button>
+            </div>
+            <div class="grid grid-cols-2 gap-2.5 my-4 text-xs font-mono">
+                <div class="flex justify-between bg-geist-900 p-2 rounded-lg border border-geist-800">
+                    <span class="text-geist-400">キャンバス移動</span><span class="text-white">Space + Drag</span>
+                </div>
+                <div class="flex justify-between bg-geist-900 p-2 rounded-lg border border-geist-800">
+                    <span class="text-geist-400">ブラシサイズ</span><span class="text-white">Ctrl + Wheel</span>
+                </div>
+                <div class="flex justify-between bg-geist-900 p-2 rounded-lg border border-geist-800">
+                    <span class="text-geist-400">ブラシツール</span><span class="text-white">B</span>
+                </div>
+                <div class="flex justify-between bg-geist-900 p-2 rounded-lg border border-geist-800">
+                    <span class="text-geist-400">消しゴム</span><span class="text-white">E</span>
+                </div>
+                <div class="flex justify-between bg-geist-900 p-2 rounded-lg border border-geist-800">
+                    <span class="text-geist-400">テキスト</span><span class="text-white">T</span>
+                </div>
+                <div class="flex justify-between bg-geist-900 p-2 rounded-lg border border-geist-800">
+                    <span class="text-geist-400">グリッド切替</span><span class="text-white">G</span>
+                </div>
+                <div class="flex justify-between bg-geist-900 p-2 rounded-lg border border-geist-800">
+                    <span class="text-geist-400">Undo / Redo</span><span class="text-white">Ctrl+Z / Y</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT APPLICATION CODE -->
     <script>
-        /**
-         * INFINITE CANVAS APP - CORE ARCHITECTURE
-         * Dual Engine: Vector & Paint (Raster) Mode
-         */
         document.addEventListener('DOMContentLoaded', () => {
-            // --- CORE APP STATE ---
+            // --- APP STATE ---
             const state = {
                 mode: 'vector', // 'vector' | 'paint'
                 tool: 'brush', // 'hand', 'select', 'brush', 'text', 'rect', 'circle', 'line', 'arrow', 'eraser', 'eyedropper'
-                paintPreset: 'pen', // 'pen', 'marker', 'airbrush', 'watercolor', 'calligraphy'
+                paintPreset: 'pen',
                 
-                // Transform Infinite Viewport
+                // Infinite Canvas Transform
                 zoom: 1.0,
                 panX: 0,
                 panY: 0,
 
+                // Grid & Canvas Background
+                gridMode: 'grid', // 'grid' | 'dots' | 'off'
+                canvasBg: '#ffffff',
+
                 // Drawing Properties
-                color: '#06b6d4',
+                color: '#000000',
                 strokeWidth: 12,
                 opacity: 1.0,
 
-                // Text Properties
-                fontFamily: 'Inter',
-                isBold: false,
-                isItalic: false,
-
-                // Interactivity States
+                // Interactions
                 isPanning: false,
                 isDrawing: false,
                 spacePressed: false,
@@ -458,34 +452,34 @@
                 lastMousePos: { x: 0, y: 0 },
                 startMousePos: { x: 0, y: 0 },
 
-                // Vector Objects Database
+                // Vector Elements Store
                 vectorObjects: [],
-                selectedObjectId: null,
-
-                // Layers Stack for Raster/Paint Engine
+                
+                // Raster Paint Layers Stack
                 layers: [
-                    { id: 1, name: 'レイヤー 1', visible: true, locked: false, canvas: null, ctx: null }
+                    { id: 1, name: 'Layer 1', visible: true, canvas: null, ctx: null }
                 ],
                 activeLayerIndex: 0,
 
-                // History (Undo/Redo) Stack
+                // History Stacks
                 undoStack: [],
                 redoStack: [],
 
-                // Color Swatches
-                swatches: [
-                    '#06b6d4', '#3b82f6', '#8b5cf6', '#ec4899', '#f43f5e', 
-                    '#f97316', '#eab308', '#10b981', '#ffffff', '#000000'
-                ]
+                // Curated Palettes
+                palettes: {
+                    monochrome: ['#000000', '#262626', '#525252', '#a3a3a3', '#d4d4d4', '#ffffff'],
+                    neon: ['#000000', '#0070f3', '#7928ca', '#f5a623', '#ff0080', '#50e3c2'],
+                    pastel: ['#2b2d42', '#ffb5a7', '#fcd5ce', '#f8edeb', '#f8ad9d', '#f4a261'],
+                    earthy: ['#1b4332', '#2d6a4f', '#40916c', '#52b788', '#74c69d', '#b7e4c7']
+                }
             };
 
-            // --- DOM ELEMENTS ---
+            // DOM References
             const container = document.getElementById('canvas-container');
             const mainCanvas = document.getElementById('main-canvas');
             const ctx = mainCanvas.getContext('2d');
             const brushCursor = document.getElementById('brush-cursor');
-            
-            // HUD & Tool controls
+
             const hudCoords = document.getElementById('hud-coords');
             const hudZoom = document.getElementById('hud-zoom');
             const strokeWidthSlider = document.getElementById('stroke-width-slider');
@@ -496,12 +490,11 @@
             const colorPreviewBox = document.getElementById('color-preview-box');
             const colorHexInput = document.getElementById('color-hex-input');
 
-            // --- INITIALIZE CANVAS SIZE ---
+            // --- CANVAS RESIZE & LAYER INITIALIZATION ---
             function resizeCanvas() {
                 mainCanvas.width = window.innerWidth;
                 mainCanvas.height = window.innerHeight;
-                
-                // Initialize Offscreen Layer Canvases
+
                 state.layers.forEach(layer => {
                     if (!layer.canvas) {
                         layer.canvas = document.createElement('canvas');
@@ -512,21 +505,25 @@
                 });
                 renderCanvas();
             }
-
             window.addEventListener('resize', resizeCanvas);
 
-            // --- COLOR SWATCHES GENERATION ---
-            const paletteContainer = document.getElementById('palette-presets');
-            function initSwatches() {
-                paletteContainer.innerHTML = '';
-                state.swatches.forEach(hex => {
+            // --- PALETTE MANAGEMENT ---
+            const palettePresetsContainer = document.getElementById('palette-presets');
+            const paletteThemeSelect = document.getElementById('palette-theme-select');
+
+            function renderSwatches(theme) {
+                palettePresetsContainer.innerHTML = '';
+                const colors = state.palettes[theme] || state.palettes.monochrome;
+                colors.forEach(hex => {
                     const btn = document.createElement('button');
-                    btn.className = 'w-6 h-6 rounded-lg border border-white/20 transition-transform hover:scale-110';
+                    btn.className = 'w-6 h-6 rounded-md border border-white/20 transition-transform hover:scale-110';
                     btn.style.backgroundColor = hex;
                     btn.addEventListener('click', () => updateColor(hex));
-                    paletteContainer.appendChild(btn);
+                    palettePresetsContainer.appendChild(btn);
                 });
             }
+
+            paletteThemeSelect.addEventListener('change', (e) => renderSwatches(e.target.value));
 
             function updateColor(hex) {
                 state.color = hex;
@@ -542,8 +539,29 @@
                 if (/^#[0-9A-F]{6}$/i.test(hex)) updateColor(hex);
             });
 
-            // --- ENGINE SWITCH LOGIC ---
-            const engineSwitchBtn = document.getElementById('engine-switch-btn');
+            // --- CANVAS BACKGROUND SWITCHER ---
+            document.querySelectorAll('.bg-picker-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    state.canvasBg = btn.dataset.color;
+                    renderCanvas();
+                });
+            });
+
+            // --- GRID TOGGLE CONTROL ---
+            const btnGridToggle = document.getElementById('btn-grid-toggle');
+            const gridLabel = document.getElementById('grid-label');
+
+            function cycleGridMode() {
+                if (state.gridMode === 'grid') state.gridMode = 'dots';
+                else if (state.gridMode === 'dots') state.gridMode = 'off';
+                else state.gridMode = 'grid';
+
+                gridLabel.innerText = state.gridMode.toUpperCase();
+                renderCanvas();
+            }
+            btnGridToggle.addEventListener('click', cycleGridMode);
+
+            // --- ENGINE & TOOL SWITCHING ---
             const modeVectorBtn = document.getElementById('mode-vector-btn');
             const modePaintBtn = document.getElementById('mode-paint-btn');
             const paintPresetsPanel = document.getElementById('paint-presets-panel');
@@ -551,27 +569,22 @@
             function setEngineMode(mode) {
                 state.mode = mode;
                 if (mode === 'paint') {
-                    engineSwitchBtn.classList.add('paint-mode');
-                    modeVectorBtn.classList.replace('text-white', 'text-gray-400');
-                    modePaintBtn.classList.replace('text-gray-400', 'text-white');
+                    modeVectorBtn.classList.remove('active');
+                    modePaintBtn.classList.add('active');
                     paintPresetsPanel.classList.remove('hidden');
                     paintPresetsPanel.classList.add('flex');
-                    if (state.tool === 'select') setTool('brush');
                 } else {
-                    engineSwitchBtn.classList.remove('paint-mode');
-                    modePaintBtn.classList.replace('text-white', 'text-gray-400');
-                    modeVectorBtn.classList.replace('text-gray-400', 'text-white');
+                    modePaintBtn.classList.remove('active');
+                    modeVectorBtn.classList.add('active');
                     paintPresetsPanel.classList.add('hidden');
                     paintPresetsPanel.classList.remove('flex');
                 }
                 renderCanvas();
             }
 
-            engineSwitchBtn.addEventListener('click', () => {
-                setEngineMode(state.mode === 'vector' ? 'paint' : 'vector');
-            });
+            modeVectorBtn.addEventListener('click', () => setEngineMode('vector'));
+            modePaintBtn.addEventListener('click', () => setEngineMode('paint'));
 
-            // --- TOOL SELECTION LOGIC ---
             const tools = {
                 hand: document.getElementById('tool-hand'),
                 select: document.getElementById('tool-select'),
@@ -584,48 +597,24 @@
 
             function setTool(toolName) {
                 state.tool = toolName;
-                Object.keys(tools).forEach(key => {
-                    if (tools[key]) tools[key].classList.remove('active');
-                });
+                Object.keys(tools).forEach(k => tools[k] && tools[k].classList.remove('active'));
                 if (tools[toolName]) tools[toolName].classList.add('active');
-                
                 document.getElementById('active-tool-badge').innerText = toolName.toUpperCase();
-                
-                // Cursor adjustment
-                if (toolName === 'hand') {
-                    container.style.cursor = 'grab';
-                } else {
-                    container.style.cursor = 'crosshair';
-                }
+                container.style.cursor = toolName === 'hand' ? 'grab' : 'crosshair';
             }
 
-            Object.keys(tools).forEach(key => {
-                if (tools[key]) {
-                    tools[key].addEventListener('click', () => setTool(key));
-                }
+            Object.keys(tools).forEach(k => {
+                if (tools[k]) tools[k].addEventListener('click', () => setTool(k));
             });
 
-            // Shape sub-tool selection
-            ['rect', 'circle', 'line', 'arrow'].forEach(shapeType => {
-                document.getElementById(`shape-${shapeType}`).addEventListener('click', (e) => {
+            ['rect', 'circle', 'line', 'arrow'].forEach(s => {
+                document.getElementById(`shape-${s}`).addEventListener('click', (e) => {
                     e.stopPropagation();
-                    setTool(shapeType);
-                    const iconMap = { rect: 'fa-square', circle: 'fa-circle', line: 'fa-minus', arrow: 'fa-arrow-right' };
-                    document.getElementById('shape-icon-active').className = `fa-regular ${iconMap[shapeType]} text-lg`;
+                    setTool(s);
                 });
             });
 
-            // Paint Preset Buttons
-            document.querySelectorAll('.paint-preset-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    document.querySelectorAll('.paint-preset-btn').forEach(b => b.classList.remove('active'));
-                    const target = e.currentTarget;
-                    target.classList.add('active');
-                    state.paintPreset = target.dataset.preset;
-                });
-            });
-
-            // Sliders handling
+            // Sliders
             strokeWidthSlider.addEventListener('input', (e) => {
                 state.strokeWidth = parseInt(e.target.value);
                 strokeWidthVal.innerText = `${state.strokeWidth}px`;
@@ -637,92 +626,78 @@
                 opacityVal.innerText = `${e.target.value}%`;
             });
 
-            // --- CANVAS COORDINATE TRANSFORMS ---
-            function screenToWorld(screenX, screenY) {
-                return {
-                    x: (screenX - state.panX) / state.zoom,
-                    y: (screenY - state.panY) / state.zoom
-                };
+            // --- TRANSFORM CALCULATIONS ---
+            function screenToWorld(sx, sy) {
+                return { x: (sx - state.panX) / state.zoom, y: (sy - state.panY) / state.zoom };
+            }
+            function worldToScreen(wx, wy) {
+                return { x: wx * state.zoom + state.panX, y: wy * state.zoom + state.panY };
             }
 
-            function worldToScreen(worldX, worldY) {
-                return {
-                    x: worldX * state.zoom + state.panX,
-                    y: worldY * state.zoom + state.panY
-                };
-            }
-
-            // --- INFINITE GRID RENDERING ---
-            function drawGrid() {
-                const width = mainCanvas.width;
-                const height = mainCanvas.height;
+            // --- GRID RENDER ENGINE ---
+            function drawBackgroundGrid() {
+                const w = mainCanvas.width;
+                const h = mainCanvas.height;
 
                 ctx.save();
-                ctx.fillStyle = '#090d16';
-                ctx.fillRect(0, 0, width, height);
+                ctx.fillStyle = state.canvasBg;
+                ctx.fillRect(0, 0, w, h);
 
-                // Grid pattern calculation scaling dynamically
-                const gridSize = 40 * state.zoom;
-                const offsetX = state.panX % gridSize;
-                const offsetY = state.panY % gridSize;
+                if (state.gridMode === 'off') {
+                    ctx.restore();
+                    return;
+                }
 
-                ctx.beginPath();
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+                const step = 40 * state.zoom;
+                const offsetX = state.panX % step;
+                const offsetY = state.panY % step;
+                const isDarkBg = state.canvasBg === '#0A0A0A';
+
+                ctx.strokeStyle = isDarkBg ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+                ctx.fillStyle = isDarkBg ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)';
                 ctx.lineWidth = 1;
 
-                // Vertical lines
-                for (let x = offsetX; x < width; x += gridSize) {
-                    ctx.moveTo(x, 0);
-                    ctx.lineTo(x, height);
+                if (state.gridMode === 'grid') {
+                    ctx.beginPath();
+                    for (let x = offsetX; x < w; x += step) { ctx.moveTo(x, 0); ctx.lineTo(x, h); }
+                    for (let y = offsetY; y < h; y += step) { ctx.moveTo(0, y); ctx.lineTo(w, y); }
+                    ctx.stroke();
+                } else if (state.gridMode === 'dots') {
+                    for (let x = offsetX; x < w; x += step) {
+                        for (let y = offsetY; y < h; y += step) {
+                            ctx.beginPath();
+                            ctx.arc(x, y, 1.2 * Math.min(state.zoom, 1.5), 0, Math.PI * 2);
+                            ctx.fill();
+                        }
+                    }
                 }
-                // Horizontal lines
-                for (let y = offsetY; y < height; y += gridSize) {
-                    ctx.moveTo(0, y);
-                    ctx.lineTo(width, y);
-                }
-                ctx.stroke();
-
-                // Origin Axes Indicator
-                const origin = worldToScreen(0, 0);
-                ctx.beginPath();
-                ctx.strokeStyle = 'rgba(6, 182, 212, 0.3)';
-                ctx.lineWidth = 1.5;
-                ctx.moveTo(origin.x, 0); ctx.lineTo(origin.x, height);
-                ctx.moveTo(0, origin.y); ctx.lineTo(width, origin.y);
-                ctx.stroke();
-
                 ctx.restore();
             }
 
-            // --- MAIN RENDER LOOP ---
+            // --- RENDER LOOP ---
             function renderCanvas() {
-                // Clear & draw background grid
-                drawGrid();
+                drawBackgroundGrid();
 
                 ctx.save();
-                // Apply infinite transform matrix
                 ctx.translate(state.panX, state.panY);
                 ctx.scale(state.zoom, state.zoom);
 
-                // 1. Draw Raster Layers
-                state.layers.forEach(layer => {
-                    if (layer.visible && layer.canvas) {
+                // 1. Draw Paint Layers
+                state.layers.forEach(l => {
+                    if (l.visible && l.canvas) {
                         ctx.save();
                         ctx.globalAlpha = state.opacity;
-                        ctx.drawImage(layer.canvas, 0, 0);
+                        ctx.drawImage(l.canvas, 0, 0);
                         ctx.restore();
                     }
                 });
 
-                // 2. Draw Vector Objects Engine
-                state.vectorObjects.forEach(obj => {
-                    drawVectorObject(obj);
-                });
+                // 2. Draw Vector Objects
+                state.vectorObjects.forEach(obj => drawVectorObject(obj));
 
                 ctx.restore();
             }
 
-            // Draw single vector shape / path
             function drawVectorObject(obj) {
                 ctx.save();
                 ctx.strokeStyle = obj.color;
@@ -735,96 +710,48 @@
                 if (obj.type === 'path' && obj.points.length > 0) {
                     ctx.beginPath();
                     ctx.moveTo(obj.points[0].x, obj.points[0].y);
-                    for (let i = 1; i < obj.points.length; i++) {
-                        ctx.lineTo(obj.points[i].x, obj.points[i].y);
-                    }
+                    for (let i = 1; i < obj.points.length; i++) ctx.lineTo(obj.points[i].x, obj.points[i].y);
                     ctx.stroke();
                 } else if (obj.type === 'rect') {
                     ctx.strokeRect(obj.x, obj.y, obj.w, obj.h);
                 } else if (obj.type === 'circle') {
                     ctx.beginPath();
-                    const radius = Math.sqrt(obj.w * obj.w + obj.h * obj.h);
-                    ctx.arc(obj.x, obj.y, radius, 0, Math.PI * 2);
+                    const r = Math.sqrt(obj.w * obj.w + obj.h * obj.h);
+                    ctx.arc(obj.x, obj.y, r, 0, Math.PI * 2);
                     ctx.stroke();
-                } else if (obj.type === 'line') {
-                    ctx.beginPath();
-                    ctx.moveTo(obj.x, obj.y);
-                    ctx.lineTo(obj.x + obj.w, obj.y + obj.h);
-                    ctx.stroke();
-                } else if (obj.type === 'arrow') {
-                    drawArrow(obj.x, obj.y, obj.x + obj.w, obj.y + obj.h, obj.strokeWidth);
                 } else if (obj.type === 'text') {
-                    ctx.font = `${obj.isBold ? 'bold' : ''} ${obj.isItalic ? 'italic' : ''} ${obj.fontSize}px ${obj.fontFamily}`;
+                    ctx.font = `${obj.fontSize || 24}px Inter, sans-serif`;
                     ctx.fillText(obj.text, obj.x, obj.y);
                 }
-
-                // Highlight Selection
-                if (state.selectedObjectId === obj.id) {
-                    ctx.strokeStyle = '#38bdf8';
-                    ctx.lineWidth = 1.5 / state.zoom;
-                    ctx.setLineDash([4 / state.zoom, 4 / state.zoom]);
-                    if (obj.type === 'rect') {
-                        ctx.strokeRect(obj.x - 4, obj.y - 4, obj.w + 8, obj.h + 8);
-                    }
-                }
-
                 ctx.restore();
             }
 
-            function drawArrow(fromx, fromy, tox, toy, width) {
-                const headlen = width * 3;
-                const angle = Math.atan2(toy - fromy, tox - fromx);
-                ctx.beginPath();
-                ctx.moveTo(fromx, fromy);
-                ctx.lineTo(tox, toy);
-                ctx.stroke();
-                ctx.beginPath();
-                ctx.moveTo(tox, toy);
-                ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
-                ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
-                ctx.closePath();
-                ctx.fill();
-            }
-
-            // --- MOUSE & TOUCH EVENT HANDLERS ---
+            // --- INTERACTIVITY HANDLERS ---
             let currentPath = null;
             let currentShape = null;
 
-            function getActiveLayerCtx() {
-                return state.layers[state.activeLayerIndex].ctx;
-            }
-
             container.addEventListener('mousedown', (e) => {
                 const rect = mainCanvas.getBoundingClientRect();
-                const screenX = e.clientX - rect.left;
-                const screenY = e.clientY - rect.top;
-                const worldPos = screenToWorld(screenX, screenY);
+                const sx = e.clientX - rect.left;
+                const sy = e.clientY - rect.top;
+                const world = screenToWorld(sx, sy);
 
-                state.lastMousePos = { x: screenX, y: screenY };
-                state.startMousePos = worldPos;
+                state.lastMousePos = { x: sx, y: sy };
+                state.startMousePos = world;
 
-                // Hand / Pan Tool or Spacebar Hold
                 if (state.tool === 'hand' || state.spacePressed || e.button === 1) {
                     state.isPanning = true;
                     container.style.cursor = 'grabbing';
                     return;
                 }
 
-                // Eyedropper Tool
-                if (state.tool === 'eyedropper') {
-                    pickColor(screenX, screenY);
-                    return;
-                }
-
-                // Text Tool Creation
                 if (state.tool === 'text') {
-                    spawnTextEditor(worldPos.x, worldPos.y);
+                    spawnTextEditor(world.x, world.y);
                     return;
                 }
 
                 state.isDrawing = true;
 
-                // VECTOR MODE DRAWING
                 if (state.mode === 'vector') {
                     if (state.tool === 'brush') {
                         currentPath = {
@@ -833,99 +760,64 @@
                             color: state.color,
                             strokeWidth: state.strokeWidth,
                             opacity: state.opacity,
-                            points: [worldPos]
+                            points: [world]
                         };
                         state.vectorObjects.push(currentPath);
-                    } else if (['rect', 'circle', 'line', 'arrow'].includes(state.tool)) {
+                    } else if (['rect', 'circle'].includes(state.tool)) {
                         currentShape = {
                             id: Date.now(),
                             type: state.tool,
-                            x: worldPos.x,
-                            y: worldPos.y,
-                            w: 0,
-                            h: 0,
-                            color: state.color,
-                            strokeWidth: state.strokeWidth,
-                            opacity: state.opacity
+                            x: world.x, y: world.y, w: 0, h: 0,
+                            color: state.color, strokeWidth: state.strokeWidth, opacity: state.opacity
                         };
                         state.vectorObjects.push(currentShape);
                     }
-                } 
-                // PAINT MODE (RASTER) DRAWING
-                else {
-                    const layerCtx = getActiveLayerCtx();
-                    if (!layerCtx) return;
-
-                    layerCtx.save();
-                    layerCtx.strokeStyle = state.color;
-                    layerCtx.fillStyle = state.color;
-                    layerCtx.lineWidth = state.strokeWidth;
-                    layerCtx.lineCap = 'round';
-                    layerCtx.lineJoin = 'round';
-                    layerCtx.globalAlpha = state.opacity;
-
-                    if (state.tool === 'eraser') {
-                        layerCtx.globalCompositeOperation = 'destination-out';
-                    } else {
-                        layerCtx.globalCompositeOperation = 'source-over';
-                    }
-
-                    layerCtx.beginPath();
-                    layerCtx.moveTo(worldPos.x, worldPos.y);
+                } else {
+                    const lCtx = state.layers[state.activeLayerIndex].ctx;
+                    if (!lCtx) return;
+                    lCtx.save();
+                    lCtx.strokeStyle = state.color;
+                    lCtx.lineWidth = state.strokeWidth;
+                    lCtx.lineCap = 'round';
+                    lCtx.globalCompositeOperation = state.tool === 'eraser' ? 'destination-out' : 'source-over';
+                    lCtx.beginPath();
+                    lCtx.moveTo(world.x, world.y);
                 }
             });
 
             container.addEventListener('mousemove', (e) => {
                 const rect = mainCanvas.getBoundingClientRect();
-                const screenX = e.clientX - rect.left;
-                const screenY = e.clientY - rect.top;
-                const worldPos = screenToWorld(screenX, screenY);
+                const sx = e.clientX - rect.left;
+                const sy = e.clientY - rect.top;
+                const world = screenToWorld(sx, sy);
 
-                // Update HUD Info
-                hudCoords.innerText = `X: ${Math.round(worldPos.x)}, Y: ${Math.round(worldPos.y)}`;
+                hudCoords.innerText = `X: ${Math.round(world.x)}, Y: ${Math.round(world.y)}`;
+                updateCursorPreview(sx, sy);
 
-                // Update Cursor Preview Circle Position
-                updateCursorPreview(screenX, screenY);
-
-                // Panning Canvas
                 if (state.isPanning) {
-                    const dx = screenX - state.lastMousePos.x;
-                    const dy = screenY - state.lastMousePos.y;
-                    state.panX += dx;
-                    state.panY += dy;
-                    state.lastMousePos = { x: screenX, y: screenY };
+                    state.panX += sx - state.lastMousePos.x;
+                    state.panY += sy - state.lastMousePos.y;
+                    state.lastMousePos = { x: sx, y: sy };
                     renderCanvas();
                     return;
                 }
 
                 if (!state.isDrawing) return;
 
-                // VECTOR MODE INTERACTION
                 if (state.mode === 'vector') {
                     if (state.tool === 'brush' && currentPath) {
-                        currentPath.points.push(worldPos);
+                        currentPath.points.push(world);
                         renderCanvas();
                     } else if (currentShape) {
-                        currentShape.w = worldPos.x - state.startMousePos.x;
-                        currentShape.h = worldPos.y - state.startMousePos.y;
+                        currentShape.w = world.x - state.startMousePos.x;
+                        currentShape.h = world.y - state.startMousePos.y;
                         renderCanvas();
                     }
-                } 
-                // PAINT MODE INTERACTION
-                else {
-                    const layerCtx = getActiveLayerCtx();
-                    if (state.tool === 'brush' || state.tool === 'eraser') {
-                        // Apply preset dynamics
-                        if (state.paintPreset === 'airbrush') {
-                            for (let i = 0; i < 10; i++) {
-                                const rx = (Math.random() - 0.5) * state.strokeWidth;
-                                const ry = (Math.random() - 0.5) * state.strokeWidth;
-                                layerCtx.fillRect(worldPos.x + rx, worldPos.y + ry, 1, 1);
-                            }
-                        } else {
-                            layerCtx.lineTo(worldPos.x, worldPos.y);
-                            layerCtx.stroke();
-                        }
+                } else {
+                    const lCtx = state.layers[state.activeLayerIndex].ctx;
+                    if (lCtx) {
+                        lCtx.lineTo(world.x, world.y);
+                        lCtx.stroke();
                         renderCanvas();
                     }
                 }
@@ -936,25 +828,17 @@
                     state.isPanning = false;
                     container.style.cursor = state.tool === 'hand' ? 'grab' : 'crosshair';
                 }
-
                 if (state.isDrawing) {
                     state.isDrawing = false;
-                    if (state.mode === 'paint') {
-                        const layerCtx = getActiveLayerCtx();
-                        if (layerCtx) layerCtx.restore();
-                    }
-                    saveStateToHistory();
+                    saveHistory();
                 }
-
                 currentPath = null;
                 currentShape = null;
             });
 
-            // --- CTRL + SCROLL WHEEL DYNAMIC BRUSH RESIZING & ZOOMING ---
+            // --- CTRL + SCROLL WHEEL DYNAMIC BRUSH RESIZING ---
             container.addEventListener('wheel', (e) => {
                 e.preventDefault();
-
-                // CTRL + Scroll -> Dynamic Brush Resize!
                 if (e.ctrlKey || state.ctrlPressed) {
                     const delta = e.deltaY < 0 ? 2 : -2;
                     state.strokeWidth = Math.max(1, Math.min(150, state.strokeWidth + delta));
@@ -964,19 +848,14 @@
                     return;
                 }
 
-                // Standard Scroll -> Infinite Zooming
+                // Smooth Infinite Zooming
                 const zoomFactor = 1.08;
-                const rect = mainCanvas.getBoundingClientRect();
-                const mouseX = e.clientX - rect.left;
-                const mouseY = e.clientY - rect.top;
-
+                const mouseX = e.clientX;
+                const mouseY = e.clientY;
                 const worldBefore = screenToWorld(mouseX, mouseY);
 
-                if (e.deltaY < 0) {
-                    state.zoom = Math.min(20, state.zoom * zoomFactor);
-                } else {
-                    state.zoom = Math.max(0.1, state.zoom / zoomFactor);
-                }
+                if (e.deltaY < 0) state.zoom = Math.min(20, state.zoom * zoomFactor);
+                else state.zoom = Math.max(0.1, state.zoom / zoomFactor);
 
                 const worldAfter = screenToWorld(mouseX, mouseY);
                 state.panX += (worldAfter.x - worldBefore.x) * state.zoom;
@@ -986,18 +865,14 @@
                 renderCanvas();
             }, { passive: false });
 
-            // --- CURSOR BRUSH PREVIEW CIRCLE ---
+            // Cursor Hover Ring
             function updateCursorPreview(x, y) {
-                if (x === undefined) {
-                    x = state.lastMousePos.x;
-                    y = state.lastMousePos.y;
-                }
-
+                if (x === undefined) { x = state.lastMousePos.x; y = state.lastMousePos.y; }
                 if (['brush', 'eraser'].includes(state.tool)) {
                     brushCursor.style.display = 'block';
-                    const displayRadius = state.strokeWidth * state.zoom;
-                    brushCursor.style.width = `${displayRadius}px`;
-                    brushCursor.style.height = `${displayRadius}px`;
+                    const r = state.strokeWidth * state.zoom;
+                    brushCursor.style.width = `${r}px`;
+                    brushCursor.style.height = `${r}px`;
                     brushCursor.style.left = `${x}px`;
                     brushCursor.style.top = `${y}px`;
                 } else {
@@ -1005,23 +880,18 @@
                 }
             }
 
-            container.addEventListener('mouseenter', () => brushCursor.style.display = 'block');
-            container.addEventListener('mouseleave', () => brushCursor.style.display = 'none');
-
-            // --- INNOVATIVE TEXT TOOL LOGIC ---
+            // --- TEXT TOOL ENGINE ---
             const textEditorContainer = document.getElementById('text-editor-container');
-
-            function spawnTextEditor(worldX, worldY) {
-                const screenPos = worldToScreen(worldX, worldY);
+            function spawnTextEditor(wx, wy) {
+                const sp = worldToScreen(wx, wy);
                 textEditorContainer.style.display = 'block';
-                textEditorContainer.style.left = `${screenPos.x}px`;
-                textEditorContainer.style.top = `${screenPos.y}px`;
+                textEditorContainer.style.left = `${sp.x}px`;
+                textEditorContainer.style.top = `${sp.y}px`;
 
                 const textarea = document.createElement('textarea');
                 textarea.className = 'text-editor-input';
                 textarea.style.color = state.color;
-                textarea.style.fontSize = `${20 * state.zoom}px`;
-                textarea.style.fontFamily = state.fontFamily;
+                textarea.style.fontSize = `${24 * state.zoom}px`;
                 textarea.placeholder = 'テキストを入力...';
 
                 textEditorContainer.innerHTML = '';
@@ -1035,82 +905,33 @@
                             id: Date.now(),
                             type: 'text',
                             text: val,
-                            x: worldX,
-                            y: worldY,
+                            x: wx, y: wy,
                             color: state.color,
-                            fontSize: 24,
-                            fontFamily: state.fontFamily,
-                            isBold: state.isBold,
-                            isItalic: state.isItalic
+                            fontSize: 24
                         });
                         renderCanvas();
-                        saveStateToHistory();
+                        saveHistory();
                     }
                     textEditorContainer.style.display = 'none';
                 });
             }
 
-            // --- EYEDROPPER COLOR PICKER ---
-            function pickColor(screenX, screenY) {
-                const pixel = ctx.getImageData(screenX, screenY, 1, 1).data;
-                const hex = "#" + ((1 << 24) + (pixel[0] << 16) + (pixel[1] << 8) + pixel[2]).toString(16).slice(1);
-                updateColor(hex);
-                setTool('brush');
-            }
-
-            // --- KEYBOARD SHORTCUTS ---
-            window.addEventListener('keydown', (e) => {
-                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-
-                if (e.code === 'Space') {
-                    state.spacePressed = true;
-                    container.style.cursor = 'grab';
-                }
-                if (e.key === 'Control') state.ctrlPressed = true;
-
-                if (e.ctrlKey && e.key === 'z') {
-                    e.preventDefault();
-                    undo();
-                }
-                if (e.ctrlKey && (e.key === 'y' || (e.shiftKey && e.key === 'Z'))) {
-                    e.preventDefault();
-                    redo();
-                }
-
-                if (e.key === 'b' || e.key === 'B') setTool('brush');
-                if (e.key === 'v' || e.key === 'V') setTool('select');
-                if (e.key === 't' || e.key === 'T') setTool('text');
-                if (e.key === 'e' || e.key === 'E') setTool('eraser');
-            });
-
-            window.addEventListener('keyup', (e) => {
-                if (e.code === 'Space') {
-                    state.spacePressed = false;
-                    container.style.cursor = state.tool === 'hand' ? 'grab' : 'crosshair';
-                }
-                if (e.key === 'Control') state.ctrlPressed = false;
-            });
-
-            // --- UNDO / REDO SYSTEM ---
-            function saveStateToHistory() {
+            // --- UNDO / REDO ENGINE ---
+            function saveHistory() {
                 state.undoStack.push(JSON.stringify(state.vectorObjects));
                 state.redoStack = [];
             }
-
             function undo() {
                 if (state.undoStack.length > 0) {
                     state.redoStack.push(JSON.stringify(state.vectorObjects));
-                    const prev = state.undoStack.pop();
-                    state.vectorObjects = JSON.parse(prev);
+                    state.vectorObjects = JSON.parse(state.undoStack.pop());
                     renderCanvas();
                 }
             }
-
             function redo() {
                 if (state.redoStack.length > 0) {
                     state.undoStack.push(JSON.stringify(state.vectorObjects));
-                    const next = state.redoStack.pop();
-                    state.vectorObjects = JSON.parse(next);
+                    state.vectorObjects = JSON.parse(state.redoStack.pop());
                     renderCanvas();
                 }
             }
@@ -1119,117 +940,57 @@
             document.getElementById('btn-redo').addEventListener('click', redo);
 
             document.getElementById('btn-clear').addEventListener('click', () => {
-                if (confirm('キャンバスの全内容を消去しますか？')) {
+                if (confirm('すべての内容を消去しますか？')) {
                     state.vectorObjects = [];
                     state.layers.forEach(l => l.ctx && l.ctx.clearRect(0, 0, mainCanvas.width, mainCanvas.height));
                     renderCanvas();
-                    saveStateToHistory();
+                    saveHistory();
                 }
             });
 
-            // --- ZOOM BUTTONS CONTROLS ---
-            document.getElementById('btn-zoom-in').addEventListener('click', () => {
-                state.zoom = Math.min(20, state.zoom * 1.2);
-                hudZoom.innerText = `${Math.round(state.zoom * 100)}%`;
-                renderCanvas();
+            // --- KEYBOARD SHORTCUTS ---
+            window.addEventListener('keydown', (e) => {
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+                if (e.code === 'Space') { state.spacePressed = true; container.style.cursor = 'grab'; }
+                if (e.key === 'Control') state.ctrlPressed = true;
+                if (e.ctrlKey && e.key === 'z') { e.preventDefault(); undo(); }
+                if (e.ctrlKey && (e.key === 'y' || (e.shiftKey && e.key === 'Z'))) { e.preventDefault(); redo(); }
+                if (e.key === 'g' || e.key === 'G') cycleGridMode();
+                if (e.key === 'b' || e.key === 'B') setTool('brush');
+                if (e.key === 'e' || e.key === 'E') setTool('eraser');
+                if (e.key === 't' || e.key === 'T') setTool('text');
+                if (e.key === '?') document.getElementById('shortcuts-modal').classList.remove('hidden');
             });
 
-            document.getElementById('btn-zoom-out').addEventListener('click', () => {
-                state.zoom = Math.max(0.1, state.zoom / 1.2);
-                hudZoom.innerText = `${Math.round(state.zoom * 100)}%`;
-                renderCanvas();
+            window.addEventListener('keyup', (e) => {
+                if (e.code === 'Space') { state.spacePressed = false; container.style.cursor = 'crosshair'; }
+                if (e.key === 'Control') state.ctrlPressed = false;
             });
 
-            document.getElementById('btn-zoom-reset').addEventListener('click', () => {
-                state.zoom = 1.0;
-                state.panX = 0;
-                state.panY = 0;
-                hudZoom.innerText = `100%`;
-                renderCanvas();
+            // Shortcuts Modal
+            document.getElementById('btn-shortcuts-modal').addEventListener('click', () => {
+                document.getElementById('shortcuts-modal').classList.remove('hidden');
+            });
+            document.getElementById('btn-close-modal').addEventListener('click', () => {
+                document.getElementById('shortcuts-modal').classList.add('hidden');
             });
 
-            // --- EXPORT FUNCTIONALITIES ---
+            // Export Popup Toggle
             const exportMenuBtn = document.getElementById('btn-export-menu');
             const exportPopup = document.getElementById('export-popup');
-
-            exportMenuBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                exportPopup.classList.toggle('hidden');
-            });
-
+            exportMenuBtn.addEventListener('click', (e) => { e.stopPropagation(); exportPopup.classList.toggle('hidden'); });
             document.addEventListener('click', () => exportPopup.classList.add('hidden'));
 
-            document.getElementById('export-png').addEventListener('click', () => downloadCanvasImage('image/png', 'canvas.png'));
-            document.getElementById('export-jpeg').addEventListener('click', () => downloadCanvasImage('image/jpeg', 'canvas.jpg'));
-
-            function downloadCanvasImage(format, filename) {
+            document.getElementById('export-png').addEventListener('click', () => {
                 const link = document.createElement('a');
-                link.download = filename;
-                link.href = mainCanvas.toDataURL(format);
-                link.click();
-            }
-
-            document.getElementById('export-svg').addEventListener('click', () => {
-                let svgContent = `<svg xmlns="http://www.w3.org/2000/svg" width="${mainCanvas.width}" height="${mainCanvas.height}">`;
-                state.vectorObjects.forEach(obj => {
-                    if (obj.type === 'rect') {
-                        svgContent += `<rect x="${obj.x}" y="${obj.y}" width="${obj.w}" height="${obj.h}" stroke="${obj.color}" stroke-width="${obj.strokeWidth}" fill="none" />`;
-                    } else if (obj.type === 'circle') {
-                        const r = Math.sqrt(obj.w * obj.w + obj.h * obj.h);
-                        svgContent += `<circle cx="${obj.x}" cy="${obj.y}" r="${r}" stroke="${obj.color}" stroke-width="${obj.strokeWidth}" fill="none" />`;
-                    }
-                });
-                svgContent += `</svg>`;
-
-                const blob = new Blob([svgContent], { type: 'image/svg+xml' });
-                const link = document.createElement('a');
-                link.download = 'vector-canvas.svg';
-                link.href = URL.createObjectURL(blob);
+                link.download = 'canvas.png';
+                link.href = mainCanvas.toDataURL('image/png');
                 link.click();
             });
 
-            // --- LAYERS MANAGER RENDERING ---
-            const layersList = document.getElementById('layers-list');
-            function renderLayersList() {
-                layersList.innerHTML = '';
-                state.layers.forEach((layer, idx) => {
-                    const item = document.createElement('div');
-                    item.className = `flex items-center justify-between p-2 rounded-xl text-xs ${idx === state.activeLayerIndex ? 'bg-cyan-500/20 border border-cyan-500/40 text-cyan-200' : 'bg-gray-900/60 text-gray-400'}`;
-                    item.innerHTML = `
-                        <div class="flex items-center gap-2 cursor-pointer flex-1">
-                            <i class="fa-solid ${layer.visible ? 'fa-eye text-cyan-400' : 'fa-eye-slash text-gray-600'} toggle-vis"></i>
-                            <span>${layer.name}</span>
-                        </div>
-                    `;
-                    item.addEventListener('click', () => {
-                        state.activeLayerIndex = idx;
-                        renderLayersList();
-                    });
-                    layersList.appendChild(item);
-                });
-            }
-
-            document.getElementById('btn-add-layer').addEventListener('click', () => {
-                const newId = state.layers.length + 1;
-                const newCanvas = document.createElement('canvas');
-                newCanvas.width = mainCanvas.width;
-                newCanvas.height = mainCanvas.height;
-                state.layers.push({
-                    id: newId,
-                    name: `レイヤー ${newId}`,
-                    visible: true,
-                    locked: false,
-                    canvas: newCanvas,
-                    ctx: newCanvas.getContext('2d')
-                });
-                state.activeLayerIndex = state.layers.length - 1;
-                renderLayersList();
-            });
-
-            // INITIALIZATION
-            initSwatches();
+            // Init App
+            renderSwatches('monochrome');
             resizeCanvas();
-            renderLayersList();
         });
     </script>
 </body>
