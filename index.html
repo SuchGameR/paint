@@ -304,6 +304,128 @@
             #mobile-dock { display: none !important; }
         }
 
+        /* Right properties panel (Illustrator-like) */
+        #props-panel {
+            left: auto !important;
+            right: 12px !important;
+            top: 56px !important;
+            bottom: 56px !important;
+            transform: none !important;
+            width: 280px !important;
+            max-height: none !important;
+            max-width: calc(100vw - 24px);
+            border-radius: 12px !important;
+            padding: 14px !important;
+            gap: 12px !important;
+        }
+        #props-panel .prop-section {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+        #props-panel .prop-section:last-child { border-bottom: none; }
+        #props-panel label.prop-label {
+            font-size: 11px;
+            color: #a3a3a3;
+            font-weight: 500;
+            letter-spacing: 0.02em;
+        }
+        #props-panel .prop-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+        #props-panel .prop-input {
+            background: rgba(0,0,0,0.45);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 6px;
+            color: #fafafa;
+            font-size: 12px;
+            padding: 6px 8px;
+            outline: none;
+            width: 100%;
+            font-family: ui-monospace, monospace;
+        }
+        #props-panel .prop-input:focus {
+            border-color: rgba(255,255,255,0.35);
+        }
+        #props-panel .color-pair {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        #props-panel .color-pair input[type=color] {
+            width: 36px; height: 36px;
+            border: none; padding: 0;
+            background: transparent;
+            cursor: pointer;
+        }
+
+        /* Toolbar docking */
+        body.tools-left #left-toolbar {
+            left: 12px !important; right: auto !important;
+            top: 50% !important; bottom: auto !important;
+            transform: translateY(-50%) !important;
+            flex-direction: column !important;
+        }
+        body.tools-right #left-toolbar {
+            right: 300px !important; left: auto !important;
+            top: 50% !important; bottom: auto !important;
+            transform: translateY(-50%) !important;
+            flex-direction: column !important;
+        }
+        body.tools-top #left-toolbar {
+            top: 56px !important; bottom: auto !important;
+            left: 50% !important; right: auto !important;
+            transform: translateX(-50%) !important;
+            flex-direction: row !important;
+        }
+        body.tools-bottom #left-toolbar {
+            bottom: 56px !important; top: auto !important;
+            left: 50% !important; right: auto !important;
+            transform: translateX(-50%) !important;
+            flex-direction: row !important;
+        }
+        body.tools-right #props-panel {
+            right: 12px !important;
+        }
+        body.tools-right.props-open #left-toolbar {
+            right: 300px !important;
+        }
+
+        /* Shape menu on hover */
+        #shapes-wrap { position: relative; }
+        #shapes-wrap:hover #shapes-menu,
+        #shapes-menu:hover {
+            display: flex !important;
+        }
+        #shapes-menu {
+            display: none;
+        }
+        body.tools-top #shapes-menu,
+        body.tools-bottom #shapes-menu {
+            left: 0 !important;
+            top: 100% !important;
+            margin-left: 0 !important;
+            margin-top: 4px !important;
+            flex-direction: row !important;
+        }
+
+        @media (max-width: 768px) {
+            #props-panel {
+                left: 8px !important;
+                right: 8px !important;
+                width: auto !important;
+                top: auto !important;
+                bottom: calc(64px + env(safe-area-inset-bottom)) !important;
+                max-height: 45vh !important;
+            }
+        }
+
+
         /* Brush preview chips */
         .brush-chip {
             display: flex; flex-direction: column; align-items: center; gap: 2px;
@@ -388,7 +510,7 @@
         <button id="tool-text" class="geist-btn" title="テキスト (T)"><i class="fa-solid fa-font text-[14px]"></i></button>
         <div class="relative" id="shapes-wrap">
             <button id="tool-shapes" class="geist-btn w-full" title="図形"><i id="shape-icon" class="fa-regular fa-square text-[14px]"></i></button>
-            <div id="shapes-menu" class="absolute left-full top-0 ml-1 geist-surface p-0.5 rounded-lg hidden flex-col gap-0.5 z-30">
+            <div id="shapes-menu" class="absolute left-full top-0 ml-1 geist-surface p-0.5 rounded-lg flex-col gap-0.5 z-30">
                 <button data-shape="rect" class="geist-btn" title="四角形"><i class="fa-regular fa-square"></i></button>
                 <button data-shape="roundrect" class="geist-btn" title="角丸四角"><i class="fa-solid fa-square"></i></button>
                 <button data-shape="circle" class="geist-btn" title="円"><i class="fa-regular fa-circle"></i></button>
@@ -422,82 +544,86 @@
     </nav>
 
     <!-- PROPERTIES (hidden by default) -->
-    <aside id="props-panel" class="absolute left-14 top-1/2 -translate-y-1/2 w-56 geist-surface p-2.5 rounded-lg flex-col gap-2.5 z-30 pointer-events-auto overflow-y-auto props-scroll hidden" style="max-height:70vh;">
-        <div class="flex justify-between items-center">
-            <span class="text-[10px] font-mono uppercase tracking-wider text-geist-500">設定</span>
+    <aside id="props-panel" class="absolute geist-surface flex flex-col z-30 pointer-events-auto overflow-y-auto props-scroll hidden">
+        <div class="flex justify-between items-center mb-1">
+            <span class="text-[11px] font-semibold tracking-wide text-white">プロパティ</span>
             <div class="flex items-center gap-1">
                 <span id="tool-badge" class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-geist-300 font-mono">BRUSH</span>
-                <button id="btn-props-close" class="geist-btn !min-w-6 !min-h-6 text-geist-400" title="閉じる">&times;</button>
+                <button id="btn-props-close" class="geist-btn !min-w-7 !min-h-7 text-geist-400" title="閉じる">&times;</button>
             </div>
         </div>
 
-        <div id="paint-presets" class="hidden flex-col gap-1.5">
-            <label class="text-[11px] text-geist-400">ブラシ</label>
+        <!-- Appearance for selected object -->
+        <div id="fill-stroke-props" class="prop-section hidden">
+            <label class="prop-label">塗りと線</label>
+            <div class="prop-row">
+                <span class="text-[11px] text-geist-400 w-12">塗り</span>
+                <div class="color-pair flex-1">
+                    <input type="color" id="fill-color-input" value="#ffffff" title="塗り色">
+                    <input type="text" id="fill-hex" class="prop-input" maxlength="7" value="#ffffff" style="flex:1">
+                    <button id="btn-fill-none" class="geist-btn !min-w-8 !min-h-8 text-[10px]" title="塗りなし">無</button>
+                </div>
+            </div>
+            <div class="prop-row">
+                <span class="text-[11px] text-geist-400 w-12">線</span>
+                <div class="color-pair flex-1">
+                    <input type="color" id="stroke-color-input" value="#171717" title="線色">
+                    <input type="text" id="stroke-hex" class="prop-input" maxlength="7" value="#171717" style="flex:1">
+                    <button id="btn-stroke-none" class="geist-btn !min-w-8 !min-h-8 text-[10px]" title="線なし">無</button>
+                </div>
+            </div>
+            <div class="prop-row">
+                <span class="text-[11px] text-geist-400 w-12">線幅</span>
+                <input type="number" id="obj-stroke-width" class="prop-input" min="0" max="2000" step="0.5" value="2" style="width:80px">
+            </div>
+        </div>
+
+        <div id="paint-presets" class="prop-section hidden">
+            <label class="prop-label">ブラシ</label>
             <div class="grid grid-cols-4 gap-1" id="brush-grid">
-                <button class="paint-preset active geist-btn py-1.5 rounded-md text-[10px]" data-preset="pen" title="硬筆">ペン</button>
-                <button class="paint-preset geist-btn py-1.5 rounded-md text-[10px]" data-preset="marker" title="半透明">マーカー</button>
-                <button class="paint-preset geist-btn py-1.5 rounded-md text-[10px]" data-preset="airbrush" title="ソフト">エア</button>
-                <button class="paint-preset geist-btn py-1.5 rounded-md text-[10px]" data-preset="calligraphy" title="筆圧風">カリグラ</button>
-                <button class="paint-preset geist-btn py-1.5 rounded-md text-[10px]" data-preset="watercolor" title="水彩">水彩</button>
-                <button class="paint-preset geist-btn py-1.5 rounded-md text-[10px]" data-preset="charcoal" title="粗い">木炭</button>
-                <button class="paint-preset geist-btn py-1.5 rounded-md text-[10px]" data-preset="pixel" title="ドット">ピクセル</button>
-                <button class="paint-preset geist-btn py-1.5 rounded-md text-[10px]" data-preset="neon" title="発光">ネオン</button>
+                <button class="paint-preset active geist-btn py-1.5 rounded-md text-[10px]" data-preset="pen">ペン</button>
+                <button class="paint-preset geist-btn py-1.5 rounded-md text-[10px]" data-preset="marker">マーカー</button>
+                <button class="paint-preset geist-btn py-1.5 rounded-md text-[10px]" data-preset="airbrush">エア</button>
+                <button class="paint-preset geist-btn py-1.5 rounded-md text-[10px]" data-preset="calligraphy">カリグラ</button>
+                <button class="paint-preset geist-btn py-1.5 rounded-md text-[10px]" data-preset="watercolor">水彩</button>
+                <button class="paint-preset geist-btn py-1.5 rounded-md text-[10px]" data-preset="charcoal">木炭</button>
+                <button class="paint-preset geist-btn py-1.5 rounded-md text-[10px]" data-preset="pixel">ピクセル</button>
+                <button class="paint-preset geist-btn py-1.5 rounded-md text-[10px]" data-preset="neon">ネオン</button>
             </div>
-            <div class="flex flex-col gap-1 pt-1">
-                <div class="flex justify-between">
-                    <label class="text-[11px] text-geist-400">手ブレ補正</label>
-                    <span id="stabilize-val" class="text-[11px] font-mono text-white">0</span>
-                </div>
-                <input id="stabilize-slider" type="range" min="0" max="20" value="0" class="slider w-full">
-            </div>
-            <div class="flex flex-col gap-1">
-                <div class="flex justify-between">
-                    <label class="text-[11px] text-geist-400">硬さ</label>
-                    <span id="hardness-val" class="text-[11px] font-mono text-white">100%</span>
-                </div>
-                <input id="hardness-slider" type="range" min="0" max="100" value="100" class="slider w-full">
-            </div>
+            <div class="prop-row"><label class="prop-label">手ブレ補正</label><span id="stabilize-val" class="text-[11px] font-mono text-white">0</span></div>
+            <input id="stabilize-slider" type="range" min="0" max="20" value="0" class="slider w-full">
+            <div class="prop-row"><label class="prop-label">硬さ</label><span id="hardness-val" class="text-[11px] font-mono text-white">100%</span></div>
+            <input id="hardness-slider" type="range" min="0" max="100" value="100" class="slider w-full">
         </div>
 
-        <div id="fill-props" class="hidden flex-col gap-1.5">
-            <label class="text-[11px] text-geist-400">バケツ塗り</label>
-            <div class="flex flex-col gap-1">
-                <div class="flex justify-between">
-                    <label class="text-[11px] text-geist-400">許容差</label>
-                    <span id="fill-tol-val" class="text-[11px] font-mono text-white">32</span>
-                </div>
-                <input id="fill-tol-slider" type="range" min="0" max="128" value="32" class="slider w-full">
-            </div>
-            <p class="text-[10px] text-geist-500">タップした色に近い領域を塗りつぶします</p>
-        </div>
-
-        <div id="eraser-presets" class="hidden flex-col gap-1.5">
-            <label class="text-[11px] text-geist-400">消しゴム</label>
+        <div id="eraser-presets" class="prop-section hidden">
+            <label class="prop-label">消しゴム</label>
             <div class="grid grid-cols-2 gap-1">
                 <button class="eraser-mode-btn active geist-btn py-1.5 rounded-md text-[10px]" data-emode="partial">部分消し</button>
                 <button class="eraser-mode-btn geist-btn py-1.5 rounded-md text-[10px]" data-emode="object">一筆消し</button>
             </div>
-            <p id="eraser-hint" class="text-[10px] text-geist-500">なぞった部分だけ消します</p>
         </div>
 
-        <div id="text-props" class="hidden flex-col gap-1.5">
-            <label class="text-[11px] text-geist-400">フォント</label>
-            <select id="font-family-select" class="w-full bg-black/50 border border-white/10 rounded-md text-[12px] text-white px-2 py-1.5 outline-none">
+        <div id="fill-props" class="prop-section hidden">
+            <label class="prop-label">バケツ塗り</label>
+            <div class="prop-row"><span class="text-[11px] text-geist-400">許容差</span><span id="fill-tol-val" class="text-[11px] font-mono">32</span></div>
+            <input id="fill-tol-slider" type="range" min="0" max="128" value="32" class="slider w-full">
+        </div>
+
+        <div id="text-props" class="prop-section hidden">
+            <label class="prop-label">フォント</label>
+            <select id="font-family-select" class="prop-input">
                 <option value="Inter">Inter</option>
                 <option value="Noto Sans JP">Noto Sans JP</option>
                 <option value="system-ui">System UI</option>
-                <option value="Georgia, serif">Georgia (Serif)</option>
+                <option value="Georgia, serif">Georgia</option>
                 <option value="ui-monospace, monospace">Monospace</option>
-                <option value="'Hiragino Sans', 'Hiragino Kaku Gothic ProN', sans-serif">ヒラギノ角ゴ</option>
-                <option value="'Yu Gothic', 'YuGothic', sans-serif">游ゴシック</option>
-                <option value="'Hiragino Mincho ProN', 'Yu Mincho', serif">明朝</option>
+                <option value="'Hiragino Sans', sans-serif">ヒラギノ角ゴ</option>
+                <option value="'Yu Gothic', sans-serif">游ゴシック</option>
+                <option value="'Hiragino Mincho ProN', serif">明朝</option>
             </select>
-            <div class="flex justify-between">
-                <label class="text-[11px] text-geist-400">文字サイズ</label>
-                <span id="font-size-val" class="text-[11px] font-mono text-white">24</span>
-            </div>
+            <div class="prop-row"><span class="text-[11px] text-geist-400">サイズ</span><span id="font-size-val" class="text-[11px] font-mono">24</span></div>
             <input id="font-size-slider" type="range" min="8" max="200" value="24" class="slider w-full">
-            <label class="text-[11px] text-geist-400">太さ</label>
             <div class="grid grid-cols-3 gap-1">
                 <button class="font-weight-btn geist-btn py-1.5 rounded-md text-[10px]" data-weight="400">通常</button>
                 <button class="font-weight-btn active geist-btn py-1.5 rounded-md text-[10px]" data-weight="500">中</button>
@@ -505,93 +631,61 @@
             </div>
         </div>
 
-        <div class="flex flex-col gap-1">
-            <div class="flex justify-between">
-                <label class="text-[11px] text-geist-400">サイズ</label>
-                <span id="size-val" class="text-[11px] font-mono text-white">8</span>
-            </div>
+        <div class="prop-section">
+            <label class="prop-label">ブラシサイズ / 不透明度</label>
+            <div class="prop-row"><span class="text-[11px] text-geist-400">サイズ</span><span id="size-val" class="text-[11px] font-mono text-white">8</span></div>
             <input id="size-slider" type="range" min="1" max="500" value="8" class="slider w-full">
-            <input id="size-num" type="number" min="0.5" max="2000" step="0.5" value="8" class="w-full bg-black/40 border border-white/10 rounded-md text-[11px] text-white px-2 py-1 font-mono outline-none">
-        </div>
-
-        <div class="flex flex-col gap-1">
-            <div class="flex justify-between">
-                <label class="text-[11px] text-geist-400">不透明度</label>
-                <span id="opacity-val" class="text-[11px] font-mono text-white">100%</span>
-            </div>
+            <input id="size-num" type="number" min="0.5" max="2000" step="0.5" value="8" class="prop-input">
+            <div class="prop-row"><span class="text-[11px] text-geist-400">不透明度</span><span id="opacity-val" class="text-[11px] font-mono text-white">100%</span></div>
             <input id="opacity-slider" type="range" min="5" max="100" value="100" class="slider w-full">
         </div>
 
-        <div id="object-props" class="hidden flex-col gap-1.5 pt-1 border-t border-white/8">
-            <label class="text-[11px] text-geist-400">オブジェクト</label>
-            <div class="flex flex-col gap-1">
-                <div class="flex justify-between"><label class="text-[11px] text-geist-400">角丸</label><span id="radius-val" class="text-[11px] font-mono text-white">0</span></div>
-                <input id="radius-slider" type="range" min="0" max="200" value="0" class="slider w-full">
-            </div>
-            <div class="flex flex-col gap-1">
-                <div class="flex justify-between"><label class="text-[11px] text-geist-400">ぼかし</label><span id="blur-val" class="text-[11px] font-mono text-white">0</span></div>
-                <input id="blur-slider" type="range" min="0" max="50" value="0" class="slider w-full">
-            </div>
-            <div class="flex flex-col gap-1">
-                <div class="flex justify-between"><label class="text-[11px] text-geist-400">回転</label><span id="rotate-val" class="text-[11px] font-mono text-white">0°</span></div>
-                <input id="rotate-slider" type="range" min="-180" max="180" value="0" class="slider w-full">
-            </div>
-            <div class="grid grid-cols-2 gap-1">
-                <button id="btn-flip-h" class="geist-btn py-1.5 rounded-md text-[10px]">左右反転</button>
-                <button id="btn-flip-v" class="geist-btn py-1.5 rounded-md text-[10px]">上下反転</button>
-            </div>
-            <button id="btn-use-mask" class="geist-btn py-1.5 rounded-md text-[10px] w-full" title="選択中を下のオブジェクトのマスクに">マスクに設定</button>
-            <button id="btn-clear-mask" class="geist-btn py-1.5 rounded-md text-[10px] w-full">マスク解除</button>
-        </div>
-
-        <div class="flex flex-col gap-2 pt-1 border-t border-white/8">
-            <label class="text-[11px] text-geist-400">カラー</label>
+        <div class="prop-section">
+            <label class="prop-label">カラー</label>
             <div class="flex items-center gap-2">
                 <div class="relative shrink-0">
                     <input id="color-input" type="color" value="#171717" class="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10">
-                    <div id="color-swatch" class="w-8 h-8 rounded-md border border-white/15" style="background:#171717"></div>
+                    <div id="color-swatch" class="w-9 h-9 rounded-md border border-white/15" style="background:#171717"></div>
                 </div>
-                <div class="flex-1 flex items-center gap-1 bg-black/40 px-2 py-1 rounded-md border border-white/8">
+                <div class="flex-1 flex items-center gap-1 bg-black/40 px-2 py-1.5 rounded-md border border-white/8">
                     <span class="text-geist-600 text-[10px] font-mono">#</span>
                     <input id="hex-input" type="text" value="171717" maxlength="6" class="bg-transparent text-[12px] text-white font-mono outline-none w-full uppercase">
                 </div>
             </div>
-            <div class="flex flex-col gap-1">
-                <select id="palette-select" class="bg-black/40 border border-white/8 text-[10px] text-geist-300 rounded px-1.5 py-1 outline-none">
-                    <option value="mono">Monochrome</option>
-                    <option value="vercel">Vercel</option>
-                    <option value="pastel">Pastel</option>
-                    <option value="earth">Earth</option>
-                    <option value="neon">Neon</option>
-                </select>
-                <div id="palette-grid" class="grid grid-cols-6 gap-1"></div>
-            </div>
+            <div id="palette-swatches" class="flex flex-wrap gap-1.5 mt-1"></div>
         </div>
 
-        <div class="flex flex-col gap-1.5 pt-1 border-t border-white/8">
-            <label class="text-[11px] text-geist-400">背景</label>
-            <div id="center-controls" class="flex items-center gap-1.5">
-                <button class="bg-picker w-5 h-5 rounded border border-white/20 bg-white" data-color="#ffffff" title="White"></button>
-                <button class="bg-picker w-5 h-5 rounded border border-white/15 bg-[#F8F8FA]" data-color="#F8F8FA" title="Off-white"></button>
-                <button class="bg-picker w-5 h-5 rounded border border-white/15 bg-[#F0F2F5]" data-color="#F0F2F5" title="Slate"></button>
-                <button class="bg-picker w-5 h-5 rounded border border-white/15 bg-[#E8E8EC]" data-color="#E8E8EC" title="Light gray"></button>
-                <button class="bg-picker w-5 h-5 rounded border border-white/25 bg-[#0A0A0A]" data-color="#0A0A0A" title="Dark"></button>
+        <div id="object-props" class="prop-section hidden">
+            <label class="prop-label">変形・効果</label>
+            <div class="prop-row"><span class="text-[11px] text-geist-400">角丸</span><span id="radius-val" class="text-[11px] font-mono">0</span></div>
+            <input id="radius-slider" type="range" min="0" max="200" value="0" class="slider w-full">
+            <div class="prop-row"><span class="text-[11px] text-geist-400">ぼかし</span><span id="blur-val" class="text-[11px] font-mono">0</span></div>
+            <input id="blur-slider" type="range" min="0" max="50" value="0" class="slider w-full">
+            <div class="prop-row"><span class="text-[11px] text-geist-400">回転</span><span id="rotate-val" class="text-[11px] font-mono">0°</span></div>
+            <input id="rotate-slider" type="range" min="-180" max="180" value="0" class="slider w-full">
+            <div class="grid grid-cols-2 gap-1 mt-1">
+                <button id="btn-flip-h" class="geist-btn py-1.5 rounded-md text-[10px]">左右反転</button>
+                <button id="btn-flip-v" class="geist-btn py-1.5 rounded-md text-[10px]">上下反転</button>
             </div>
+            <button id="btn-use-mask" class="geist-btn py-1.5 rounded-md text-[10px] w-full mt-1">マスクに設定</button>
+            <button id="btn-clear-mask" class="geist-btn py-1.5 rounded-md text-[10px] w-full">マスク解除</button>
         </div>
 
-        <div class="flex flex-col gap-1.5 pt-1 border-t border-white/8">
-            <div class="flex justify-between items-center">
-                <label class="text-[11px] text-geist-400">レイヤー</label>
-                <button id="btn-add-layer" class="geist-btn !min-w-6 !min-h-6" title="レイヤー追加"><i class="fa-solid fa-plus text-[10px]"></i></button>
-                <button id="btn-add-folder" class="geist-btn !min-w-6 !min-h-6" title="フォルダ追加"><i class="fa-solid fa-folder text-[10px]"></i></button>
-                <button id="btn-settings" class="geist-btn !min-w-6 !min-h-6" title="設定"><i class="fa-solid fa-gear text-[10px]"></i></button>
+        <div class="prop-section">
+            <div class="prop-row">
+                <label class="prop-label">レイヤー</label>
+                <div class="flex gap-0.5">
+                    <button id="btn-add-layer" class="geist-btn !min-w-7 !min-h-7" title="レイヤー追加"><i class="fa-solid fa-plus text-[10px]"></i></button>
+                    <button id="btn-add-folder" class="geist-btn !min-w-7 !min-h-7" title="フォルダ"><i class="fa-solid fa-folder text-[10px]"></i></button>
+                    <button id="btn-settings" class="geist-btn !min-w-7 !min-h-7" title="設定"><i class="fa-solid fa-gear text-[10px]"></i></button>
+                </div>
             </div>
-            <div id="layer-list" class="flex flex-col gap-1 max-h-24 overflow-y-auto"></div>
+            <div id="layer-list" class="flex flex-col gap-1 max-h-36 overflow-y-auto"></div>
         </div>
 
-        <div id="selection-actions" class="hidden flex-col gap-1.5 pt-1 border-t border-white/8">
-            <button id="btn-delete-selected" class="geist-btn py-1.5 rounded-md text-[11px] text-rose-400 w-full">
-                <i class="fa-solid fa-trash-can mr-1"></i>削除
+        <div id="selection-actions" class="prop-section hidden">
+            <button id="btn-delete-selected" class="geist-btn py-2 rounded-md text-[11px] text-rose-400 w-full">
+                <i class="fa-solid fa-trash-can mr-1"></i>選択を削除
             </button>
         </div>
     </aside>
@@ -672,7 +766,17 @@
                 <div class="flex justify-between"><label class="text-[11px] text-geist-400">最大履歴</label><span id="maxhist-val" class="text-[11px] font-mono">80</span></div>
                 <input id="maxhist-slider" type="range" min="10" max="200" value="80" class="slider w-full">
             </div>
-            <p class="text-[10px] text-geist-500">プロファイルはブラウザのローカルに保存されます</p>
+            <div class="flex flex-col gap-1.5">
+                <label class="text-[11px] text-geist-400">ツールバー位置</label>
+                <div class="grid grid-cols-4 gap-1">
+                    <button class="dock-btn geist-btn py-1.5 text-[10px]" data-dock="left">左</button>
+                    <button class="dock-btn geist-btn py-1.5 text-[10px]" data-dock="right">右</button>
+                    <button class="dock-btn geist-btn py-1.5 text-[10px]" data-dock="top">上</button>
+                    <button class="dock-btn geist-btn py-1.5 text-[10px]" data-dock="bottom">下</button>
+                </div>
+            </div>
+            <button id="btn-reset-defaults" class="geist-btn py-2 rounded-md text-[11px] text-rose-300 w-full border border-white/10">設定をデフォルトに戻す</button>
+            <p class="text-[10px] text-geist-500">設定は自動でローカルに保存されます</p>
         </div>
     </div>
 
@@ -968,7 +1072,16 @@
             const selected = state.selectedIds.has(obj.id);
 
             if (obj.type === 'path' && obj.points && obj.points.length) {
-                drawBrushStroke(ctx, obj);
+                if (obj.fill || obj.closed) {
+                    ctx.beginPath();
+                    ctx.moveTo(obj.points[0].x, obj.points[0].y);
+                    for (let i = 1; i < obj.points.length; i++) ctx.lineTo(obj.points[i].x, obj.points[i].y);
+                    if (obj.closed) ctx.closePath();
+                    if (obj.fill) { ctx.fillStyle = obj.fill; ctx.fill(); }
+                    if (obj.strokeWidth) ctx.stroke();
+                } else {
+                    drawBrushStroke(ctx, obj);
+                }
             } else if (obj.type === 'bezier' && obj.anchors) {
                 drawBezier(ctx, obj);
             } else if (obj.type === 'image' && obj.src) {
@@ -1488,14 +1601,13 @@
                 const cp2x = first.x + (first.inX != null ? first.inX : 0);
                 const cp2y = first.y + (first.inY != null ? first.inY : 0);
                 ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, first.x, first.y);
-                if (obj.fill) {
-                    ctx.fillStyle = obj.fill;
-                    ctx.globalAlpha = (obj.opacity != null ? obj.opacity : 1) * 0.35;
-                    ctx.fill();
-                    ctx.globalAlpha = obj.opacity != null ? obj.opacity : 1;
-                }
+                ctx.closePath();
             }
-            ctx.stroke();
+            if (obj.fill) {
+                ctx.fillStyle = obj.fill;
+                ctx.fill();
+            }
+            if (obj.strokeWidth !== 0) ctx.stroke();
         }
 
         function drawEditHandles(ctx, obj) {
@@ -2221,7 +2333,15 @@
             if (state._resizeHandle && state._resizeObjId && state._resizeStartBounds) {
                 const obj = state.objects.find(o => o.id === state._resizeObjId);
                 if (obj) {
-                    applyResize(obj, state._resizeHandle, state._resizeStartBounds, world.x, world.y);
+                    let wx = world.x, wy = world.y;
+                    if (e.shiftKey) {
+                        const b = state._resizeStartBounds;
+                        const cx = b.x + b.w / 2, cy = b.y + b.h / 2;
+                        const side = Math.max(Math.abs(wx - cx), Math.abs(wy - cy));
+                        wx = cx + (wx >= cx ? side : -side);
+                        wy = cy + (wy >= cy ? side : -side);
+                    }
+                    applyResize(obj, state._resizeHandle, state._resizeStartBounds, wx, wy);
                     render();
                     return;
                 }
@@ -2289,8 +2409,16 @@
                         pts.push({ x: nx, y: ny });
                     }
                 } else if (['rect','roundrect','circle','triangle','star','hexagon'].includes(state.currentObj.type)) {
-                    state.currentObj.w = world.x - state.startWorld.x;
-                    state.currentObj.h = world.y - state.startWorld.y;
+                    let w = world.x - state.startWorld.x;
+                    let h = world.y - state.startWorld.y;
+                    // Shift: lock 1:1 aspect ratio
+                    if (e.shiftKey) {
+                        const s = Math.max(Math.abs(w), Math.abs(h)) || 0;
+                        w = (w < 0 ? -1 : 1) * s;
+                        h = (h < 0 ? -1 : 1) * s;
+                    }
+                    state.currentObj.w = w;
+                    state.currentObj.h = h;
                 } else if (state.currentObj.type === 'line' || state.currentObj.type === 'arrow') {
                     state.currentObj.x2 = world.x;
                     state.currentObj.y2 = world.y;
@@ -2667,308 +2795,343 @@
             const doc = parser.parseFromString(text, 'image/svg+xml');
             const svg = doc.querySelector('svg');
             if (!svg) { alert('SVGを解析できません'); return; }
+            const parseErr = doc.querySelector('parsererror');
+            if (parseErr) { alert('SVGの構文エラーがあります'); return; }
+
             const newObjs = [];
             const layerId = state.activeLayerId;
 
-            function attr(el, name, fallback) {
-                const v = el.getAttribute(name);
-                if (v == null || v === '') return fallback;
-                return v;
+            // viewBox → scale
+            let vbX = 0, vbY = 0, vbW = 0, vbH = 0;
+            const vb = (svg.getAttribute('viewBox') || '').trim().split(/[\s,]+/).map(Number);
+            if (vb.length === 4 && vb.every(n => !isNaN(n))) {
+                vbX = vb[0]; vbY = vb[1]; vbW = vb[2]; vbH = vb[3];
+            } else {
+                vbW = parseFloat(svg.getAttribute('width')) || 100;
+                vbH = parseFloat(svg.getAttribute('height')) || 100;
             }
-            function num(el, name, fallback) {
-                const v = parseFloat(el.getAttribute(name));
+
+            function parseStyle(el) {
+                const s = {};
+                const style = el.getAttribute('style') || '';
+                style.split(';').forEach(part => {
+                    const [k, v] = part.split(':').map(x => x && x.trim());
+                    if (k && v) s[k] = v;
+                });
+                return s;
+            }
+            function css(el, name, fallback) {
+                const st = parseStyle(el);
+                const a = el.getAttribute(name);
+                if (a != null && a !== '') return a;
+                if (st[name] != null) return st[name];
+                return fallback;
+            }
+            function numAttr(el, name, fallback) {
+                const v = parseFloat(css(el, name, ''));
                 return isNaN(v) ? fallback : v;
             }
-            function strokeOf(el) {
-                let c = attr(el, 'stroke', null);
-                if (!c || c === 'none') c = attr(el, 'fill', '#171717');
-                if (c === 'none') c = '#171717';
+            function colorOf(el, which, fallback) {
+                let c = css(el, which, null);
+                if (!c || c === 'none' || c === 'transparent') return which === 'fill' ? null : fallback;
+                if (c.startsWith('url(')) return fallback; // gradients skip for now
                 return c;
             }
-            function opacityOf(el) {
-                const o = num(el, 'opacity', 1);
-                const fo = num(el, 'fill-opacity', 1);
-                const so = num(el, 'stroke-opacity', 1);
-                return o * Math.min(fo, so);
-            }
 
-            // Parse SVG path d into bezier anchors + polyline fallback
-            function parsePathD(d) {
-                const commands = [];
-                const re = /([MmLlHhVvCcSsQqTtAaZz])|([+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?)/g;
-                let match, curCmd = null, nums = [];
-                const flush = () => {
-                    if (curCmd && nums.length) {
-                        commands.push({ cmd: curCmd, nums: nums.slice() });
-                        nums = [];
-                    }
+            // Simple transform: matrix/translate/scale only
+            function parseTransform(el) {
+                const t = el.getAttribute('transform') || '';
+                let a = 1, b = 0, c = 0, d = 1, e = 0, f = 0;
+                const apply = (na, nb, nc, nd, ne, nf) => {
+                    const a2 = a * na + c * nb;
+                    const b2 = b * na + d * nb;
+                    const c2 = a * nc + c * nd;
+                    const d2 = b * nc + d * nd;
+                    const e2 = a * ne + c * nf + e;
+                    const f2 = b * ne + d * nf + f;
+                    a = a2; b = b2; c = c2; d = d2; e = e2; f = f2;
                 };
-                while ((match = re.exec(d))) {
-                    if (match[1]) {
-                        if (curCmd) {
-                            // implicit repeat: keep same command type for leftover nums handled below
-                            if (nums.length) {
-                                commands.push({ cmd: curCmd, nums: nums.slice() });
-                                nums = [];
-                            }
-                        }
-                        curCmd = match[1];
-                        if (curCmd === 'Z' || curCmd === 'z') {
-                            commands.push({ cmd: curCmd, nums: [] });
-                            curCmd = null;
-                        }
-                    } else if (match[2]) {
-                        nums.push(parseFloat(match[2]));
+                const re = /(matrix|translate|scale|rotate)\s*\(([^)]*)\)/g;
+                let m;
+                while ((m = re.exec(t))) {
+                    const nums = m[2].split(/[\s,]+/).map(parseFloat).filter(n => !isNaN(n));
+                    if (m[1] === 'matrix' && nums.length >= 6) apply(nums[0], nums[1], nums[2], nums[3], nums[4], nums[5]);
+                    else if (m[1] === 'translate') apply(1, 0, 0, 1, nums[0] || 0, nums[1] || 0);
+                    else if (m[1] === 'scale') {
+                        const sx = nums[0] || 1, sy = nums[1] != null ? nums[1] : sx;
+                        apply(sx, 0, 0, sy, 0, 0);
+                    } else if (m[1] === 'rotate' && nums.length) {
+                        const ang = (nums[0] * Math.PI) / 180;
+                        const cos = Math.cos(ang), sin = Math.sin(ang);
+                        const cx = nums[1] || 0, cy = nums[2] || 0;
+                        apply(1, 0, 0, 1, cx, cy);
+                        apply(cos, sin, -sin, cos, 0, 0);
+                        apply(1, 0, 0, 1, -cx, -cy);
                     }
                 }
-                if (curCmd && nums.length) commands.push({ cmd: curCmd, nums });
+                return { a, b, c, d, e, f };
+            }
+            function xf(mat, x, y) {
+                return { x: mat.a * x + mat.c * y + mat.e, y: mat.b * x + mat.d * y + mat.f };
+            }
 
-                // Expand into list of cubic segments / points
+            // Robust path d → cubic anchors
+            function parsePathD(d) {
+                const tokens = [];
+                const re = /([MmLlHhVvCcSsQqTtAaZz])|(-?\d*\.?\d+(?:e[-+]?\d+)?)/gi;
+                let m;
+                while ((m = re.exec(d))) {
+                    if (m[1]) tokens.push({ t: 'c', v: m[1] });
+                    else tokens.push({ t: 'n', v: parseFloat(m[2]) });
+                }
                 const anchors = [];
-                let cx = 0, cy = 0, startX = 0, startY = 0;
-                let lastCpX = 0, lastCpY = 0, lastCmd = '';
-                const closed = { value: false };
+                let i = 0, cx = 0, cy = 0, sx = 0, sy = 0;
+                let lastC = '', lastCpX = 0, lastCpY = 0;
+                let closed = false;
+                const add = (x, y, inX, inY, outX, outY) => {
+                    anchors.push({ x, y, inX: inX || 0, inY: inY || 0, outX: outX || 0, outY: outY || 0 });
+                };
+                const readN = () => (i < tokens.length && tokens[i].t === 'n' ? tokens[i++].v : 0);
 
-                function addAnchor(x, y, inX, inY, outX, outY) {
-                    anchors.push({
-                        x, y,
-                        inX: inX || 0, inY: inY || 0,
-                        outX: outX || 0, outY: outY || 0
+                while (i < tokens.length) {
+                    if (tokens[i].t !== 'c') { i++; continue; }
+                    let cmd = tokens[i++].v;
+                    const abs = cmd === cmd.toUpperCase();
+                    cmd = cmd.toUpperCase();
+
+                    const takePairs = (fn) => {
+                        while (i < tokens.length && tokens[i].t === 'n') fn();
+                    };
+
+                    if (cmd === 'M') {
+                        let first = true;
+                        takePairs(() => {
+                            let x = readN(), y = readN();
+                            if (!abs) { x += cx; y += cy; }
+                            cx = x; cy = y;
+                            if (first) { sx = x; sy = y; first = false; }
+                            add(x, y, 0, 0, 0, 0);
+                        });
+                    } else if (cmd === 'L') {
+                        takePairs(() => {
+                            let x = readN(), y = readN();
+                            if (!abs) { x += cx; y += cy; }
+                            cx = x; cy = y; add(x, y, 0, 0, 0, 0);
+                        });
+                    } else if (cmd === 'H') {
+                        while (i < tokens.length && tokens[i].t === 'n') {
+                            let x = readN();
+                            if (!abs) x += cx;
+                            cx = x; add(cx, cy, 0, 0, 0, 0);
+                        }
+                    } else if (cmd === 'V') {
+                        while (i < tokens.length && tokens[i].t === 'n') {
+                            let y = readN();
+                            if (!abs) y += cy;
+                            cy = y; add(cx, cy, 0, 0, 0, 0);
+                        }
+                    } else if (cmd === 'C') {
+                        while (i + 5 < tokens.length && tokens[i].t === 'n') {
+                            let x1 = readN(), y1 = readN(), x2 = readN(), y2 = readN(), x = readN(), y = readN();
+                            if (!abs) { x1 += cx; y1 += cy; x2 += cx; y2 += cy; x += cx; y += cy; }
+                            if (anchors.length) {
+                                const p = anchors[anchors.length - 1];
+                                p.outX = x1 - p.x; p.outY = y1 - p.y;
+                            }
+                            add(x, y, x2 - x, y2 - y, 0, 0);
+                            lastCpX = x2; lastCpY = y2; cx = x; cy = y;
+                        }
+                    } else if (cmd === 'S') {
+                        while (i + 3 < tokens.length && tokens[i].t === 'n') {
+                            let x2 = readN(), y2 = readN(), x = readN(), y = readN();
+                            if (!abs) { x2 += cx; y2 += cy; x += cx; y += cy; }
+                            let x1 = cx, y1 = cy;
+                            if (lastC === 'C' || lastC === 'S') {
+                                x1 = cx * 2 - lastCpX; y1 = cy * 2 - lastCpY;
+                            }
+                            if (anchors.length) {
+                                const p = anchors[anchors.length - 1];
+                                p.outX = x1 - p.x; p.outY = y1 - p.y;
+                            }
+                            add(x, y, x2 - x, y2 - y, 0, 0);
+                            lastCpX = x2; lastCpY = y2; cx = x; cy = y;
+                        }
+                    } else if (cmd === 'Q') {
+                        while (i + 3 < tokens.length && tokens[i].t === 'n') {
+                            let x1 = readN(), y1 = readN(), x = readN(), y = readN();
+                            if (!abs) { x1 += cx; y1 += cy; x += cx; y += cy; }
+                            const c1x = cx + 2/3 * (x1 - cx), c1y = cy + 2/3 * (y1 - cy);
+                            const c2x = x + 2/3 * (x1 - x), c2y = y + 2/3 * (y1 - y);
+                            if (anchors.length) {
+                                const p = anchors[anchors.length - 1];
+                                p.outX = c1x - p.x; p.outY = c1y - p.y;
+                            }
+                            add(x, y, c2x - x, c2y - y, 0, 0);
+                            lastCpX = x1; lastCpY = y1; cx = x; cy = y;
+                        }
+                    } else if (cmd === 'T') {
+                        while (i + 1 < tokens.length && tokens[i].t === 'n') {
+                            let x = readN(), y = readN();
+                            if (!abs) { x += cx; y += cy; }
+                            let x1 = cx, y1 = cy;
+                            if (lastC === 'Q' || lastC === 'T') {
+                                x1 = cx * 2 - lastCpX; y1 = cy * 2 - lastCpY;
+                            }
+                            const c1x = cx + 2/3 * (x1 - cx), c1y = cy + 2/3 * (y1 - cy);
+                            const c2x = x + 2/3 * (x1 - x), c2y = y + 2/3 * (y1 - y);
+                            if (anchors.length) {
+                                const p = anchors[anchors.length - 1];
+                                p.outX = c1x - p.x; p.outY = c1y - p.y;
+                            }
+                            add(x, y, c2x - x, c2y - y, 0, 0);
+                            lastCpX = x1; lastCpY = y1; cx = x; cy = y;
+                        }
+                    } else if (cmd === 'A') {
+                        // Approximate arcs as lines to endpoint (better than dropping)
+                        while (i + 6 < tokens.length && tokens[i].t === 'n') {
+                            readN(); readN(); readN(); readN(); readN(); // rx ry angle large sweep
+                            let x = readN(), y = readN();
+                            if (!abs) { x += cx; y += cy; }
+                            cx = x; cy = y; add(x, y, 0, 0, 0, 0);
+                        }
+                    } else if (cmd === 'Z') {
+                        closed = true;
+                        cx = sx; cy = sy;
+                    }
+                    lastC = cmd;
+                }
+                return { anchors, closed };
+            }
+
+            function applyMatToAnchors(anchors, mat) {
+                return anchors.map(a => {
+                    const p = xf(mat, a.x, a.y);
+                    const pin = xf(mat, a.x + (a.inX || 0), a.y + (a.inY || 0));
+                    const pout = xf(mat, a.x + (a.outX || 0), a.y + (a.outY || 0));
+                    return {
+                        x: p.x, y: p.y,
+                        inX: pin.x - p.x, inY: pin.y - p.y,
+                        outX: pout.x - p.x, outY: pout.y - p.y
+                    };
+                });
+            }
+
+            function walk(el, parentMat) {
+                if (!el || el.nodeType !== 1) return;
+                const tag = el.tagName.toLowerCase().replace(/^svg:/, '');
+                if (['defs', 'clippath', 'mask', 'script', 'style', 'title', 'desc', 'metadata', 'filter', 'lineargradient', 'radialgradient', 'pattern', 'marker', 'symbol'].includes(tag)) return;
+
+                const mat = parseTransform(el);
+                // multiply parent * local
+                const combined = {
+                    a: parentMat.a * mat.a + parentMat.c * mat.b,
+                    b: parentMat.b * mat.a + parentMat.d * mat.b,
+                    c: parentMat.a * mat.c + parentMat.c * mat.d,
+                    d: parentMat.b * mat.c + parentMat.d * mat.d,
+                    e: parentMat.a * mat.e + parentMat.c * mat.f + parentMat.e,
+                    f: parentMat.b * mat.e + parentMat.d * mat.f + parentMat.f
+                };
+
+                if (tag === 'g' || tag === 'svg' || tag === 'a') {
+                    Array.from(el.children).forEach(ch => walk(ch, combined));
+                    return;
+                }
+
+                const stroke = colorOf(el, 'stroke', null);
+                const fill = colorOf(el, 'fill', tag === 'text' ? '#171717' : null);
+                const sw = numAttr(el, 'stroke-width', stroke ? 1 : 0);
+                const op = numAttr(el, 'opacity', 1);
+
+                if (tag === 'path') {
+                    const d = el.getAttribute('d') || '';
+                    if (!d.trim()) return;
+                    let { anchors, closed } = parsePathD(d);
+                    if (!anchors.length) return;
+                    anchors = applyMatToAnchors(anchors, combined);
+                    const hasCurves = anchors.some(a => a.inX || a.inY || a.outX || a.outY);
+                    newObjs.push({
+                        id: uid(), type: 'bezier', anchors, closed: closed || false,
+                        fill: fill, color: stroke || fill || '#171717',
+                        strokeWidth: sw || (stroke ? 1 : 0), opacity: op, layerId
+                    });
+                } else if (tag === 'rect') {
+                    let x = numAttr(el, 'x', 0), y = numAttr(el, 'y', 0);
+                    let w = numAttr(el, 'width', 0), h = numAttr(el, 'height', 0);
+                    const rx = numAttr(el, 'rx', 0);
+                    const p1 = xf(combined, x, y), p2 = xf(combined, x + w, y + h);
+                    newObjs.push({
+                        id: uid(), type: rx > 0 ? 'roundrect' : 'rect',
+                        x: Math.min(p1.x, p2.x), y: Math.min(p1.y, p2.y),
+                        w: Math.abs(p2.x - p1.x), h: Math.abs(p2.y - p1.y),
+                        cornerRadius: rx, fill, color: stroke || fill || '#171717',
+                        strokeWidth: sw || (stroke ? 1 : 0), opacity: op, layerId
+                    });
+                } else if (tag === 'circle' || tag === 'ellipse') {
+                    let cx = numAttr(el, 'cx', 0), cy = numAttr(el, 'cy', 0);
+                    let rx = tag === 'circle' ? numAttr(el, 'r', 0) : numAttr(el, 'rx', 0);
+                    let ry = tag === 'circle' ? rx : numAttr(el, 'ry', 0);
+                    const c = xf(combined, cx, cy);
+                    const rxp = xf(combined, cx + rx, cy), ryp = xf(combined, cx, cy + ry);
+                    newObjs.push({
+                        id: uid(), type: 'circle', x: c.x, y: c.y,
+                        w: Math.hypot(rxp.x - c.x, rxp.y - c.y),
+                        h: Math.hypot(ryp.x - c.x, ryp.y - c.y),
+                        fill, color: stroke || fill || '#171717',
+                        strokeWidth: sw || (stroke ? 1 : 0), opacity: op, layerId
+                    });
+                } else if (tag === 'line') {
+                    const p1 = xf(combined, numAttr(el, 'x1', 0), numAttr(el, 'y1', 0));
+                    const p2 = xf(combined, numAttr(el, 'x2', 0), numAttr(el, 'y2', 0));
+                    newObjs.push({
+                        id: uid(), type: 'line', x1: p1.x, y1: p1.y, x2: p2.x, y2: p2.y,
+                        color: stroke || '#171717', strokeWidth: sw || 1, opacity: op, layerId
+                    });
+                } else if (tag === 'polyline' || tag === 'polygon') {
+                    const raw = (el.getAttribute('points') || '').trim().split(/[\s,]+/).map(Number).filter(n => !isNaN(n));
+                    const pts = [];
+                    for (let k = 0; k + 1 < raw.length; k += 2) {
+                        pts.push(xf(combined, raw[k], raw[k + 1]));
+                    }
+                    if (pts.length) {
+                        newObjs.push({
+                            id: uid(), type: 'path', points: pts, closed: tag === 'polygon',
+                            fill, color: stroke || fill || '#171717',
+                            strokeWidth: sw || (stroke ? 1 : 0), opacity: op, layerId
+                        });
+                    }
+                } else if (tag === 'text') {
+                    const p = xf(combined, numAttr(el, 'x', 0), numAttr(el, 'y', 0));
+                    newObjs.push({
+                        id: uid(), type: 'text', x: p.x, y: p.y,
+                        text: (el.textContent || '').trim(),
+                        fontSize: numAttr(el, 'font-size', 16),
+                        fontFamily: (css(el, 'font-family', 'Inter') || 'Inter').split(',')[0].replace(/['"]/g, '').trim(),
+                        fontWeight: css(el, 'font-weight', '400'),
+                        color: fill || '#171717', opacity: op, layerId
+                    });
+                } else if (tag === 'image') {
+                    const href = el.getAttribute('href') || el.getAttributeNS('http://www.w3.org/1999/xlink', 'href') || '';
+                    if (!href) return;
+                    const p1 = xf(combined, numAttr(el, 'x', 0), numAttr(el, 'y', 0));
+                    const p2 = xf(combined, numAttr(el, 'x', 0) + numAttr(el, 'width', 100), numAttr(el, 'y', 0) + numAttr(el, 'height', 100));
+                    newObjs.push({
+                        id: uid(), type: 'image', src: href,
+                        x: Math.min(p1.x, p2.x), y: Math.min(p1.y, p2.y),
+                        w: Math.abs(p2.x - p1.x), h: Math.abs(p2.y - p1.y),
+                        opacity: op, layerId
                     });
                 }
-
-                for (const { cmd, nums: n } of commands) {
-                    const abs = cmd === cmd.toUpperCase();
-                    const c = cmd.toUpperCase();
-                    let i = 0;
-                    if (c === 'M') {
-                        while (i + 1 < n.length) {
-                            let x = n[i++], y = n[i++];
-                            if (!abs) { x += cx; y += cy; }
-                            cx = x; cy = y;
-                            startX = x; startY = y;
-                            addAnchor(x, y, 0, 0, 0, 0);
-                            // subsequent pairs are L
-                            while (i + 1 < n.length) {
-                                let x2 = n[i++], y2 = n[i++];
-                                if (!abs) { x2 += cx; y2 += cy; }
-                                cx = x2; cy = y2;
-                                addAnchor(x2, y2, 0, 0, 0, 0);
-                            }
-                        }
-                    } else if (c === 'L') {
-                        while (i + 1 < n.length) {
-                            let x = n[i++], y = n[i++];
-                            if (!abs) { x += cx; y += cy; }
-                            cx = x; cy = y;
-                            addAnchor(x, y, 0, 0, 0, 0);
-                        }
-                    } else if (c === 'H') {
-                        while (i < n.length) {
-                            let x = n[i++];
-                            if (!abs) x += cx;
-                            cx = x;
-                            addAnchor(cx, cy, 0, 0, 0, 0);
-                        }
-                    } else if (c === 'V') {
-                        while (i < n.length) {
-                            let y = n[i++];
-                            if (!abs) y += cy;
-                            cy = y;
-                            addAnchor(cx, cy, 0, 0, 0, 0);
-                        }
-                    } else if (c === 'C') {
-                        while (i + 5 < n.length) {
-                            let x1 = n[i++], y1 = n[i++], x2 = n[i++], y2 = n[i++], x = n[i++], y = n[i++];
-                            if (!abs) {
-                                x1 += cx; y1 += cy; x2 += cx; y2 += cy; x += cx; y += cy;
-                            }
-                            // set out handle on previous anchor
-                            if (anchors.length) {
-                                const prev = anchors[anchors.length - 1];
-                                prev.outX = x1 - prev.x;
-                                prev.outY = y1 - prev.y;
-                            }
-                            addAnchor(x, y, x2 - x, y2 - y, 0, 0);
-                            lastCpX = x2; lastCpY = y2;
-                            cx = x; cy = y;
-                        }
-                    } else if (c === 'S') {
-                        while (i + 3 < n.length) {
-                            let x2 = n[i++], y2 = n[i++], x = n[i++], y = n[i++];
-                            if (!abs) { x2 += cx; y2 += cy; x += cx; y += cy; }
-                            // reflect previous control
-                            let x1 = cx, y1 = cy;
-                            if (lastCmd === 'C' || lastCmd === 'S') {
-                                x1 = cx + (cx - lastCpX);
-                                y1 = cy + (cy - lastCpY);
-                            }
-                            if (anchors.length) {
-                                const prev = anchors[anchors.length - 1];
-                                prev.outX = x1 - prev.x;
-                                prev.outY = y1 - prev.y;
-                            }
-                            addAnchor(x, y, x2 - x, y2 - y, 0, 0);
-                            lastCpX = x2; lastCpY = y2;
-                            cx = x; cy = y;
-                        }
-                    } else if (c === 'Q') {
-                        while (i + 3 < n.length) {
-                            let x1 = n[i++], y1 = n[i++], x = n[i++], y = n[i++];
-                            if (!abs) { x1 += cx; y1 += cy; x += cx; y += cy; }
-                            // convert quadratic to cubic
-                            const c1x = cx + (2/3) * (x1 - cx);
-                            const c1y = cy + (2/3) * (y1 - cy);
-                            const c2x = x + (2/3) * (x1 - x);
-                            const c2y = y + (2/3) * (y1 - y);
-                            if (anchors.length) {
-                                const prev = anchors[anchors.length - 1];
-                                prev.outX = c1x - prev.x;
-                                prev.outY = c1y - prev.y;
-                            }
-                            addAnchor(x, y, c2x - x, c2y - y, 0, 0);
-                            lastCpX = x1; lastCpY = y1;
-                            cx = x; cy = y;
-                        }
-                    } else if (c === 'T') {
-                        while (i + 1 < n.length) {
-                            let x = n[i++], y = n[i++];
-                            if (!abs) { x += cx; y += cy; }
-                            let x1 = cx, y1 = cy;
-                            if (lastCmd === 'Q' || lastCmd === 'T') {
-                                x1 = cx + (cx - lastCpX);
-                                y1 = cy + (cy - lastCpY);
-                            }
-                            const c1x = cx + (2/3) * (x1 - cx);
-                            const c1y = cy + (2/3) * (y1 - cy);
-                            const c2x = x + (2/3) * (x1 - x);
-                            const c2y = y + (2/3) * (y1 - y);
-                            if (anchors.length) {
-                                const prev = anchors[anchors.length - 1];
-                                prev.outX = c1x - prev.x;
-                                prev.outY = c1y - prev.y;
-                            }
-                            addAnchor(x, y, c2x - x, c2y - y, 0, 0);
-                            lastCpX = x1; lastCpY = y1;
-                            cx = x; cy = y;
-                        }
-                    } else if (c === 'Z') {
-                        closed.value = true;
-                        cx = startX; cy = startY;
-                    }
-                    lastCmd = c;
-                }
-                return { anchors, closed: closed.value };
             }
 
-            svg.querySelectorAll('path').forEach(el => {
-                const d = el.getAttribute('d') || '';
-                if (!d.trim()) return;
-                const { anchors, closed } = parsePathD(d);
-                if (anchors.length < 1) return;
-                const hasCurves = anchors.some(a => a.inX || a.inY || a.outX || a.outY);
-                const fill = attr(el, 'fill', 'none');
-                newObjs.push({
-                    id: uid(),
-                    type: hasCurves || closed ? 'bezier' : 'path',
-                    anchors: hasCurves || closed ? anchors : undefined,
-                    points: !hasCurves && !closed ? anchors.map(a => ({ x: a.x, y: a.y })) : undefined,
-                    closed: closed || false,
-                    fill: fill !== 'none' ? fill : null,
-                    layerId,
-                    color: strokeOf(el),
-                    strokeWidth: num(el, 'stroke-width', 2),
-                    opacity: opacityOf(el)
-                });
-            });
+            const identity = { a: 1, b: 0, c: 0, d: 1, e: -vbX, f: -vbY };
+            Array.from(svg.children).forEach(ch => walk(ch, identity));
 
-            svg.querySelectorAll('rect').forEach(el => {
-                newObjs.push({
-                    id: uid(), type: 'rect', layerId,
-                    x: num(el, 'x', 0), y: num(el, 'y', 0),
-                    w: num(el, 'width', 0), h: num(el, 'height', 0),
-                    color: strokeOf(el),
-                    fill: attr(el, 'fill', null) !== 'none' ? attr(el, 'fill', null) : null,
-                    strokeWidth: num(el, 'stroke-width', 2),
-                    opacity: opacityOf(el)
-                });
-            });
-            svg.querySelectorAll('circle').forEach(el => {
-                const r = num(el, 'r', 0);
-                newObjs.push({
-                    id: uid(), type: 'circle', layerId,
-                    x: num(el, 'cx', 0), y: num(el, 'cy', 0),
-                    w: r, h: r,
-                    color: strokeOf(el),
-                    fill: attr(el, 'fill', null) !== 'none' ? attr(el, 'fill', null) : null,
-                    strokeWidth: num(el, 'stroke-width', 2),
-                    opacity: opacityOf(el)
-                });
-            });
-            svg.querySelectorAll('ellipse').forEach(el => {
-                newObjs.push({
-                    id: uid(), type: 'circle', layerId,
-                    x: num(el, 'cx', 0), y: num(el, 'cy', 0),
-                    w: num(el, 'rx', 0), h: num(el, 'ry', 0),
-                    color: strokeOf(el),
-                    strokeWidth: num(el, 'stroke-width', 2),
-                    opacity: opacityOf(el)
-                });
-            });
-            svg.querySelectorAll('line').forEach(el => {
-                newObjs.push({
-                    id: uid(), type: 'line', layerId,
-                    x1: num(el, 'x1', 0), y1: num(el, 'y1', 0),
-                    x2: num(el, 'x2', 0), y2: num(el, 'y2', 0),
-                    color: strokeOf(el),
-                    strokeWidth: num(el, 'stroke-width', 2),
-                    opacity: opacityOf(el)
-                });
-            });
-            svg.querySelectorAll('polyline, polygon').forEach(el => {
-                const pts = (el.getAttribute('points') || '').trim().split(/[\s,]+/).map(Number).filter(n => !isNaN(n));
-                const points = [];
-                for (let i = 0; i + 1 < pts.length; i += 2) points.push({ x: pts[i], y: pts[i + 1] });
-                if (!points.length) return;
-                const isPoly = el.tagName.toLowerCase() === 'polygon';
-                newObjs.push({
-                    id: uid(), type: 'path', points, layerId,
-                    color: strokeOf(el),
-                    strokeWidth: num(el, 'stroke-width', 2),
-                    opacity: opacityOf(el),
-                    closed: isPoly
-                });
-            });
-            svg.querySelectorAll('text').forEach(el => {
-                newObjs.push({
-                    id: uid(), type: 'text', layerId,
-                    x: num(el, 'x', 0), y: num(el, 'y', 0),
-                    text: el.textContent || '',
-                    fontSize: num(el, 'font-size', 22),
-                    fontFamily: (attr(el, 'font-family', 'Inter')).split(',')[0].replace(/['"]/g, '').trim() || 'Inter',
-                    fontWeight: attr(el, 'font-weight', '400'),
-                    color: attr(el, 'fill', '#171717'),
-                    opacity: opacityOf(el)
-                });
-            });
-
-            // Also accept embedded raster images in SVG
-            svg.querySelectorAll('image').forEach(el => {
-                const href = el.getAttribute('href') || el.getAttributeNS('http://www.w3.org/1999/xlink', 'href') || '';
-                if (!href) return;
-                newObjs.push({
-                    id: uid(), type: 'image', layerId,
-                    src: href,
-                    x: num(el, 'x', 0), y: num(el, 'y', 0),
-                    w: num(el, 'width', 100), h: num(el, 'height', 100),
-                    opacity: opacityOf(el)
-                });
-            });
-
-            if (!newObjs.length) { alert('読み込める図形が見つかりませんでした'); return; }
+            if (!newObjs.length) {
+                alert('読み込める図形が見つかりませんでした（対応: path/rect/circle/line/poly/text/image）');
+                return;
+            }
             pushHistory();
             state.objects = state.objects.concat(newObjs);
-            // fit view to imported content
             let minx = Infinity, miny = Infinity, maxx = -Infinity, maxy = -Infinity;
             newObjs.forEach(o => {
                 const b = getBounds(o);
@@ -2977,10 +3140,10 @@
                 maxx = Math.max(maxx, b.x + b.w); maxy = Math.max(maxy, b.y + b.h);
             });
             if (isFinite(minx)) {
-                const pad = 40;
+                const pad = 48;
                 const vw = window.innerWidth, vh = window.innerHeight;
                 const bw = Math.max(1, maxx - minx), bh = Math.max(1, maxy - miny);
-                const z = Math.min((vw - pad * 2) / bw, (vh - pad * 2) / bh, 4);
+                const z = Math.min((vw - pad * 2) / bw, (vh - pad * 2) / bh, 8);
                 state.zoom = Math.max(0.05, z);
                 state.panX = (vw - bw * state.zoom) / 2 - minx * state.zoom;
                 state.panY = (vh - bh * state.zoom) / 2 - miny * state.zoom;
@@ -3078,8 +3241,10 @@
         const shapesMenu = document.getElementById('shapes-menu');
         shapesBtn.onclick = (e) => {
             e.stopPropagation();
-            shapesMenu.classList.toggle('hidden');
-            shapesMenu.classList.toggle('flex');
+            // keep current shape tool; menu opens on hover
+            if (state.tool !== 'rect' && !['roundrect','circle','triangle','star','hexagon','line','arrow'].includes(state.tool)) {
+                setTool('rect');
+            }
         };
         document.querySelectorAll('[data-shape]').forEach(b => {
             b.onclick = (e) => {
@@ -3089,10 +3254,7 @@
                 shapesMenu.classList.remove('flex');
             };
         });
-        document.addEventListener('click', () => {
-            shapesMenu.classList.add('hidden');
-            shapesMenu.classList.remove('flex');
-        });
+        // shapes menu: CSS hover only (no click-dismiss needed)
 
         document.querySelectorAll('.paint-preset').forEach(b => {
             b.onclick = () => {
@@ -3150,11 +3312,22 @@
         }
         function syncObjectPropsUI() {
             const panel = document.getElementById('object-props');
-            if (!panel) return;
+            const fs = document.getElementById('fill-stroke-props');
             const targets = selectedObjects();
             const show = targets.length > 0;
-            panel.classList.toggle('hidden', !show);
-            panel.classList.toggle('flex', show);
+            if (panel) {
+                panel.classList.toggle('hidden', !show);
+                panel.classList.toggle('flex', show);
+            }
+            if (fs) {
+                fs.classList.toggle('hidden', !show);
+                fs.classList.toggle('flex', show);
+            }
+            // keep props panel open when selecting
+            if (show) {
+                const pp = document.getElementById('props-panel');
+                if (pp) { pp.classList.remove('hidden'); pp.classList.add('flex'); }
+            }
             if (!show) return;
             const o = targets[0];
             const set = (id, val, labelId, fmt) => {
@@ -3166,7 +3339,77 @@
             set('radius-slider', o.cornerRadius || 0, 'radius-val');
             set('blur-slider', o.blur || 0, 'blur-val');
             set('rotate-slider', o.rotation || 0, 'rotate-val', v => v + '°');
+            const fill = o.fill || null;
+            const stroke = o.color || '#171717';
+            const fi = document.getElementById('fill-color-input');
+            const fh = document.getElementById('fill-hex');
+            const si = document.getElementById('stroke-color-input');
+            const sh = document.getElementById('stroke-hex');
+            if (fi && fill && /^#/.test(fill)) { fi.value = fill.length === 4 ? '#'+fill[1]+fill[1]+fill[2]+fill[2]+fill[3]+fill[3] : fill.slice(0,7); }
+            if (fh) fh.value = fill || 'none';
+            if (si && stroke && /^#/.test(stroke)) { si.value = stroke.slice(0,7); }
+            if (sh) sh.value = stroke || 'none';
+            const osw = document.getElementById('obj-stroke-width');
+            if (osw) osw.value = o.strokeWidth != null ? o.strokeWidth : 2;
         }
+
+        function bindFillStrokeEditors() {
+            const applyFill = (val) => {
+                const targets = selectedObjects();
+                if (!targets.length) return;
+                pushHistory();
+                targets.forEach(o => { o.fill = val; });
+                render();
+            };
+            const applyStroke = (val) => {
+                const targets = selectedObjects();
+                if (!targets.length) return;
+                pushHistory();
+                targets.forEach(o => { o.color = val; });
+                render();
+            };
+            const fi = document.getElementById('fill-color-input');
+            const fh = document.getElementById('fill-hex');
+            const si = document.getElementById('stroke-color-input');
+            const sh = document.getElementById('stroke-hex');
+            if (fi) fi.oninput = () => { if (fh) fh.value = fi.value; applyFill(fi.value); };
+            if (fh) fh.onchange = () => {
+                let v = fh.value.trim();
+                if (v === 'none' || v === '') applyFill(null);
+                else {
+                    if (v[0] !== '#') v = '#' + v;
+                    applyFill(v);
+                    if (fi && /^#[0-9a-fA-F]{6}$/.test(v)) fi.value = v;
+                }
+            };
+            if (si) si.oninput = () => { if (sh) sh.value = si.value; applyStroke(si.value); };
+            if (sh) sh.onchange = () => {
+                let v = sh.value.trim();
+                if (v === 'none' || v === '') applyStroke('#00000000');
+                else {
+                    if (v[0] !== '#') v = '#' + v;
+                    applyStroke(v);
+                    if (si && /^#[0-9a-fA-F]{6}$/.test(v)) si.value = v;
+                }
+            };
+            document.getElementById('btn-fill-none') && (document.getElementById('btn-fill-none').onclick = () => applyFill(null));
+            document.getElementById('btn-stroke-none') && (document.getElementById('btn-stroke-none').onclick = () => {
+                const targets = selectedObjects();
+                if (!targets.length) return;
+                pushHistory();
+                targets.forEach(o => { o.strokeWidth = 0; });
+                render();
+            });
+            const osw = document.getElementById('obj-stroke-width');
+            if (osw) osw.onchange = osw.oninput = () => {
+                const v = parseFloat(osw.value);
+                if (isNaN(v)) return;
+                selectedObjects().forEach(o => { o.strokeWidth = v; });
+                render();
+            };
+            if (osw) osw.addEventListener('pointerdown', () => pushHistory());
+        }
+
         const radiusSl = document.getElementById('radius-slider');
         if (radiusSl) radiusSl.oninput = (e) => {
             const v = +e.target.value;
@@ -3418,6 +3661,31 @@
             if ((e.key === 'Delete' || e.key === 'Backspace') && state.selectedIds.size) {
                 document.getElementById('btn-delete-selected').click();
             }
+            // Arrow keys: nudge selection
+            if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key) && state.selectedIds.size) {
+                e.preventDefault();
+                const step = e.shiftKey ? 10 : (e.altKey ? 0.5 : 1);
+                const dx = e.key === 'ArrowLeft' ? -step : e.key === 'ArrowRight' ? step : 0;
+                const dy = e.key === 'ArrowUp' ? -step : e.key === 'ArrowDown' ? step : 0;
+                if (!state._nudgePushed) {
+                    pushHistory();
+                    state._nudgePushed = true;
+                }
+                state.objects.forEach(o => {
+                    if (!state.selectedIds.has(o.id)) return;
+                    if (o.type === 'path' && o.points) {
+                        o.points.forEach(p => { p.x += dx; p.y += dy; });
+                    } else if (o.type === 'bezier' && o.anchors) {
+                        o.anchors.forEach(a => { a.x += dx; a.y += dy; });
+                    } else if (o.type === 'line' || o.type === 'arrow') {
+                        o.x1 += dx; o.y1 += dy; o.x2 += dx; o.y2 += dy;
+                    } else if (o.x != null) {
+                        o.x += dx; o.y += dy;
+                    }
+                });
+                render();
+                return;
+            }
             if (e.key === '?' || (e.shiftKey && e.key === '/')) document.getElementById('help-modal').classList.remove('hidden');
             if (e.key === 'Escape') {
                 state.selectedIds.clear();
@@ -3431,6 +3699,9 @@
             if (e.code === 'Space') {
                 state.spacePressed = false;
                 container.style.cursor = state.tool === 'hand' ? 'grab' : 'crosshair';
+            }
+            if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) {
+                state._nudgePushed = false;
             }
         });
 
@@ -3620,13 +3891,127 @@
         });
 
 
+        bindFillStrokeEditors();
+
+        // ---- Settings persistence ----
+        const SETTINGS_KEY = 'infiniteStudioSettings_v1';
+        const DEFAULTS = {
+            strokeWidth: 8, color: '#171717', opacity: 1, paintPreset: 'pen',
+            stabilize: 0, hardness: 1, canvasBg: '#ffffff', gridMode: 'grid',
+            maxHistory: 80, pixelGrid: false, pixelSnap: false,
+            fontFamily: 'Inter', fontSize: 24, fontWeight: '500',
+            toolbarDock: 'left'
+        };
+        function applyToolbarDock(pos) {
+            state.toolbarDock = pos || 'left';
+            document.body.classList.remove('tools-left','tools-right','tools-top','tools-bottom');
+            document.body.classList.add('tools-' + state.toolbarDock);
+            document.querySelectorAll('.dock-btn').forEach(b => {
+                b.classList.toggle('active', b.dataset.dock === state.toolbarDock);
+            });
+        }
+        function loadSettings() {
+            try {
+                const raw = localStorage.getItem(SETTINGS_KEY);
+                if (!raw) { applyToolbarDock('left'); return; }
+                const d = JSON.parse(raw);
+                Object.keys(DEFAULTS).forEach(k => {
+                    if (d[k] !== undefined) state[k] = d[k];
+                });
+                if (d.strokeWidth) {
+                    const sl = document.getElementById('size-slider');
+                    if (sl) sl.value = Math.min(500, d.strokeWidth);
+                    const sv = document.getElementById('size-val');
+                    if (sv) sv.textContent = d.strokeWidth;
+                    const sn = document.getElementById('size-num');
+                    if (sn) sn.value = d.strokeWidth;
+                }
+                if (d.color) setColor(d.color);
+                if (d.opacity != null) {
+                    const os = document.getElementById('opacity-slider');
+                    if (os) os.value = Math.round(d.opacity * 100);
+                    const ov = document.getElementById('opacity-val');
+                    if (ov) ov.textContent = Math.round(d.opacity * 100) + '%';
+                }
+                applyToolbarDock(d.toolbarDock || 'left');
+            } catch (e) {
+                applyToolbarDock('left');
+            }
+        }
+        function saveSettings() {
+            const data = {
+                strokeWidth: state.strokeWidth,
+                color: state.color,
+                opacity: state.opacity,
+                paintPreset: state.paintPreset,
+                stabilize: state.stabilize,
+                hardness: state.hardness,
+                canvasBg: state.canvasBg,
+                gridMode: state.gridMode,
+                maxHistory: state.maxHistory,
+                pixelGrid: state.pixelGrid,
+                pixelSnap: state.pixelSnap,
+                fontFamily: state.fontFamily,
+                fontSize: state.fontSize,
+                fontWeight: state.fontWeight,
+                toolbarDock: state.toolbarDock || 'left'
+            };
+            try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(data)); } catch (_) {}
+        }
+        // debounce save
+        let _saveTimer = null;
+        function scheduleSaveSettings() {
+            clearTimeout(_saveTimer);
+            _saveTimer = setTimeout(saveSettings, 200);
+        }
+        // wrap setColor to save
+        const _setColorOrig = setColor;
+        setColor = function(hex) {
+            _setColorOrig(hex);
+            scheduleSaveSettings();
+        };
+
+        document.querySelectorAll('.dock-btn').forEach(b => {
+            b.onclick = () => {
+                applyToolbarDock(b.dataset.dock);
+                scheduleSaveSettings();
+            };
+        });
+        document.getElementById('btn-reset-defaults') && (document.getElementById('btn-reset-defaults').onclick = () => {
+            if (!confirm('設定をすべてデフォルトに戻しますか？')) return;
+            Object.keys(DEFAULTS).forEach(k => { state[k] = DEFAULTS[k]; });
+            localStorage.removeItem(SETTINGS_KEY);
+            applyToolbarDock('left');
+            setColor(DEFAULTS.color);
+            document.getElementById('size-slider').value = DEFAULTS.strokeWidth;
+            document.getElementById('size-val').textContent = DEFAULTS.strokeWidth;
+            const sn = document.getElementById('size-num'); if (sn) sn.value = DEFAULTS.strokeWidth;
+            document.getElementById('opacity-slider').value = 100;
+            document.getElementById('opacity-val').textContent = '100%';
+            render();
+            alert('デフォルトに戻しました');
+        });
+
+
+
         // Init
         renderPalette('mono');
         setColor('#171717');
+        loadSettings();
         renderLayerList();
         resize();
         pushHistory();
         updateHistoryButtons();
+        // open props on desktop
+        if (window.innerWidth > 768) {
+            const pp = document.getElementById('props-panel');
+            if (pp) { pp.classList.remove('hidden'); pp.classList.add('flex'); }
+        }
+        // auto-save on various controls
+        ['size-slider','opacity-slider','stabilize-slider','hardness-slider'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.addEventListener('change', scheduleSaveSettings);
+        });
     });
     </script>
 </body>
