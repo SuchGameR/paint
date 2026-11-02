@@ -363,13 +363,17 @@
                         <i class="fa-solid fa-bezier-curve w-4"></i>SVG
                     </button>
                     <div class="h-px bg-white/10 my-1"></div>
+                    <button id="btn-insert-image" class="w-full text-left px-3 py-2 hover:bg-white/8 flex items-center gap-2 text-geist-200">
+                        <i class="fa-solid fa-file-image w-4"></i>画像を挿入
+                    </button>
                     <button data-export="project" class="w-full text-left px-3 py-2 hover:bg-white/8 flex items-center gap-2 text-geist-200">
                         <i class="fa-solid fa-floppy-disk w-4"></i>プロジェクト保存
                     </button>
                     <button id="btn-load-project" class="w-full text-left px-3 py-2 hover:bg-white/8 flex items-center gap-2 text-geist-200">
                         <i class="fa-solid fa-folder-open w-4"></i>読み込み
                     </button>
-                    <input type="file" id="file-input" accept=".json,.svg,image/svg+xml,application/json" class="hidden">
+                    <input type="file" id="file-input" accept=".json,.svg,image/svg+xml,application/json,image/*,.png,.jpg,.jpeg,.webp" class="hidden">
+                    <input type="file" id="image-input" accept="image/*,.png,.jpg,.jpeg,.webp,.gif,.bmp" class="hidden">
                 </div>
             </div>
         </div>
@@ -386,7 +390,11 @@
             <button id="tool-shapes" class="geist-btn w-full" title="図形"><i id="shape-icon" class="fa-regular fa-square text-[14px]"></i></button>
             <div id="shapes-menu" class="absolute left-full top-0 ml-1 geist-surface p-0.5 rounded-lg hidden flex-col gap-0.5 z-30">
                 <button data-shape="rect" class="geist-btn" title="四角形"><i class="fa-regular fa-square"></i></button>
+                <button data-shape="roundrect" class="geist-btn" title="角丸四角"><i class="fa-solid fa-square"></i></button>
                 <button data-shape="circle" class="geist-btn" title="円"><i class="fa-regular fa-circle"></i></button>
+                <button data-shape="triangle" class="geist-btn" title="三角形"><i class="fa-solid fa-play fa-rotate-270"></i></button>
+                <button data-shape="star" class="geist-btn" title="星"><i class="fa-solid fa-star"></i></button>
+                <button data-shape="hexagon" class="geist-btn" title="六角形"><i class="fa-solid fa-hexagon" style="font-size:12px"></i></button>
                 <button data-shape="line" class="geist-btn" title="直線"><i class="fa-solid fa-minus"></i></button>
                 <button data-shape="arrow" class="geist-btn" title="矢印"><i class="fa-solid fa-arrow-right"></i></button>
             </div>
@@ -502,7 +510,8 @@
                 <label class="text-[11px] text-geist-400">サイズ</label>
                 <span id="size-val" class="text-[11px] font-mono text-white">8</span>
             </div>
-            <input id="size-slider" type="range" min="1" max="120" value="8" class="slider w-full">
+            <input id="size-slider" type="range" min="1" max="500" value="8" class="slider w-full">
+            <input id="size-num" type="number" min="0.5" max="2000" step="0.5" value="8" class="w-full bg-black/40 border border-white/10 rounded-md text-[11px] text-white px-2 py-1 font-mono outline-none">
         </div>
 
         <div class="flex flex-col gap-1">
@@ -511,6 +520,28 @@
                 <span id="opacity-val" class="text-[11px] font-mono text-white">100%</span>
             </div>
             <input id="opacity-slider" type="range" min="5" max="100" value="100" class="slider w-full">
+        </div>
+
+        <div id="object-props" class="hidden flex-col gap-1.5 pt-1 border-t border-white/8">
+            <label class="text-[11px] text-geist-400">オブジェクト</label>
+            <div class="flex flex-col gap-1">
+                <div class="flex justify-between"><label class="text-[11px] text-geist-400">角丸</label><span id="radius-val" class="text-[11px] font-mono text-white">0</span></div>
+                <input id="radius-slider" type="range" min="0" max="200" value="0" class="slider w-full">
+            </div>
+            <div class="flex flex-col gap-1">
+                <div class="flex justify-between"><label class="text-[11px] text-geist-400">ぼかし</label><span id="blur-val" class="text-[11px] font-mono text-white">0</span></div>
+                <input id="blur-slider" type="range" min="0" max="50" value="0" class="slider w-full">
+            </div>
+            <div class="flex flex-col gap-1">
+                <div class="flex justify-between"><label class="text-[11px] text-geist-400">回転</label><span id="rotate-val" class="text-[11px] font-mono text-white">0°</span></div>
+                <input id="rotate-slider" type="range" min="-180" max="180" value="0" class="slider w-full">
+            </div>
+            <div class="grid grid-cols-2 gap-1">
+                <button id="btn-flip-h" class="geist-btn py-1.5 rounded-md text-[10px]">左右反転</button>
+                <button id="btn-flip-v" class="geist-btn py-1.5 rounded-md text-[10px]">上下反転</button>
+            </div>
+            <button id="btn-use-mask" class="geist-btn py-1.5 rounded-md text-[10px] w-full" title="選択中を下のオブジェクトのマスクに">マスクに設定</button>
+            <button id="btn-clear-mask" class="geist-btn py-1.5 rounded-md text-[10px] w-full">マスク解除</button>
         </div>
 
         <div class="flex flex-col gap-2 pt-1 border-t border-white/8">
@@ -551,7 +582,9 @@
         <div class="flex flex-col gap-1.5 pt-1 border-t border-white/8">
             <div class="flex justify-between items-center">
                 <label class="text-[11px] text-geist-400">レイヤー</label>
-                <button id="btn-add-layer" class="geist-btn !min-w-6 !min-h-6" title="追加"><i class="fa-solid fa-plus text-[10px]"></i></button>
+                <button id="btn-add-layer" class="geist-btn !min-w-6 !min-h-6" title="レイヤー追加"><i class="fa-solid fa-plus text-[10px]"></i></button>
+                <button id="btn-add-folder" class="geist-btn !min-w-6 !min-h-6" title="フォルダ追加"><i class="fa-solid fa-folder text-[10px]"></i></button>
+                <button id="btn-settings" class="geist-btn !min-w-6 !min-h-6" title="設定"><i class="fa-solid fa-gear text-[10px]"></i></button>
             </div>
             <div id="layer-list" class="flex flex-col gap-1 max-h-24 overflow-y-auto"></div>
         </div>
@@ -600,6 +633,49 @@
         </div>
     </div>
 
+    
+    <!-- SETTINGS MODAL -->
+    <div id="settings-modal" class="fixed inset-0 z-[100] hidden items-center justify-center" style="background:rgba(0,0,0,0.65)">
+        <div class="geist-surface rounded-xl w-[min(420px,92vw)] max-h-[80vh] overflow-y-auto p-4 flex flex-col gap-3">
+            <div class="flex justify-between items-center">
+                <h3 class="text-[14px] font-medium text-white"><i class="fa-solid fa-gear text-geist-400 mr-2"></i>設定 / プロファイル</h3>
+                <button id="settings-close" class="geist-btn !min-w-8 !min-h-8">&times;</button>
+            </div>
+            <div class="flex flex-col gap-1.5">
+                <label class="text-[11px] text-geist-400">プロファイル名</label>
+                <input id="profile-name" type="text" placeholder="My Profile" class="bg-black/50 border border-white/10 rounded-md text-[12px] text-white px-2 py-1.5 outline-none">
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+                <button id="btn-save-profile" class="geist-btn py-2 rounded-md text-[11px] bg-white/10">保存</button>
+                <button id="btn-load-profile" class="geist-btn py-2 rounded-md text-[11px] bg-white/10">読込</button>
+            </div>
+            <div id="profile-list" class="flex flex-col gap-1 max-h-32 overflow-y-auto text-[11px]"></div>
+            <div class="h-px bg-white/10"></div>
+            <div class="flex flex-col gap-1.5">
+                <label class="text-[11px] text-geist-400">キャンバス背景</label>
+                <div class="flex gap-2">
+                    <button class="bg-btn geist-btn py-1.5 px-2 text-[10px]" data-bg="#ffffff">白</button>
+                    <button class="bg-btn geist-btn py-1.5 px-2 text-[10px]" data-bg="#0A0A0A">黒</button>
+                    <button class="bg-btn geist-btn py-1.5 px-2 text-[10px]" data-bg="#f5f5f4">ペーパー</button>
+                    <button class="bg-btn geist-btn py-1.5 px-2 text-[10px]" data-bg="transparent">透明</button>
+                </div>
+            </div>
+            <div class="flex flex-col gap-1">
+                <div class="flex justify-between"><label class="text-[11px] text-geist-400">ピクセルグリッド</label>
+                    <input type="checkbox" id="pixel-grid-toggle" class="accent-white">
+                </div>
+                <div class="flex justify-between"><label class="text-[11px] text-geist-400">ピクセルスナップ</label>
+                    <input type="checkbox" id="pixel-snap-toggle" class="accent-white">
+                </div>
+            </div>
+            <div class="flex flex-col gap-1">
+                <div class="flex justify-between"><label class="text-[11px] text-geist-400">最大履歴</label><span id="maxhist-val" class="text-[11px] font-mono">80</span></div>
+                <input id="maxhist-slider" type="range" min="10" max="200" value="80" class="slider w-full">
+            </div>
+            <p class="text-[10px] text-geist-500">プロファイルはブラウザのローカルに保存されます</p>
+        </div>
+    </div>
+
     <script>
     document.addEventListener('DOMContentLoaded', () => {
         // ===== STATE =====
@@ -639,7 +715,14 @@
             stabilize: 0,
             hardness: 1,
             fillTolerance: 32,
-            brushPreset: 'pen'
+            brushPreset: 'pen',
+            paintCanvas: null,
+            paintCtx: null,
+            paintOrigin: { x: -2000, y: -2000 },
+            paintSize: 4000,
+            pixelGrid: false,
+            pixelSnap: false,
+            profiles: {}
         };
 
         const palettes = {
@@ -684,7 +767,8 @@
             return {
                 objects: cloneObjects(state.objects),
                 layers: JSON.parse(JSON.stringify(state.layers)),
-                activeLayerId: state.activeLayerId
+                activeLayerId: state.activeLayerId,
+                paintData: state.paintCanvas ? state.paintCanvas.toDataURL('image/png') : null
             };
         }
 
@@ -714,6 +798,18 @@
             state.selectedIds.clear();
             state.currentObj = null;
             state.isDrawing = false;
+            if (snap.paintData) {
+                ensurePaintLayer();
+                const img = new Image();
+                img.onload = () => {
+                    state.paintCtx.clearRect(0, 0, state.paintCanvas.width, state.paintCanvas.height);
+                    state.paintCtx.drawImage(img, 0, 0);
+                    render();
+                };
+                img.src = snap.paintData;
+            } else if (state.paintCtx) {
+                state.paintCtx.clearRect(0, 0, state.paintCanvas.width, state.paintCanvas.height);
+            }
             updateHistoryButtons();
             updateSelectionUI();
             renderLayerList();
@@ -757,8 +853,17 @@
             const h = window.innerHeight;
             ctx.save();
             ctx.setTransform(state.dpr, 0, 0, state.dpr, 0, 0);
-            ctx.fillStyle = state.canvasBg;
-            ctx.fillRect(0, 0, w, h);
+            if (state.canvasBg === 'transparent') {
+                // checkerboard
+                const s = 12;
+                for (let y = 0; y < h; y += s) for (let x = 0; x < w; x += s) {
+                    ctx.fillStyle = ((x/s + y/s) & 1) ? '#ccc' : '#fff';
+                    ctx.fillRect(x, y, s, s);
+                }
+            } else {
+                ctx.fillStyle = state.canvasBg;
+                ctx.fillRect(0, 0, w, h);
+            }
 
             if (state.gridMode === 'off') { ctx.restore(); return; }
 
@@ -788,17 +893,73 @@
             ctx.restore();
         }
 
+
+        function roundRectPath(ctx, x, y, w, h, r) {
+            if (w < 0) { x += w; w = -w; }
+            if (h < 0) { y += h; h = -h; }
+            r = Math.max(0, Math.min(r || 0, w / 2, h / 2));
+            ctx.moveTo(x + r, y);
+            ctx.arcTo(x + w, y, x + w, y + h, r);
+            ctx.arcTo(x + w, y + h, x, y + h, r);
+            ctx.arcTo(x, y + h, x, y, r);
+            ctx.arcTo(x, y, x + w, y, r);
+            ctx.closePath();
+        }
+
+        function starPoints(cx, cy, outer, inner, n) {
+            const pts = [];
+            for (let i = 0; i < n * 2; i++) {
+                const ang = (i * Math.PI) / n - Math.PI / 2;
+                const rad = i % 2 === 0 ? outer : inner;
+                pts.push({ x: cx + Math.cos(ang) * rad, y: cy + Math.sin(ang) * rad });
+            }
+            return pts;
+        }
+
         function drawObject(obj) {
             if (!obj) return;
             const layer = state.layers.find(l => l.id === obj.layerId);
             if (layer && !layer.visible) return;
 
             ctx.save();
+            // Mask clip
+            if (obj.maskId) {
+                const mask = state.objects.find(o => o.id === obj.maskId);
+                if (mask) {
+                    const mb = getBounds(mask);
+                    if (mb) {
+                        ctx.beginPath();
+                        if (mask.type === 'circle') {
+                            ctx.ellipse(mask.x, mask.y, Math.abs(mask.w||0), Math.abs(mask.h||mask.w||0), 0, 0, Math.PI*2);
+                        } else {
+                            const r = mask.cornerRadius || 0;
+                            roundRectPath(ctx, mb.x, mb.y, mb.w, mb.h, r);
+                        }
+                        ctx.clip();
+                    }
+                }
+            }
+            // Rotation around center
+            if (obj.rotation) {
+                const b = getBounds(obj);
+                if (b) {
+                    const cx = b.x + b.w / 2, cy = b.y + b.h / 2;
+                    ctx.translate(cx, cy);
+                    ctx.rotate((obj.rotation * Math.PI) / 180);
+                    ctx.translate(-cx, -cy);
+                }
+            }
+            if (obj.blur) {
+                ctx.filter = `blur(${obj.blur}px)`;
+            }
             ctx.strokeStyle = obj.color;
-            ctx.fillStyle = obj.color;
-            ctx.lineWidth = obj.strokeWidth;
+            ctx.fillStyle = obj.fill || obj.color;
+            const sw = obj.strokeWidth || 1;
+            ctx.lineWidth = Math.max(sw, 0.75 / Math.max(state.zoom, 0.001));
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
+            ctx.miterLimit = 2;
+            ctx.imageSmoothingEnabled = true;
             ctx.globalAlpha = obj.opacity ?? 1;
             if (obj.soft) {
                 ctx.shadowBlur = obj.strokeWidth * 0.5;
@@ -820,12 +981,35 @@
                     ctx.globalAlpha = obj.opacity != null ? obj.opacity : 1;
                     ctx.drawImage(obj._img, obj.x, obj.y, obj.w, obj.h);
                 }
-            } else if (obj.type === 'rect') {
-                ctx.strokeRect(obj.x, obj.y, obj.w, obj.h);
-            } else if (obj.type === 'circle') {
-                const r = Math.hypot(obj.w, obj.h);
+            } else if (obj.type === 'rect' || obj.type === 'roundrect') {
+                const r = obj.cornerRadius || (obj.type === 'roundrect' ? Math.min(Math.abs(obj.w), Math.abs(obj.h)) * 0.15 : 0);
                 ctx.beginPath();
-                ctx.arc(obj.x, obj.y, Math.max(0.5, r), 0, Math.PI * 2);
+                roundRectPath(ctx, obj.x, obj.y, obj.w, obj.h, r);
+                if (obj.fill) ctx.fill();
+                ctx.stroke();
+            } else if (obj.type === 'circle') {
+                ctx.beginPath();
+                ctx.ellipse(obj.x, obj.y, Math.max(0.5, Math.abs(obj.w)), Math.max(0.5, Math.abs(obj.h || obj.w)), 0, 0, Math.PI * 2);
+                if (obj.fill) ctx.fill();
+                ctx.stroke();
+            } else if (obj.type === 'triangle' || obj.type === 'star' || obj.type === 'hexagon') {
+                let pts = [];
+                const cx = obj.x + (obj.w || 0) / 2, cy = obj.y + (obj.h || 0) / 2;
+                const rx = Math.abs(obj.w || 0) / 2, ry = Math.abs(obj.h || 0) / 2;
+                if (obj.type === 'triangle') {
+                    pts = [{ x: cx, y: obj.y }, { x: obj.x + obj.w, y: obj.y + obj.h }, { x: obj.x, y: obj.y + obj.h }];
+                } else if (obj.type === 'star') {
+                    pts = starPoints(cx, cy, Math.max(rx, ry), Math.max(rx, ry) * 0.4, 5);
+                } else {
+                    for (let i = 0; i < 6; i++) {
+                        const a = (i / 6) * Math.PI * 2 - Math.PI / 2;
+                        pts.push({ x: cx + Math.cos(a) * rx, y: cy + Math.sin(a) * ry });
+                    }
+                }
+                ctx.beginPath();
+                pts.forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y));
+                ctx.closePath();
+                if (obj.fill) ctx.fill();
                 ctx.stroke();
             } else if (obj.type === 'line' || obj.type === 'arrow') {
                 ctx.beginPath();
@@ -869,14 +1053,14 @@
                 const pad = (obj.strokeWidth || 4) / 2;
                 return { x: minX - pad, y: minY - pad, w: maxX - minX + pad * 2, h: maxY - minY + pad * 2 };
             }
-            if (obj.type === 'rect') {
-                const x = Math.min(obj.x, obj.x + obj.w);
-                const y = Math.min(obj.y, obj.y + obj.h);
-                return { x, y, w: Math.abs(obj.w), h: Math.abs(obj.h) };
+            if (['rect','roundrect','triangle','star','hexagon'].includes(obj.type)) {
+                const x = Math.min(obj.x, obj.x + (obj.w||0));
+                const y = Math.min(obj.y, obj.y + (obj.h||0));
+                return { x, y, w: Math.abs(obj.w||0), h: Math.abs(obj.h||0) };
             }
             if (obj.type === 'circle') {
-                const r = Math.hypot(obj.w, obj.h);
-                return { x: obj.x - r, y: obj.y - r, w: r * 2, h: r * 2 };
+                const rx = Math.abs(obj.w||0), ry = Math.abs(obj.h||obj.w||0);
+                return { x: obj.x - rx, y: obj.y - ry, w: rx * 2, h: ry * 2 };
             }
             if (obj.type === 'line' || obj.type === 'arrow') {
                 const x = Math.min(obj.x1, obj.x2), y = Math.min(obj.y1, obj.y2);
@@ -910,9 +1094,29 @@
             drawGrid();
             ctx.save();
             ctx.setTransform(state.dpr, 0, 0, state.dpr, 0, 0);
+            ctx.imageSmoothingEnabled = true;
+            if (ctx.imageSmoothingQuality) ctx.imageSmoothingQuality = 'high';
             ctx.translate(state.panX, state.panY);
             ctx.scale(state.zoom, state.zoom);
+            // raster paint layer under vectors
+            if (state.paintCanvas) {
+                ctx.drawImage(state.paintCanvas, state.paintOrigin.x, state.paintOrigin.y);
+            }
             state.objects.forEach(drawObject);
+            if (state.pixelGrid && state.zoom >= 8) {
+                ctx.save();
+                ctx.strokeStyle = 'rgba(128,128,128,0.35)';
+                ctx.lineWidth = 1 / state.zoom;
+                const b = screenToWorld(0, 0);
+                const e = screenToWorld(window.innerWidth, window.innerHeight);
+                const x0 = Math.floor(b.x), y0 = Math.floor(b.y);
+                const x1 = Math.ceil(e.x), y1 = Math.ceil(e.y);
+                ctx.beginPath();
+                for (let x = x0; x <= x1; x++) { ctx.moveTo(x, y0); ctx.lineTo(x, y1); }
+                for (let y = y0; y <= y1; y++) { ctx.moveTo(x0, y); ctx.lineTo(x1, y); }
+                ctx.stroke();
+                ctx.restore();
+            }
             ctx.restore();
             document.getElementById('hud-zoom').textContent = Math.round(state.zoom * 100) + '%';
         }
@@ -934,7 +1138,7 @@
                 }
                 return false;
             }
-            if (obj.type === 'rect') {
+            if (['rect','roundrect','triangle','star','hexagon'].includes(obj.type)) {
                 const minX = Math.min(obj.x, obj.x + obj.w), maxX = Math.max(obj.x, obj.x + obj.w);
                 const minY = Math.min(obj.y, obj.y + obj.h), maxY = Math.max(obj.y, obj.y + obj.h);
                 // stroke only roughly
@@ -948,8 +1152,9 @@
                 );
             }
             if (obj.type === 'circle') {
-                const r = Math.hypot(obj.w, obj.h);
-                const d = Math.hypot(x - obj.x, y - obj.y);
+                const rx = Math.abs(obj.w||0), ry = Math.abs(obj.h||obj.w||0);
+                const d = Math.hypot((x - obj.x) / (rx||1), (y - obj.y) / (ry||1));
+                const r = 1;
                 return Math.abs(d - r) < tol;
             }
             if (obj.type === 'line' || obj.type === 'arrow') {
@@ -1047,6 +1252,87 @@
             return erasePartialAt(wx, wy);
         }
 
+
+
+        function ensurePaintLayer() {
+            if (state.paintCanvas) return;
+            const s = state.paintSize || 4000;
+            const c = document.createElement('canvas');
+            c.width = s;
+            c.height = s;
+            state.paintCanvas = c;
+            state.paintCtx = c.getContext('2d');
+            state.paintOrigin = { x: -s / 2, y: -s / 2 };
+            state.paintCtx.clearRect(0, 0, s, s);
+        }
+
+        function worldToPaint(wx, wy) {
+            ensurePaintLayer();
+            return {
+                x: wx - state.paintOrigin.x,
+                y: wy - state.paintOrigin.y
+            };
+        }
+
+        function stampPaintBrush(wx, wy, last) {
+            ensurePaintLayer();
+            if (state.pixelSnap) {
+                wx = Math.round(wx);
+                wy = Math.round(wy);
+            }
+            const pctx = state.paintCtx;
+            const p = worldToPaint(wx, wy);
+            const r = Math.max(0.5, state.strokeWidth / 2);
+            const preset = state.paintPreset || 'pen';
+            pctx.save();
+            pctx.lineCap = 'round';
+            pctx.lineJoin = 'round';
+            pctx.strokeStyle = state.color;
+            pctx.fillStyle = state.color;
+            pctx.globalAlpha = state.opacity * (preset === 'marker' ? 0.4 : preset === 'watercolor' ? 0.15 : preset === 'airbrush' ? 0.2 : 1);
+
+            if (last) {
+                const q = worldToPaint(last.x, last.y);
+                pctx.lineWidth = state.strokeWidth;
+                if (preset === 'airbrush' || preset === 'watercolor') {
+                    const dist = Math.hypot(p.x - q.x, p.y - q.y);
+                    const steps = Math.max(1, Math.floor(dist / (r * 0.35)));
+                    for (let i = 0; i <= steps; i++) {
+                        const t = i / steps;
+                        const x = q.x + (p.x - q.x) * t;
+                        const y = q.y + (p.y - q.y) * t;
+                        const g = pctx.createRadialGradient(x, y, 0, x, y, r);
+                        g.addColorStop(0, state.color);
+                        g.addColorStop(1, 'rgba(0,0,0,0)');
+                        pctx.fillStyle = g;
+                        pctx.beginPath();
+                        pctx.arc(x, y, r, 0, Math.PI * 2);
+                        pctx.fill();
+                    }
+                } else if (preset === 'pixel') {
+                    const step = Math.max(1, Math.round(state.strokeWidth));
+                    pctx.fillRect(Math.round(p.x / step) * step - step/2, Math.round(p.y / step) * step - step/2, step, step);
+                } else {
+                    pctx.beginPath();
+                    pctx.moveTo(q.x, q.y);
+                    pctx.lineTo(p.x, p.y);
+                    pctx.stroke();
+                }
+            } else {
+                pctx.beginPath();
+                pctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+                pctx.fill();
+            }
+            pctx.restore();
+        }
+
+        function clearPaintLayer() {
+            if (!state.paintCanvas) return;
+            pushHistory();
+            // snapshot paint into image object then clear? For history we store paint dataURL in snapshot
+            state.paintCtx.clearRect(0, 0, state.paintCanvas.width, state.paintCanvas.height);
+            render();
+        }
 
         // ===== BRUSH ENGINE =====
         function drawBrushStroke(ctx, obj) {
@@ -1158,12 +1444,22 @@
                 return;
             }
 
-            // pen / marker default
-            ctx.lineWidth = w;
+            // pen / marker — smooth quadratic (less jagged when zoomed)
+            ctx.lineWidth = Math.max(w, 0.5 / Math.max(state.zoom, 0.01));
             if (preset === 'marker') ctx.globalAlpha = (obj.opacity != null ? obj.opacity : 1) * 0.55;
             ctx.beginPath();
             ctx.moveTo(pts[0].x, pts[0].y);
-            for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+            if (pts.length === 2) {
+                ctx.lineTo(pts[1].x, pts[1].y);
+            } else if (pts.length > 2) {
+                for (let i = 1; i < pts.length - 1; i++) {
+                    const mx = (pts[i].x + pts[i + 1].x) / 2;
+                    const my = (pts[i].y + pts[i + 1].y) / 2;
+                    ctx.quadraticCurveTo(pts[i].x, pts[i].y, mx, my);
+                }
+                const last = pts[pts.length - 1];
+                ctx.lineTo(last.x, last.y);
+            }
             ctx.stroke();
             if (preset === 'marker') ctx.globalAlpha = obj.opacity != null ? obj.opacity : 1;
         }
@@ -1462,13 +1758,17 @@
         function setTool(name) {
             state.tool = name;
             document.querySelectorAll('[id^="tool-"]').forEach(b => b.classList.remove('active'));
-            const btn = document.getElementById('tool-' + (['rect','circle','line','arrow'].includes(name) ? 'shapes' : name));
+            const btn = document.getElementById('tool-' + (['rect','roundrect','circle','triangle','star','hexagon','line','arrow'].includes(name) ? 'shapes' : name));
             if (btn) btn.classList.add('active');
             document.getElementById('tool-badge').textContent = name.toUpperCase();
             container.style.cursor = name === 'hand' ? 'grab' : name === 'text' ? 'text' : name === 'fill' ? 'cell' : name === 'pen' ? 'crosshair' : 'crosshair';
-            if (['rect','circle','line','arrow'].includes(name)) {
-                const icons = { rect: 'fa-regular fa-square', circle: 'fa-regular fa-circle', line: 'fa-solid fa-minus', arrow: 'fa-solid fa-arrow-right' };
-                document.getElementById('shape-icon').className = icons[name] + ' text-[15px]';
+            if (['rect','roundrect','circle','triangle','star','hexagon','line','arrow'].includes(name)) {
+                const icons = {
+                    rect: 'fa-regular fa-square', roundrect: 'fa-solid fa-square', circle: 'fa-regular fa-circle',
+                    triangle: 'fa-solid fa-play fa-rotate-270', star: 'fa-solid fa-star', hexagon: 'fa-solid fa-stop',
+                    line: 'fa-solid fa-minus', arrow: 'fa-solid fa-arrow-right'
+                };
+                document.getElementById('shape-icon').className = (icons[name] || 'fa-regular fa-square') + ' text-[15px]';
             }
             // show eraser mode panel
             const ep = document.getElementById('eraser-presets');
@@ -1598,29 +1898,62 @@
         // ===== LAYERS UI =====
         function renderLayerList() {
             const list = document.getElementById('layer-list');
+            if (!list) return;
             list.innerHTML = '';
-            [...state.layers].reverse().forEach(layer => {
+            // folders first concept: layer.folderId groups
+            const roots = state.layers.filter(l => !l.folderId);
+            const renderRow = (layer, indent) => {
                 const row = document.createElement('div');
-                row.className = 'flex items-center gap-1.5 px-1.5 py-1 rounded-md text-[11px] cursor-pointer ' +
+                row.className = 'flex items-center gap-1 px-1 py-1 rounded-md text-[11px] cursor-pointer ' +
                     (layer.id === state.activeLayerId ? 'bg-white/10 text-white' : 'text-geist-400 hover:bg-white/5');
+                row.style.paddingLeft = (4 + indent * 12) + 'px';
+                const isFolder = layer.type === 'folder';
                 row.innerHTML = `
-                    <button class="layer-vis w-5 h-5 flex items-center justify-center" data-id="${layer.id}" title="表示切替">
-                        <i class="fa-solid ${layer.visible ? 'fa-eye' : 'fa-eye-slash'} text-[10px]"></i>
+                    <button class="layer-vis w-5 h-5 flex items-center justify-center shrink-0" data-id="${layer.id}" title="表示">
+                        <i class="fa-solid ${layer.visible !== false ? 'fa-eye' : 'fa-eye-slash'} text-[10px]"></i>
                     </button>
-                    <span class="flex-1 truncate layer-name" data-id="${layer.id}">${layer.name}</span>
+                    <i class="fa-solid ${isFolder ? 'fa-folder' : 'fa-layer-group'} text-[9px] text-geist-500"></i>
+                    <span class="flex-1 truncate layer-name" data-id="${layer.id}" title="ダブルクリックで改名">${layer.name}</span>
                 `;
                 row.querySelector('.layer-name').onclick = () => {
                     state.activeLayerId = layer.id;
                     renderLayerList();
                 };
+                row.querySelector('.layer-name').ondblclick = (e) => {
+                    e.stopPropagation();
+                    const span = e.currentTarget;
+                    const input = document.createElement('input');
+                    input.className = 'flex-1 bg-black/60 border border-white/20 rounded px-1 text-[11px] text-white outline-none min-w-0';
+                    input.value = layer.name;
+                    span.replaceWith(input);
+                    input.focus();
+                    input.select();
+                    const commit = () => {
+                        const v = input.value.trim();
+                        if (v) layer.name = v;
+                        renderLayerList();
+                    };
+                    input.onblur = commit;
+                    input.onkeydown = (ev) => {
+                        if (ev.key === 'Enter') { ev.preventDefault(); commit(); }
+                        if (ev.key === 'Escape') renderLayerList();
+                    };
+                };
                 row.querySelector('.layer-vis').onclick = (e) => {
                     e.stopPropagation();
-                    layer.visible = !layer.visible;
+                    layer.visible = layer.visible === false ? true : false;
                     renderLayerList();
                     render();
                 };
                 list.appendChild(row);
-            });
+                if (isFolder) {
+                    state.layers.filter(l => l.folderId === layer.id).forEach(ch => renderRow(ch, indent + 1));
+                }
+            };
+            // folders and root layers (non-folder without folderId), folders expanded
+            const folders = state.layers.filter(l => l.type === 'folder');
+            const top = state.layers.filter(l => l.type !== 'folder' && !l.folderId);
+            [...folders, ...top].reverse().forEach(l => renderRow(l, 0));
         }
 
         // ===== INTERACTION =====
@@ -1795,11 +2128,22 @@
             };
 
             if (state.tool === 'brush') {
+                if (state.mode === 'paint') {
+                    state._paintStroke = true;
+                    state._lastPaint = { x: world.x, y: world.y };
+                    stampPaintBrush(world.x, world.y, null);
+                    render();
+                    return;
+                }
                 state.currentObj = { ...base, type: 'path', points: [{ x: world.x, y: world.y }] };
                 state._stabBuf = [];
                 state.objects.push(state.currentObj);
-            } else if (state.tool === 'rect' || state.tool === 'circle') {
-                state.currentObj = { ...base, type: state.tool, x: world.x, y: world.y, w: 0, h: 0 };
+            } else if (['rect','roundrect','circle','triangle','star','hexagon'].includes(state.tool)) {
+                state.currentObj = {
+                    ...base, type: state.tool, x: world.x, y: world.y, w: 0, h: 0,
+                    cornerRadius: state.tool === 'roundrect' ? 16 : 0,
+                    rotation: 0, blur: 0, fill: null
+                };
                 state.objects.push(state.currentObj);
             } else if (state.tool === 'line' || state.tool === 'arrow') {
                 state.currentObj = { ...base, type: state.tool, x1: world.x, y1: world.y, x2: world.x, y2: world.y };
@@ -1911,6 +2255,13 @@
                 return;
             }
 
+            if (state._paintStroke) {
+                stampPaintBrush(world.x, world.y, state._lastPaint);
+                state._lastPaint = { x: world.x, y: world.y };
+                render();
+                return;
+            }
+
             if (state.tool === 'eraser') {
                 if (eraseAt(world.x, world.y)) state._erased = true;
                 render();
@@ -1933,11 +2284,11 @@
                         ny = sy / state._stabBuf.length;
                     }
                     const last = pts[pts.length - 1];
-                    const minDist = (state.paintPreset === 'pixel' ? Math.max(1, state.strokeWidth) : 1.5) / state.zoom;
+                    const minDist = (state.paintPreset === 'pixel' ? Math.max(1, state.strokeWidth) : 0.6) / state.zoom;
                     if (Math.hypot(nx - last.x, ny - last.y) > minDist) {
                         pts.push({ x: nx, y: ny });
                     }
-                } else if (state.currentObj.type === 'rect' || state.currentObj.type === 'circle') {
+                } else if (['rect','roundrect','circle','triangle','star','hexagon'].includes(state.currentObj.type)) {
                     state.currentObj.w = world.x - state.startWorld.x;
                     state.currentObj.h = world.y - state.startWorld.y;
                 } else if (state.currentObj.type === 'line' || state.currentObj.type === 'arrow') {
@@ -1986,7 +2337,7 @@
                     if (state.currentObj.type === 'path' && state.currentObj.points.length < 2) {
                         state.objects = state.objects.filter(o => o.id !== state.currentObj.id);
                     }
-                    if ((state.currentObj.type === 'rect' || state.currentObj.type === 'circle') &&
+                    if ((['rect','roundrect','circle','triangle','star','hexagon'].includes(state.currentObj.type)) &&
                         Math.abs(state.currentObj.w || 0) < 1 && Math.abs(state.currentObj.h || 0) < 1) {
                         state.objects = state.objects.filter(o => o.id !== state.currentObj.id);
                     }
@@ -2003,6 +2354,8 @@
             state._resizeHandle = null;
             state._resizeObjId = null;
             state._resizeStartBounds = null;
+            state._paintStroke = false;
+            state._lastPaint = null;
         }
 
         window.addEventListener('pointerup', endPointer);
@@ -2128,6 +2481,7 @@
                 tp.classList.toggle('hidden', !show);
                 tp.classList.toggle('flex', show);
             }
+            if (typeof syncObjectPropsUI === 'function') syncObjectPropsUI();
         }
 
         // ===== TEXT =====
@@ -2316,79 +2670,375 @@
             const newObjs = [];
             const layerId = state.activeLayerId;
 
-            svg.querySelectorAll('path').forEach(el => {
-                const d = el.getAttribute('d') || '';
-                const points = [];
-                const re = /[ML]\s*(-?[\d.]+)[,\s]+(-?[\d.]+)/gi;
-                let m;
-                while ((m = re.exec(d))) points.push({ x: +m[1], y: +m[2] });
-                if (points.length) {
-                    newObjs.push({
-                        id: uid(), type: 'path', points, layerId,
-                        color: el.getAttribute('stroke') || '#171717',
-                        strokeWidth: parseFloat(el.getAttribute('stroke-width')) || 2,
-                        opacity: parseFloat(el.getAttribute('opacity')) || 1
+            function attr(el, name, fallback) {
+                const v = el.getAttribute(name);
+                if (v == null || v === '') return fallback;
+                return v;
+            }
+            function num(el, name, fallback) {
+                const v = parseFloat(el.getAttribute(name));
+                return isNaN(v) ? fallback : v;
+            }
+            function strokeOf(el) {
+                let c = attr(el, 'stroke', null);
+                if (!c || c === 'none') c = attr(el, 'fill', '#171717');
+                if (c === 'none') c = '#171717';
+                return c;
+            }
+            function opacityOf(el) {
+                const o = num(el, 'opacity', 1);
+                const fo = num(el, 'fill-opacity', 1);
+                const so = num(el, 'stroke-opacity', 1);
+                return o * Math.min(fo, so);
+            }
+
+            // Parse SVG path d into bezier anchors + polyline fallback
+            function parsePathD(d) {
+                const commands = [];
+                const re = /([MmLlHhVvCcSsQqTtAaZz])|([+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?)/g;
+                let match, curCmd = null, nums = [];
+                const flush = () => {
+                    if (curCmd && nums.length) {
+                        commands.push({ cmd: curCmd, nums: nums.slice() });
+                        nums = [];
+                    }
+                };
+                while ((match = re.exec(d))) {
+                    if (match[1]) {
+                        if (curCmd) {
+                            // implicit repeat: keep same command type for leftover nums handled below
+                            if (nums.length) {
+                                commands.push({ cmd: curCmd, nums: nums.slice() });
+                                nums = [];
+                            }
+                        }
+                        curCmd = match[1];
+                        if (curCmd === 'Z' || curCmd === 'z') {
+                            commands.push({ cmd: curCmd, nums: [] });
+                            curCmd = null;
+                        }
+                    } else if (match[2]) {
+                        nums.push(parseFloat(match[2]));
+                    }
+                }
+                if (curCmd && nums.length) commands.push({ cmd: curCmd, nums });
+
+                // Expand into list of cubic segments / points
+                const anchors = [];
+                let cx = 0, cy = 0, startX = 0, startY = 0;
+                let lastCpX = 0, lastCpY = 0, lastCmd = '';
+                const closed = { value: false };
+
+                function addAnchor(x, y, inX, inY, outX, outY) {
+                    anchors.push({
+                        x, y,
+                        inX: inX || 0, inY: inY || 0,
+                        outX: outX || 0, outY: outY || 0
                     });
                 }
+
+                for (const { cmd, nums: n } of commands) {
+                    const abs = cmd === cmd.toUpperCase();
+                    const c = cmd.toUpperCase();
+                    let i = 0;
+                    if (c === 'M') {
+                        while (i + 1 < n.length) {
+                            let x = n[i++], y = n[i++];
+                            if (!abs) { x += cx; y += cy; }
+                            cx = x; cy = y;
+                            startX = x; startY = y;
+                            addAnchor(x, y, 0, 0, 0, 0);
+                            // subsequent pairs are L
+                            while (i + 1 < n.length) {
+                                let x2 = n[i++], y2 = n[i++];
+                                if (!abs) { x2 += cx; y2 += cy; }
+                                cx = x2; cy = y2;
+                                addAnchor(x2, y2, 0, 0, 0, 0);
+                            }
+                        }
+                    } else if (c === 'L') {
+                        while (i + 1 < n.length) {
+                            let x = n[i++], y = n[i++];
+                            if (!abs) { x += cx; y += cy; }
+                            cx = x; cy = y;
+                            addAnchor(x, y, 0, 0, 0, 0);
+                        }
+                    } else if (c === 'H') {
+                        while (i < n.length) {
+                            let x = n[i++];
+                            if (!abs) x += cx;
+                            cx = x;
+                            addAnchor(cx, cy, 0, 0, 0, 0);
+                        }
+                    } else if (c === 'V') {
+                        while (i < n.length) {
+                            let y = n[i++];
+                            if (!abs) y += cy;
+                            cy = y;
+                            addAnchor(cx, cy, 0, 0, 0, 0);
+                        }
+                    } else if (c === 'C') {
+                        while (i + 5 < n.length) {
+                            let x1 = n[i++], y1 = n[i++], x2 = n[i++], y2 = n[i++], x = n[i++], y = n[i++];
+                            if (!abs) {
+                                x1 += cx; y1 += cy; x2 += cx; y2 += cy; x += cx; y += cy;
+                            }
+                            // set out handle on previous anchor
+                            if (anchors.length) {
+                                const prev = anchors[anchors.length - 1];
+                                prev.outX = x1 - prev.x;
+                                prev.outY = y1 - prev.y;
+                            }
+                            addAnchor(x, y, x2 - x, y2 - y, 0, 0);
+                            lastCpX = x2; lastCpY = y2;
+                            cx = x; cy = y;
+                        }
+                    } else if (c === 'S') {
+                        while (i + 3 < n.length) {
+                            let x2 = n[i++], y2 = n[i++], x = n[i++], y = n[i++];
+                            if (!abs) { x2 += cx; y2 += cy; x += cx; y += cy; }
+                            // reflect previous control
+                            let x1 = cx, y1 = cy;
+                            if (lastCmd === 'C' || lastCmd === 'S') {
+                                x1 = cx + (cx - lastCpX);
+                                y1 = cy + (cy - lastCpY);
+                            }
+                            if (anchors.length) {
+                                const prev = anchors[anchors.length - 1];
+                                prev.outX = x1 - prev.x;
+                                prev.outY = y1 - prev.y;
+                            }
+                            addAnchor(x, y, x2 - x, y2 - y, 0, 0);
+                            lastCpX = x2; lastCpY = y2;
+                            cx = x; cy = y;
+                        }
+                    } else if (c === 'Q') {
+                        while (i + 3 < n.length) {
+                            let x1 = n[i++], y1 = n[i++], x = n[i++], y = n[i++];
+                            if (!abs) { x1 += cx; y1 += cy; x += cx; y += cy; }
+                            // convert quadratic to cubic
+                            const c1x = cx + (2/3) * (x1 - cx);
+                            const c1y = cy + (2/3) * (y1 - cy);
+                            const c2x = x + (2/3) * (x1 - x);
+                            const c2y = y + (2/3) * (y1 - y);
+                            if (anchors.length) {
+                                const prev = anchors[anchors.length - 1];
+                                prev.outX = c1x - prev.x;
+                                prev.outY = c1y - prev.y;
+                            }
+                            addAnchor(x, y, c2x - x, c2y - y, 0, 0);
+                            lastCpX = x1; lastCpY = y1;
+                            cx = x; cy = y;
+                        }
+                    } else if (c === 'T') {
+                        while (i + 1 < n.length) {
+                            let x = n[i++], y = n[i++];
+                            if (!abs) { x += cx; y += cy; }
+                            let x1 = cx, y1 = cy;
+                            if (lastCmd === 'Q' || lastCmd === 'T') {
+                                x1 = cx + (cx - lastCpX);
+                                y1 = cy + (cy - lastCpY);
+                            }
+                            const c1x = cx + (2/3) * (x1 - cx);
+                            const c1y = cy + (2/3) * (y1 - cy);
+                            const c2x = x + (2/3) * (x1 - x);
+                            const c2y = y + (2/3) * (y1 - y);
+                            if (anchors.length) {
+                                const prev = anchors[anchors.length - 1];
+                                prev.outX = c1x - prev.x;
+                                prev.outY = c1y - prev.y;
+                            }
+                            addAnchor(x, y, c2x - x, c2y - y, 0, 0);
+                            lastCpX = x1; lastCpY = y1;
+                            cx = x; cy = y;
+                        }
+                    } else if (c === 'Z') {
+                        closed.value = true;
+                        cx = startX; cy = startY;
+                    }
+                    lastCmd = c;
+                }
+                return { anchors, closed: closed.value };
+            }
+
+            svg.querySelectorAll('path').forEach(el => {
+                const d = el.getAttribute('d') || '';
+                if (!d.trim()) return;
+                const { anchors, closed } = parsePathD(d);
+                if (anchors.length < 1) return;
+                const hasCurves = anchors.some(a => a.inX || a.inY || a.outX || a.outY);
+                const fill = attr(el, 'fill', 'none');
+                newObjs.push({
+                    id: uid(),
+                    type: hasCurves || closed ? 'bezier' : 'path',
+                    anchors: hasCurves || closed ? anchors : undefined,
+                    points: !hasCurves && !closed ? anchors.map(a => ({ x: a.x, y: a.y })) : undefined,
+                    closed: closed || false,
+                    fill: fill !== 'none' ? fill : null,
+                    layerId,
+                    color: strokeOf(el),
+                    strokeWidth: num(el, 'stroke-width', 2),
+                    opacity: opacityOf(el)
+                });
             });
+
             svg.querySelectorAll('rect').forEach(el => {
-                if (el.getAttribute('fill') && el.getAttribute('fill') !== 'none' && !el.getAttribute('stroke')) return; // bg skip rough
                 newObjs.push({
                     id: uid(), type: 'rect', layerId,
-                    x: parseFloat(el.getAttribute('x')) || 0,
-                    y: parseFloat(el.getAttribute('y')) || 0,
-                    w: parseFloat(el.getAttribute('width')) || 0,
-                    h: parseFloat(el.getAttribute('height')) || 0,
-                    color: el.getAttribute('stroke') || '#171717',
-                    strokeWidth: parseFloat(el.getAttribute('stroke-width')) || 2,
-                    opacity: parseFloat(el.getAttribute('opacity')) || 1
+                    x: num(el, 'x', 0), y: num(el, 'y', 0),
+                    w: num(el, 'width', 0), h: num(el, 'height', 0),
+                    color: strokeOf(el),
+                    fill: attr(el, 'fill', null) !== 'none' ? attr(el, 'fill', null) : null,
+                    strokeWidth: num(el, 'stroke-width', 2),
+                    opacity: opacityOf(el)
                 });
             });
             svg.querySelectorAll('circle').forEach(el => {
-                const r = parseFloat(el.getAttribute('r')) || 0;
+                const r = num(el, 'r', 0);
                 newObjs.push({
                     id: uid(), type: 'circle', layerId,
-                    x: parseFloat(el.getAttribute('cx')) || 0,
-                    y: parseFloat(el.getAttribute('cy')) || 0,
-                    w: r, h: 0,
-                    color: el.getAttribute('stroke') || '#171717',
-                    strokeWidth: parseFloat(el.getAttribute('stroke-width')) || 2,
-                    opacity: parseFloat(el.getAttribute('opacity')) || 1
+                    x: num(el, 'cx', 0), y: num(el, 'cy', 0),
+                    w: r, h: r,
+                    color: strokeOf(el),
+                    fill: attr(el, 'fill', null) !== 'none' ? attr(el, 'fill', null) : null,
+                    strokeWidth: num(el, 'stroke-width', 2),
+                    opacity: opacityOf(el)
+                });
+            });
+            svg.querySelectorAll('ellipse').forEach(el => {
+                newObjs.push({
+                    id: uid(), type: 'circle', layerId,
+                    x: num(el, 'cx', 0), y: num(el, 'cy', 0),
+                    w: num(el, 'rx', 0), h: num(el, 'ry', 0),
+                    color: strokeOf(el),
+                    strokeWidth: num(el, 'stroke-width', 2),
+                    opacity: opacityOf(el)
                 });
             });
             svg.querySelectorAll('line').forEach(el => {
                 newObjs.push({
                     id: uid(), type: 'line', layerId,
-                    x1: parseFloat(el.getAttribute('x1')) || 0,
-                    y1: parseFloat(el.getAttribute('y1')) || 0,
-                    x2: parseFloat(el.getAttribute('x2')) || 0,
-                    y2: parseFloat(el.getAttribute('y2')) || 0,
-                    color: el.getAttribute('stroke') || '#171717',
-                    strokeWidth: parseFloat(el.getAttribute('stroke-width')) || 2,
-                    opacity: parseFloat(el.getAttribute('opacity')) || 1
+                    x1: num(el, 'x1', 0), y1: num(el, 'y1', 0),
+                    x2: num(el, 'x2', 0), y2: num(el, 'y2', 0),
+                    color: strokeOf(el),
+                    strokeWidth: num(el, 'stroke-width', 2),
+                    opacity: opacityOf(el)
+                });
+            });
+            svg.querySelectorAll('polyline, polygon').forEach(el => {
+                const pts = (el.getAttribute('points') || '').trim().split(/[\s,]+/).map(Number).filter(n => !isNaN(n));
+                const points = [];
+                for (let i = 0; i + 1 < pts.length; i += 2) points.push({ x: pts[i], y: pts[i + 1] });
+                if (!points.length) return;
+                const isPoly = el.tagName.toLowerCase() === 'polygon';
+                newObjs.push({
+                    id: uid(), type: 'path', points, layerId,
+                    color: strokeOf(el),
+                    strokeWidth: num(el, 'stroke-width', 2),
+                    opacity: opacityOf(el),
+                    closed: isPoly
                 });
             });
             svg.querySelectorAll('text').forEach(el => {
                 newObjs.push({
                     id: uid(), type: 'text', layerId,
-                    x: parseFloat(el.getAttribute('x')) || 0,
-                    y: parseFloat(el.getAttribute('y')) || 0,
+                    x: num(el, 'x', 0), y: num(el, 'y', 0),
                     text: el.textContent || '',
-                    fontSize: parseFloat(el.getAttribute('font-size')) || 22,
-                    fontFamily: (el.getAttribute('font-family') || 'Inter').split(',')[0].replace(/['"]/g, '').trim() || 'Inter',
-                    fontWeight: el.getAttribute('font-weight') || '400',
-                    color: el.getAttribute('fill') || '#171717',
-                    opacity: parseFloat(el.getAttribute('opacity')) || 1
+                    fontSize: num(el, 'font-size', 22),
+                    fontFamily: (attr(el, 'font-family', 'Inter')).split(',')[0].replace(/['"]/g, '').trim() || 'Inter',
+                    fontWeight: attr(el, 'font-weight', '400'),
+                    color: attr(el, 'fill', '#171717'),
+                    opacity: opacityOf(el)
+                });
+            });
+
+            // Also accept embedded raster images in SVG
+            svg.querySelectorAll('image').forEach(el => {
+                const href = el.getAttribute('href') || el.getAttributeNS('http://www.w3.org/1999/xlink', 'href') || '';
+                if (!href) return;
+                newObjs.push({
+                    id: uid(), type: 'image', layerId,
+                    src: href,
+                    x: num(el, 'x', 0), y: num(el, 'y', 0),
+                    w: num(el, 'width', 100), h: num(el, 'height', 100),
+                    opacity: opacityOf(el)
                 });
             });
 
             if (!newObjs.length) { alert('読み込める図形が見つかりませんでした'); return; }
             pushHistory();
             state.objects = state.objects.concat(newObjs);
+            // fit view to imported content
+            let minx = Infinity, miny = Infinity, maxx = -Infinity, maxy = -Infinity;
+            newObjs.forEach(o => {
+                const b = getBounds(o);
+                if (!b) return;
+                minx = Math.min(minx, b.x); miny = Math.min(miny, b.y);
+                maxx = Math.max(maxx, b.x + b.w); maxy = Math.max(maxy, b.y + b.h);
+            });
+            if (isFinite(minx)) {
+                const pad = 40;
+                const vw = window.innerWidth, vh = window.innerHeight;
+                const bw = Math.max(1, maxx - minx), bh = Math.max(1, maxy - miny);
+                const z = Math.min((vw - pad * 2) / bw, (vh - pad * 2) / bh, 4);
+                state.zoom = Math.max(0.05, z);
+                state.panX = (vw - bw * state.zoom) / 2 - minx * state.zoom;
+                state.panY = (vh - bh * state.zoom) / 2 - miny * state.zoom;
+            }
             render();
         }
 
-        // ===== UI BINDINGS =====
+        function importImageFile(file) {
+            const reader = new FileReader();
+            reader.onload = () => {
+                const img = new Image();
+                img.onload = () => {
+                    pushHistory();
+                    const maxDim = 800;
+                    let w = img.width, h = img.height;
+                    if (w > maxDim || h > maxDim) {
+                        const s = maxDim / Math.max(w, h);
+                        w *= s; h *= s;
+                    }
+                    const world = screenToWorld(window.innerWidth / 2, window.innerHeight / 2);
+                    state.objects.push({
+                        id: uid(), type: 'image',
+                        src: reader.result,
+                        x: world.x - w / 2, y: world.y - h / 2,
+                        w, h, opacity: 1, layerId: state.activeLayerId
+                    });
+                    render();
+                };
+                img.src = reader.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function handleIncomingFile(file) {
+            if (!file) return;
+            const name = (file.name || '').toLowerCase();
+            const type = file.type || '';
+            if (name.endsWith('.svg') || type.includes('svg')) {
+                const reader = new FileReader();
+                reader.onload = () => parseSVG(reader.result);
+                reader.readAsText(file);
+            } else if (name.endsWith('.json') || type.includes('json')) {
+                loadProjectFile(file);
+            } else if (type.startsWith('image/') || /\.(png|jpe?g|gif|webp|bmp)$/i.test(name)) {
+                importImageFile(file);
+            } else {
+                // try as SVG text
+                const reader = new FileReader();
+                reader.onload = () => {
+                    const t = reader.result;
+                    if (typeof t === 'string' && t.includes('<svg')) parseSVG(t);
+                    else alert('対応形式: SVG / PNG / JPEG / JSON プロジェクト');
+                };
+                reader.readAsText(file);
+            }
+        }
+
+                // ===== UI BINDINGS =====
         document.getElementById('mode-vector-btn').onclick = () => setMode('vector');
         document.getElementById('mode-paint-btn').onclick = () => setMode('paint');
 
@@ -2469,8 +3119,120 @@
         document.getElementById('size-slider').oninput = (e) => {
             state.strokeWidth = +e.target.value;
             document.getElementById('size-val').textContent = state.strokeWidth;
+            const sn = document.getElementById('size-num');
+            if (sn) sn.value = state.strokeWidth;
             updateCursor();
         };
+        const sizeNum = document.getElementById('size-num');
+        if (sizeNum) {
+            sizeNum.onchange = sizeNum.oninput = (e) => {
+                let v = parseFloat(e.target.value);
+                if (isNaN(v) || v < 0.5) v = 0.5;
+                if (v > 2000) v = 2000;
+                state.strokeWidth = v;
+                document.getElementById('size-val').textContent = v;
+                const sl = document.getElementById('size-slider');
+                if (sl) sl.value = Math.min(500, v);
+                updateCursor();
+            };
+        }
+
+        function selectedObjects() {
+            return state.objects.filter(o => state.selectedIds.has(o.id));
+        }
+        function applyToSelected(mut) {
+            const targets = selectedObjects();
+            if (!targets.length) return;
+            pushHistory();
+            targets.forEach(mut);
+            render();
+            syncObjectPropsUI();
+        }
+        function syncObjectPropsUI() {
+            const panel = document.getElementById('object-props');
+            if (!panel) return;
+            const targets = selectedObjects();
+            const show = targets.length > 0;
+            panel.classList.toggle('hidden', !show);
+            panel.classList.toggle('flex', show);
+            if (!show) return;
+            const o = targets[0];
+            const set = (id, val, labelId, fmt) => {
+                const el = document.getElementById(id);
+                if (el) el.value = val;
+                const lab = document.getElementById(labelId);
+                if (lab) lab.textContent = fmt ? fmt(val) : val;
+            };
+            set('radius-slider', o.cornerRadius || 0, 'radius-val');
+            set('blur-slider', o.blur || 0, 'blur-val');
+            set('rotate-slider', o.rotation || 0, 'rotate-val', v => v + '°');
+        }
+        const radiusSl = document.getElementById('radius-slider');
+        if (radiusSl) radiusSl.oninput = (e) => {
+            const v = +e.target.value;
+            document.getElementById('radius-val').textContent = v;
+            selectedObjects().forEach(o => { o.cornerRadius = v; if (o.type === 'rect') o.type = 'roundrect'; });
+            render();
+        };
+        const blurSl = document.getElementById('blur-slider');
+        if (blurSl) blurSl.oninput = (e) => {
+            const v = +e.target.value;
+            document.getElementById('blur-val').textContent = v;
+            selectedObjects().forEach(o => { o.blur = v; });
+            render();
+        };
+        const rotSl = document.getElementById('rotate-slider');
+        if (rotSl) rotSl.oninput = (e) => {
+            const v = +e.target.value;
+            document.getElementById('rotate-val').textContent = v + '°';
+            selectedObjects().forEach(o => { o.rotation = v; });
+            render();
+        };
+        // commit history on pointerup of prop sliders
+        ['radius-slider','blur-slider','rotate-slider'].forEach(id => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.addEventListener('pointerdown', () => pushHistory());
+        });
+        document.getElementById('btn-flip-h') && (document.getElementById('btn-flip-h').onclick = () => {
+            applyToSelected(o => {
+                if (o.type === 'path' && o.points) {
+                    const b = getBounds(o); const cx = b.x + b.w / 2;
+                    o.points.forEach(p => { p.x = cx - (p.x - cx); });
+                } else if (o.w != null) o.w = -o.w;
+            });
+        });
+        document.getElementById('btn-flip-v') && (document.getElementById('btn-flip-v').onclick = () => {
+            applyToSelected(o => {
+                if (o.type === 'path' && o.points) {
+                    const b = getBounds(o); const cy = b.y + b.h / 2;
+                    o.points.forEach(p => { p.y = cy - (p.y - cy); });
+                } else if (o.h != null) o.h = -o.h;
+            });
+        });
+        document.getElementById('btn-use-mask') && (document.getElementById('btn-use-mask').onclick = () => {
+            const targets = selectedObjects();
+            if (targets.length < 1) return alert('マスクに使うオブジェクトを選択してください');
+            // top selected becomes mask for others below in z-order, or mask for next lower
+            const mask = targets[0];
+            const others = state.objects.filter(o => o.id !== mask.id && state.selectedIds.has(o.id));
+            if (others.length) {
+                pushHistory();
+                others.forEach(o => { o.maskId = mask.id; });
+            } else {
+                // apply mask to all objects under mask in list
+                const idx = state.objects.findIndex(o => o.id === mask.id);
+                if (idx > 0) {
+                    pushHistory();
+                    state.objects[idx - 1].maskId = mask.id;
+                } else alert('マスク対象のオブジェクトも選択するか、下にオブジェクトを置いてください');
+            }
+            render();
+        });
+        document.getElementById('btn-clear-mask') && (document.getElementById('btn-clear-mask').onclick = () => {
+            applyToSelected(o => { delete o.maskId; });
+        });
+
         const stabSl = document.getElementById('stabilize-slider');
         if (stabSl) stabSl.oninput = (e) => {
             state.stabilize = +e.target.value;
@@ -2564,10 +3326,20 @@
         };
 
         document.getElementById('btn-add-layer').onclick = () => {
-            const n = state.layers.length + 1;
+            const n = state.layers.filter(l => l.type !== 'folder').length + 1;
             const layer = { id: uid(), name: 'Layer ' + n, visible: true };
             state.layers.push(layer);
             state.activeLayerId = layer.id;
+            renderLayerList();
+        };
+        const btnFolder = document.getElementById('btn-add-folder');
+        if (btnFolder) btnFolder.onclick = () => {
+            const n = state.layers.filter(l => l.type === 'folder').length + 1;
+            const folder = { id: uid(), name: 'Folder ' + n, visible: true, type: 'folder' };
+            state.layers.push(folder);
+            // nest active layer into folder if any
+            const active = state.layers.find(l => l.id === state.activeLayerId);
+            if (active && active.type !== 'folder') active.folderId = folder.id;
             renderLayerList();
         };
 
@@ -2593,10 +3365,24 @@
         };
         document.getElementById('file-input').onchange = (e) => {
             const f = e.target.files && e.target.files[0];
-            if (f) loadProjectFile(f);
+            if (f) handleIncomingFile(f);
             e.target.value = '';
             exportMenu.classList.add('hidden');
         };
+        const imageInput = document.getElementById('image-input');
+        const btnInsertImage = document.getElementById('btn-insert-image');
+        if (btnInsertImage && imageInput) {
+            btnInsertImage.onclick = (e) => {
+                e.stopPropagation();
+                imageInput.click();
+            };
+            imageInput.onchange = (e) => {
+                const f = e.target.files && e.target.files[0];
+                if (f) handleIncomingFile(f);
+                e.target.value = '';
+                exportMenu.classList.add('hidden');
+            };
+        }
 
         document.getElementById('zoom-in').onclick = () => { state.zoom = Math.min(16, state.zoom * 1.2); render(); };
         document.getElementById('zoom-out').onclick = () => { state.zoom = Math.max(0.08, state.zoom / 1.2); render(); };
@@ -2674,6 +3460,165 @@
         container.addEventListener('pointerdown', () => {
             if (!propsPanel.classList.contains('hidden')) closeProps();
         });
+
+
+        // Drag & drop SVG / images / project
+        ['dragenter', 'dragover'].forEach(ev => {
+            window.addEventListener(ev, e => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'copy';
+            });
+        });
+        window.addEventListener('drop', e => {
+            e.preventDefault();
+            const files = e.dataTransfer && e.dataTransfer.files;
+            if (!files || !files.length) {
+                // maybe SVG text
+                const text = e.dataTransfer.getData('text/plain') || e.dataTransfer.getData('text/html');
+                if (text && text.includes('<svg')) parseSVG(text);
+                return;
+            }
+            Array.from(files).forEach(f => handleIncomingFile(f));
+        });
+
+        // Paste image / svg
+        window.addEventListener('paste', e => {
+            const items = e.clipboardData && e.clipboardData.items;
+            if (!items) return;
+            for (const it of items) {
+                if (it.type.startsWith('image/')) {
+                    const f = it.getAsFile();
+                    if (f) handleIncomingFile(f);
+                    return;
+                }
+                if (it.type === 'text/plain') {
+                    it.getAsString(s => {
+                        if (s && s.includes('<svg')) parseSVG(s);
+                    });
+                }
+            }
+        });
+
+
+        // Settings & profiles
+        const settingsModal = document.getElementById('settings-modal');
+        const openSettings = () => {
+            if (!settingsModal) return;
+            settingsModal.classList.remove('hidden');
+            settingsModal.classList.add('flex');
+            renderProfileList();
+            document.getElementById('pixel-grid-toggle').checked = !!state.pixelGrid;
+            document.getElementById('pixel-snap-toggle').checked = !!state.pixelSnap;
+            document.getElementById('maxhist-slider').value = state.maxHistory;
+            document.getElementById('maxhist-val').textContent = state.maxHistory;
+        };
+        const closeSettings = () => {
+            if (!settingsModal) return;
+            settingsModal.classList.add('hidden');
+            settingsModal.classList.remove('flex');
+        };
+        document.getElementById('btn-settings') && (document.getElementById('btn-settings').onclick = openSettings);
+        document.getElementById('settings-close') && (document.getElementById('settings-close').onclick = closeSettings);
+        settingsModal && settingsModal.addEventListener('click', (e) => { if (e.target === settingsModal) closeSettings(); });
+
+        function getProfiles() {
+            try { return JSON.parse(localStorage.getItem('infiniteStudioProfiles') || '{}'); }
+            catch { return {}; }
+        }
+        function saveProfiles(p) {
+            localStorage.setItem('infiniteStudioProfiles', JSON.stringify(p));
+        }
+        function currentProfileData() {
+            return {
+                strokeWidth: state.strokeWidth,
+                color: state.color,
+                opacity: state.opacity,
+                paintPreset: state.paintPreset,
+                stabilize: state.stabilize,
+                hardness: state.hardness,
+                canvasBg: state.canvasBg,
+                gridMode: state.gridMode,
+                maxHistory: state.maxHistory,
+                pixelGrid: state.pixelGrid,
+                pixelSnap: state.pixelSnap,
+                fontFamily: state.fontFamily,
+                fontSize: state.fontSize,
+                fontWeight: state.fontWeight
+            };
+        }
+        function applyProfileData(d) {
+            if (!d) return;
+            Object.keys(d).forEach(k => { if (k in state || k === 'paintPreset') state[k] = d[k]; });
+            if (d.strokeWidth) {
+                document.getElementById('size-slider').value = Math.min(500, d.strokeWidth);
+                document.getElementById('size-val').textContent = d.strokeWidth;
+                const sn = document.getElementById('size-num'); if (sn) sn.value = d.strokeWidth;
+            }
+            if (d.color) setColor(d.color);
+            render();
+        }
+        function renderProfileList() {
+            const box = document.getElementById('profile-list');
+            if (!box) return;
+            const profiles = getProfiles();
+            box.innerHTML = '';
+            Object.keys(profiles).forEach(name => {
+                const row = document.createElement('div');
+                row.className = 'flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-white/5';
+                row.innerHTML = `<span class="flex-1 truncate text-geist-200">${name}</span>
+                    <button class="text-[10px] text-geist-400 hover:text-white load-p">読込</button>
+                    <button class="text-[10px] text-rose-400 hover:text-rose-300 del-p">削除</button>`;
+                row.querySelector('.load-p').onclick = () => {
+                    applyProfileData(profiles[name]);
+                    document.getElementById('profile-name').value = name;
+                    closeSettings();
+                };
+                row.querySelector('.del-p').onclick = () => {
+                    delete profiles[name];
+                    saveProfiles(profiles);
+                    renderProfileList();
+                };
+                box.appendChild(row);
+            });
+            if (!Object.keys(profiles).length) {
+                box.innerHTML = '<div class="text-geist-600 px-2">保存済みプロファイルなし</div>';
+            }
+        }
+        document.getElementById('btn-save-profile') && (document.getElementById('btn-save-profile').onclick = () => {
+            const name = (document.getElementById('profile-name').value || '').trim() || ('Profile ' + new Date().toLocaleString());
+            const profiles = getProfiles();
+            profiles[name] = currentProfileData();
+            saveProfiles(profiles);
+            renderProfileList();
+            alert('「' + name + '」を保存しました');
+        });
+        document.getElementById('btn-load-profile') && (document.getElementById('btn-load-profile').onclick = () => {
+            const name = (document.getElementById('profile-name').value || '').trim();
+            const profiles = getProfiles();
+            if (!name || !profiles[name]) { alert('プロファイル名を選ぶか入力してください'); return; }
+            applyProfileData(profiles[name]);
+            closeSettings();
+        });
+        document.querySelectorAll('.bg-btn').forEach(b => {
+            b.onclick = () => {
+                state.canvasBg = b.dataset.bg === 'transparent' ? '#0A0A0A' : b.dataset.bg;
+                if (b.dataset.bg === 'transparent') state.canvasBg = '#ffffff';
+                state.canvasBg = b.dataset.bg === 'transparent' ? 'transparent' : b.dataset.bg;
+                render();
+            };
+        });
+        document.getElementById('pixel-grid-toggle') && (document.getElementById('pixel-grid-toggle').onchange = (e) => {
+            state.pixelGrid = e.target.checked;
+            render();
+        });
+        document.getElementById('pixel-snap-toggle') && (document.getElementById('pixel-snap-toggle').onchange = (e) => {
+            state.pixelSnap = e.target.checked;
+        });
+        document.getElementById('maxhist-slider') && (document.getElementById('maxhist-slider').oninput = (e) => {
+            state.maxHistory = +e.target.value;
+            document.getElementById('maxhist-val').textContent = state.maxHistory;
+        });
+
 
         // Init
         renderPalette('mono');
