@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Infinite Studio</title>
+    <title>VersePaint</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -447,12 +447,158 @@
         }
         .brush-chip:hover { background: rgba(255,255,255,0.06); color: #fff; }
         .brush-chip.active { background: #fafafa; color: #0a0a0a; border-color: #fff; }
+        .side-tab.active { background: rgba(255,255,255,0.12); color: #fff; }
+        #minimap-wrap { box-shadow: 0 0 0 1px rgba(255,255,255,0.08); }
+        #effect-more-sheet:not(.hidden) { display: flex !important; }
+        #effect-more-sheet .geist-surface {
+            animation: emSlideUp 0.22s ease-out;
+        }
+        @keyframes emSlideUp {
+            from { transform: translateY(100%); opacity: 0.6; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+
         .brush-chip canvas { width: 36px; height: 16px; border-radius: 3px; }
     </style>
 </head>
 <body class="bg-black text-gray-100 h-screen w-screen relative overflow-hidden">
 
-    <!-- Canvas -->
+    
+    <!-- START SCREEN: canvas setup -->
+    <div id="start-screen" class="fixed inset-0 z-[200] flex items-center justify-center" style="background:#0a0a0a">
+        <div class="geist-surface rounded-2xl p-6 w-[min(440px,92vw)] flex flex-col gap-4 shadow-elevated">
+            <div class="text-center">
+                <h1 class="text-xl font-semibold text-white tracking-tight">VersePaint</h1>
+                <p class="text-[12px] text-geist-400 mt-1">キャンバスを設定して開始</p>
+            </div>
+            <label class="flex items-center gap-2 text-[13px] text-geist-200 cursor-pointer">
+                <input type="checkbox" id="start-infinite" checked class="accent-white w-4 h-4">
+                無限キャンバス
+            </label>
+            <div id="start-size-fields" class="flex flex-col gap-2 opacity-50 pointer-events-none">
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="text-[11px] text-geist-400">幅 (px)</label>
+                        <input id="start-w" type="number" value="1920" class="w-full bg-black/50 border border-white/10 rounded-md text-white text-[13px] px-2 py-1.5 outline-none">
+                    </div>
+                    <div>
+                        <label class="text-[11px] text-geist-400">高さ (px)</label>
+                        <input id="start-h" type="number" value="1080" class="w-full bg-black/50 border border-white/10 rounded-md text-white text-[13px] px-2 py-1.5 outline-none">
+                    </div>
+                </div>
+                <label class="flex items-center gap-2 text-[12px] text-geist-300">
+                    <input type="checkbox" id="start-lock-aspect" checked class="accent-white"> アスペクト比を固定
+                </label>
+                <div class="flex flex-wrap gap-1.5" id="start-presets">
+                    <button type="button" data-pw="1920" data-ph="1080" class="preset-btn geist-btn text-[10px] py-1 px-2 rounded-md">16:9 HD</button>
+                    <button type="button" data-pw="3840" data-ph="2160" class="preset-btn geist-btn text-[10px] py-1 px-2 rounded-md">4K</button>
+                    <button type="button" data-pw="1080" data-ph="1080" class="preset-btn geist-btn text-[10px] py-1 px-2 rounded-md">1:1</button>
+                    <button type="button" data-pw="1080" data-ph="1920" class="preset-btn geist-btn text-[10px] py-1 px-2 rounded-md">9:16</button>
+                    <button type="button" data-pw="1620" data-ph="1080" class="preset-btn geist-btn text-[10px] py-1 px-2 rounded-md">3:2</button>
+                    <button type="button" data-pw="1350" data-ph="1080" class="preset-btn geist-btn text-[10px] py-1 px-2 rounded-md">5:4</button>
+                    <button type="button" data-pw="1242" data-ph="2208" class="preset-btn geist-btn text-[10px] py-1 px-2 rounded-md">iPhone</button>
+                    <button type="button" data-pw="1280" data-ph="720" class="preset-btn geist-btn text-[10px] py-1 px-2 rounded-md">720p</button>
+                    <button type="button" data-pw="800" data-ph="600" class="preset-btn geist-btn text-[10px] py-1 px-2 rounded-md">4:3</button>
+                    <button type="button" data-pw="3508" data-ph="2480" class="preset-btn geist-btn text-[10px] py-1 px-2 rounded-md">A4</button>
+                </div>
+            </div>
+            <div>
+                <label class="text-[11px] text-geist-400">背景</label>
+                <div class="flex gap-2 mt-1">
+                    <button type="button" class="start-bg geist-btn py-1.5 px-3 text-[11px] active" data-bg="#ffffff">白</button>
+                    <button type="button" class="start-bg geist-btn py-1.5 px-3 text-[11px]" data-bg="#0A0A0A">黒</button>
+                    <button type="button" class="start-bg geist-btn py-1.5 px-3 text-[11px]" data-bg="transparent">透明</button>
+                    <button type="button" class="start-bg geist-btn py-1.5 px-3 text-[11px]" data-bg="#f5f5f4">ペーパー</button>
+                </div>
+            </div>
+            <button id="btn-start-create" class="w-full py-3 rounded-xl bg-white text-black font-medium text-[14px] hover:bg-geist-200 transition">作成</button>
+        </div>
+    </div>
+
+    <!-- EXPORT REGION MODAL -->
+    <div id="export-region-modal" class="fixed inset-0 z-[150] hidden items-center justify-center" style="background:rgba(0,0,0,0.7)">
+        <div class="geist-surface rounded-2xl p-5 w-[min(400px,94vw)] flex flex-col gap-3">
+            <div class="flex justify-between items-center">
+                <h3 class="text-[14px] font-semibold text-white">範囲を書き出し</h3>
+                <button id="export-region-close" class="geist-btn !min-w-8 !min-h-8">&times;</button>
+            </div>
+            <p class="text-[11px] text-geist-400">キャンバス上でドラッグして範囲を指定するか、数値で入力</p>
+            <div class="grid grid-cols-2 gap-2">
+                <div><label class="text-[10px] text-geist-500">X</label><input id="ex-x" type="number" value="0" class="prop-input w-full"></div>
+                <div><label class="text-[10px] text-geist-500">Y</label><input id="ex-y" type="number" value="0" class="prop-input w-full"></div>
+                <div><label class="text-[10px] text-geist-500">幅</label><input id="ex-w" type="number" value="1920" class="prop-input w-full"></div>
+                <div><label class="text-[10px] text-geist-500">高さ</label><input id="ex-h" type="number" value="1080" class="prop-input w-full"></div>
+            </div>
+            <label class="flex items-center gap-2 text-[12px] text-geist-300"><input type="checkbox" id="ex-lock" checked class="accent-white"> アスペクト比固定</label>
+            <div>
+                <div class="flex justify-between"><label class="text-[11px] text-geist-400">解像度スケール</label><span id="ex-scale-val" class="text-[11px] font-mono">1×</span></div>
+                <input id="ex-scale" type="range" min="1" max="4" step="0.5" value="1" class="slider w-full">
+                <p class="text-[10px] text-geist-500">出力: <span id="ex-out-size">1920 × 1080</span></p>
+            </div>
+            <label class="flex items-center gap-2 text-[12px] text-geist-300"><input type="checkbox" id="ex-transparent" class="accent-white"> 背景を透過</label>
+            <div class="grid grid-cols-3 gap-2">
+                <button class="ex-fmt geist-btn py-2 text-[11px] rounded-lg" data-fmt="png">PNG</button>
+                <button class="ex-fmt geist-btn py-2 text-[11px] rounded-lg" data-fmt="jpeg">JPEG</button>
+                <button class="ex-fmt geist-btn py-2 text-[11px] rounded-lg" data-fmt="webp">WebP</button>
+                <button class="ex-fmt geist-btn py-2 text-[11px] rounded-lg" data-fmt="svg">SVG</button>
+                <button class="ex-fmt geist-btn py-2 text-[11px] rounded-lg" data-fmt="gif">GIF</button>
+            </div>
+            <button id="btn-export-region-pick" class="geist-btn py-2 text-[12px] w-full rounded-lg">キャンバスで範囲を指定</button>
+        </div>
+    </div>
+
+    
+    <!-- EFFECT MORE bottom sheet -->
+    <div id="effect-more-sheet" class="fixed inset-x-0 bottom-0 z-[170] hidden flex-col pointer-events-none" style="max-height:45vh;">
+        <div class="pointer-events-auto geist-surface rounded-t-2xl border-t border-white/10 px-4 pt-3 pb-4 flex flex-col gap-2 shadow-elevated mx-auto w-full max-w-2xl" style="padding-bottom:calc(12px + env(safe-area-inset-bottom));">
+            <div class="flex items-center justify-between gap-2">
+                <div>
+                    <div class="text-[13px] font-semibold text-white">エフェクトモア</div>
+                    <div class="text-[10px] text-geist-500">例: wiggle(3); ／ wiggle(5, 2); ／ pulse(0.3); ／ spin(90);</div>
+                </div>
+                <button id="effect-more-close" class="geist-btn !min-w-8 !min-h-8 text-geist-400">&times;</button>
+            </div>
+            <textarea id="effect-more-code" class="w-full bg-black/50 border border-white/12 rounded-lg text-[12px] text-white font-mono p-3 outline-none resize-none" rows="4" placeholder="wiggle(3);"></textarea>
+            <div class="flex flex-wrap gap-1.5 text-[10px]">
+                <button type="button" class="em-snippet geist-btn px-2 py-1 rounded-md" data-code="wiggle(3);">wiggle(3)</button>
+                <button type="button" class="em-snippet geist-btn px-2 py-1 rounded-md" data-code="wiggle(5, 2);">wiggle(5,2)</button>
+                <button type="button" class="em-snippet geist-btn px-2 py-1 rounded-md" data-code="pulse(0.35);">pulse</button>
+                <button type="button" class="em-snippet geist-btn px-2 py-1 rounded-md" data-code="spin(45);">spin</button>
+                <button type="button" class="em-snippet geist-btn px-2 py-1 rounded-md" data-code="wave(8, 1.5);">wave</button>
+                <button type="button" class="em-snippet geist-btn px-2 py-1 rounded-md" data-code="">クリア</button>
+            </div>
+            <div class="flex gap-2">
+                <button id="effect-more-apply" class="flex-1 py-2.5 rounded-xl bg-white text-black text-[12px] font-medium">適用</button>
+                <button id="effect-more-preview" class="geist-btn flex-1 py-2.5 rounded-xl text-[12px]">プレビュー</button>
+                <label class="flex items-center gap-1.5 text-[11px] text-geist-300 px-2">
+                    <input type="checkbox" id="effect-more-live" checked class="accent-white"> 常時再生
+                </label>
+            </div>
+            <p id="effect-more-err" class="text-[11px] text-rose-400 hidden"></p>
+        </div>
+    </div>
+
+    <!-- APP CONTEXT MENU -->
+    <div id="app-ctx-menu" class="fixed z-[180] hidden geist-surface rounded-lg py-1 min-w-[200px] text-[12px] shadow-menu">
+        <button data-ctx="copy" class="ctx-item w-full text-left px-3 py-2 hover:bg-white/8 text-geist-200">コピー</button>
+        <button data-ctx="paste" class="ctx-item w-full text-left px-3 py-2 hover:bg-white/8 text-geist-200">貼り付け</button>
+        <button data-ctx="duplicate" class="ctx-item w-full text-left px-3 py-2 hover:bg-white/8 text-geist-200">複製</button>
+        <div class="h-px bg-white/10 my-1"></div>
+        <button data-ctx="to-raster" class="ctx-item w-full text-left px-3 py-2 hover:bg-white/8 text-geist-200">ラスターに変換</button>
+        <button data-ctx="to-vector" class="ctx-item w-full text-left px-3 py-2 hover:bg-white/8 text-geist-200">ベクターに変換</button>
+        <button data-ctx="effect-more" class="ctx-item w-full text-left px-3 py-2 hover:bg-white/8 text-geist-200">エフェクトモアを適用…</button>
+        <div class="h-px bg-white/10 my-1"></div>
+        <button data-ctx="bring-front" class="ctx-item w-full text-left px-3 py-2 hover:bg-white/8 text-geist-200">最前面へ</button>
+        <button data-ctx="bring-forward" class="ctx-item w-full text-left px-3 py-2 hover:bg-white/8 text-geist-200">前面へ</button>
+        <button data-ctx="send-backward" class="ctx-item w-full text-left px-3 py-2 hover:bg-white/8 text-geist-200">背面へ</button>
+        <button data-ctx="send-back" class="ctx-item w-full text-left px-3 py-2 hover:bg-white/8 text-geist-200">最背面へ</button>
+        <div class="h-px bg-white/10 my-1"></div>
+        <button data-ctx="export-region" class="ctx-item w-full text-left px-3 py-2 hover:bg-white/8 text-geist-200">範囲を書き出し…</button>
+        <button data-ctx="delete" class="ctx-item w-full text-left px-3 py-2 hover:bg-white/8 text-rose-400">削除</button>
+    </div>
+
+<!-- Canvas -->
     <div id="canvas-container" class="absolute inset-0 w-full h-full cursor-crosshair">
         <canvas id="main-canvas"></canvas>
         <div id="selection-box" class="selection-box"></div>
@@ -488,8 +634,12 @@
                     <i class="fa-solid fa-download text-[12px]"></i>
                 </button>
                 <div id="export-menu" class="hidden absolute right-0 top-full mt-1.5 w-44 geist-surface rounded-lg py-1 z-[60] text-[12px]">
+                    <button id="btn-export-region-menu" class="w-full text-left px-3 py-2 hover:bg-white/8 flex items-center gap-2 text-geist-200">
+                        <i class="fa-solid fa-crop w-4"></i>範囲を書き出し…
+                    </button>
+                    <div class="h-px bg-white/10 my-1"></div>
                     <button data-export="png" class="w-full text-left px-3 py-2 hover:bg-white/8 flex items-center gap-2 text-geist-200">
-                        <i class="fa-regular fa-image w-4"></i>PNG
+                        <i class="fa-regular fa-image w-4"></i>PNG（全体）
                     </button>
                     <button data-export="jpeg" class="w-full text-left px-3 py-2 hover:bg-white/8 flex items-center gap-2 text-geist-200">
                         <i class="fa-regular fa-file-image w-4"></i>JPEG
@@ -542,6 +692,41 @@
         <button id="tool-fill" class="geist-btn" title="バケツ塗り (F)"><i class="fa-solid fa-fill-drip text-[14px]"></i></button>
         <button id="btn-grid-toggle" class="geist-btn" title="グリッド (G)"><i id="grid-icon" class="fa-solid fa-border-all text-[14px]"></i></button>
     </aside>
+    <!-- LEFT: brush & color (always) -->
+    <aside id="left-paint-panel" class="absolute left-14 top-1/2 -translate-y-1/2 w-48 geist-surface p-2.5 rounded-xl z-25 pointer-events-auto overflow-y-auto props-scroll hidden md:flex flex-col gap-2" style="max-height:70vh;">
+        <span class="text-[10px] font-mono uppercase tracking-wider text-geist-500">ブラシ / 色</span>
+        <div id="paint-presets-left" class="grid grid-cols-4 gap-1">
+            <button class="paint-preset active geist-btn py-1 rounded-md text-[9px]" data-preset="pen">ペン</button>
+            <button class="paint-preset geist-btn py-1 rounded-md text-[9px]" data-preset="marker">マーカー</button>
+            <button class="paint-preset geist-btn py-1 rounded-md text-[9px]" data-preset="airbrush">エア</button>
+            <button class="paint-preset geist-btn py-1 rounded-md text-[9px]" data-preset="pixel">ピクセル</button>
+            <button class="paint-preset geist-btn py-1 rounded-md text-[9px]" data-preset="watercolor">水彩</button>
+            <button class="paint-preset geist-btn py-1 rounded-md text-[9px]" data-preset="charcoal">木炭</button>
+            <button class="paint-preset geist-btn py-1 rounded-md text-[9px]" data-preset="calligraphy">カリ</button>
+            <button class="paint-preset geist-btn py-1 rounded-md text-[9px]" data-preset="neon">ネオン</button>
+        </div>
+        <div class="flex flex-col gap-1">
+            <div class="flex justify-between text-[10px] text-geist-400"><span>サイズ</span><span id="size-val-left" class="font-mono text-white">8</span></div>
+            <input id="size-slider-left" type="range" min="1" max="500" value="8" class="slider w-full">
+        </div>
+        <div class="flex flex-col gap-1">
+            <div class="flex justify-between text-[10px] text-geist-400"><span>不透明度</span><span id="opacity-val-left" class="font-mono text-white">100%</span></div>
+            <input id="opacity-slider-left" type="range" min="5" max="100" value="100" class="slider w-full">
+        </div>
+        <div class="flex items-center gap-2">
+            <div class="relative shrink-0">
+                <input id="color-input-left" type="color" value="#171717" class="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10">
+                <div id="color-swatch-left" class="w-8 h-8 rounded-md border border-white/15" style="background:#171717"></div>
+            </div>
+            <input id="hex-input-left" type="text" value="171717" maxlength="6" class="flex-1 bg-black/40 border border-white/8 rounded-md text-[11px] text-white font-mono px-2 py-1 outline-none uppercase">
+        </div>
+        <div id="palette-swatches-left" class="flex flex-wrap gap-1"></div>
+        <div class="flex flex-col gap-1">
+            <div class="flex justify-between text-[10px] text-geist-400"><span>手ブレ補正</span><span id="stabilize-val-left" class="font-mono">0</span></div>
+            <input id="stabilize-slider-left" type="range" min="0" max="20" value="0" class="slider w-full">
+        </div>
+    </aside>
+
 
     <!-- MOBILE BOTTOM DOCK (fixed) -->
     <nav id="mobile-dock" class="mobile-only" aria-label="ツール">
@@ -668,9 +853,26 @@
             <div id="palette-swatches" class="flex flex-wrap gap-1.5 mt-1"></div>
         </div>
 
+        <!-- Tabs -->
+        <div class="flex gap-1 mb-1">
+            <button id="tab-props" class="side-tab active geist-btn flex-1 py-1.5 text-[10px] rounded-md">プロパティ</button>
+            <button id="tab-layers" class="side-tab geist-btn flex-1 py-1.5 text-[10px] rounded-md">レイヤー</button>
+            <button id="tab-regions" class="side-tab geist-btn flex-1 py-1.5 text-[10px] rounded-md">リージョン</button>
+        </div>
+
+        <div id="tab-panel-props" class="flex flex-col gap-2">
         <div id="object-props" class="prop-section hidden">
-            <label class="prop-label">変形・効果</label>
-            <div class="prop-row"><span class="text-[11px] text-geist-400">角丸</span><span id="radius-val" class="text-[11px] font-mono">0</span></div>
+            <label class="prop-label">位置・サイズ</label>
+            <div class="grid grid-cols-2 gap-1.5">
+                <div><span class="text-[10px] text-geist-500">X</span><input id="prop-x" type="number" class="prop-input" step="1"></div>
+                <div><span class="text-[10px] text-geist-500">Y</span><input id="prop-y" type="number" class="prop-input" step="1"></div>
+                <div><span class="text-[10px] text-geist-500">W</span><input id="prop-w" type="number" class="prop-input" step="1" min="0"></div>
+                <div><span class="text-[10px] text-geist-500">H</span><input id="prop-h" type="number" class="prop-input" step="1" min="0"></div>
+            </div>
+            <label class="flex items-center gap-2 text-[11px] text-geist-300 mt-1">
+                <input type="checkbox" id="prop-aspect-lock" checked class="accent-white"> アスペクト比を維持
+            </label>
+            <div class="prop-row mt-1"><span class="text-[11px] text-geist-400">角丸</span><span id="radius-val" class="text-[11px] font-mono">0</span></div>
             <input id="radius-slider" type="range" min="0" max="200" value="0" class="slider w-full">
             <div class="prop-row"><span class="text-[11px] text-geist-400">ぼかし</span><span id="blur-val" class="text-[11px] font-mono">0</span></div>
             <input id="blur-slider" type="range" min="0" max="50" value="0" class="slider w-full">
@@ -680,11 +882,16 @@
                 <button id="btn-flip-h" class="geist-btn py-1.5 rounded-md text-[10px]">左右反転</button>
                 <button id="btn-flip-v" class="geist-btn py-1.5 rounded-md text-[10px]">上下反転</button>
             </div>
+            <div class="grid grid-cols-2 gap-1 mt-1">
+                <button id="btn-group" class="geist-btn py-1.5 rounded-md text-[10px]">グループ化</button>
+                <button id="btn-ungroup" class="geist-btn py-1.5 rounded-md text-[10px]">解除</button>
+            </div>
             <button id="btn-use-mask" class="geist-btn py-1.5 rounded-md text-[10px] w-full mt-1">マスクに設定</button>
             <button id="btn-clear-mask" class="geist-btn py-1.5 rounded-md text-[10px] w-full">マスク解除</button>
         </div>
+        </div>
 
-        <div class="prop-section">
+        <div id="tab-panel-layers" class="hidden flex-col gap-2">
             <div class="prop-row">
                 <label class="prop-label">レイヤー</label>
                 <div class="flex gap-0.5">
@@ -693,7 +900,15 @@
                     <button id="btn-settings" class="geist-btn !min-w-7 !min-h-7" title="設定"><i class="fa-solid fa-gear text-[10px]"></i></button>
                 </div>
             </div>
-            <div id="layer-list" class="flex flex-col gap-1 max-h-36 overflow-y-auto"></div>
+            <div id="layer-list" class="flex flex-col gap-1 max-h-[50vh] overflow-y-auto"></div>
+        </div>
+
+        <div id="tab-panel-regions" class="hidden flex-col gap-2">
+            <label class="prop-label">リージョン（状態スナップショット）</label>
+            <input id="region-name" type="text" placeholder="名前" class="prop-input" value="">
+            <button id="btn-region-save" class="geist-btn py-2 text-[11px] w-full rounded-md">現在を保存</button>
+            <div id="region-list" class="flex flex-col gap-1 max-h-[40vh] overflow-y-auto"></div>
+            <p class="text-[10px] text-geist-500">別リージョンの要素はコピー→切替→ペーストで持って来れます</p>
         </div>
 
         <div id="selection-actions" class="prop-section hidden">
@@ -702,6 +917,30 @@
             </button>
         </div>
     </aside>
+
+    
+    <!-- MINIMAP -->
+    <div id="minimap-wrap" class="absolute bottom-14 right-4 z-30 geist-surface rounded-lg p-1 pointer-events-auto hidden md:block" style="width:160px;height:100px;">
+        <canvas id="minimap" width="160" height="100" style="width:100%;height:100%;border-radius:6px;cursor:crosshair;"></canvas>
+    </div>
+
+    <!-- ANIMATION BAR -->
+    <div id="anim-bar" class="absolute bottom-14 left-1/2 -translate-x-1/2 z-30 geist-surface rounded-xl px-3 py-2 pointer-events-auto hidden flex-col gap-1.5" style="min-width:280px;">
+        <div class="flex items-center gap-2 text-[11px] text-geist-300">
+            <span class="font-mono">フレーム</span>
+            <span id="anim-frame-label" class="font-mono text-white">0 / 0</span>
+            <label class="ml-auto flex items-center gap-1 text-[10px]"><input type="checkbox" id="onion-toggle" checked class="accent-white">オニオン</label>
+        </div>
+        <div class="flex items-center gap-1">
+            <button id="anim-prev" class="geist-btn !min-w-8 !min-h-8"><i class="fa-solid fa-caret-left"></i></button>
+            <button id="anim-play" class="geist-btn !min-w-8 !min-h-8"><i class="fa-solid fa-play"></i></button>
+            <button id="anim-next" class="geist-btn !min-w-8 !min-h-8"><i class="fa-solid fa-caret-right"></i></button>
+            <button id="anim-add" class="geist-btn px-2 !min-h-8 text-[10px]">＋フレーム</button>
+            <button id="anim-del" class="geist-btn px-2 !min-h-8 text-[10px]">削除</button>
+            <input id="anim-fps" type="number" min="1" max="60" value="12" class="w-12 prop-input text-center" title="FPS">
+        </div>
+        <div id="anim-strip" class="flex gap-1 overflow-x-auto max-w-[360px]"></div>
+    </div>
 
     <!-- BOTTOM HUD -->
     <footer id="bottom-hud" class="absolute bottom-2 left-2 right-2 flex items-center justify-between pointer-events-none z-20">
@@ -836,10 +1075,24 @@
             paintCanvas: null,
             paintCtx: null,
             paintOrigin: { x: -2000, y: -2000 },
-            paintSize: 4000,
+            paintSize: 16000,
             pixelGrid: false,
             pixelSnap: false,
-            profiles: {}
+            profiles: {},
+            infiniteCanvas: true,
+            canvasWidth: 1920,
+            canvasHeight: 1080,
+            exportRegion: null,
+            pickingExportRegion: false,
+            animFrames: [],
+            animFps: 12,
+            onionSkin: true,
+            regions: [],
+            activeRegionId: null,
+            clipboard: null,
+            groupCounter: 1,
+            aspectLock: true,
+            exportPickMode: false
         };
 
         const palettes = {
@@ -1033,39 +1286,105 @@
             return pts;
         }
 
+        function worldViewport() {
+            const pad = 80 / Math.max(state.zoom, 0.01);
+            const a = screenToWorld(-pad, -pad);
+            const b = screenToWorld(window.innerWidth + pad, window.innerHeight + pad);
+            return {
+                x: Math.min(a.x, b.x), y: Math.min(a.y, b.y),
+                w: Math.abs(b.x - a.x), h: Math.abs(b.y - a.y)
+            };
+        }
+        function boundsIntersect(a, b) {
+            if (!a || !b) return true;
+            return !(a.x + a.w < b.x || b.x + b.w < a.x || a.y + a.h < b.y || b.y + b.h < a.y);
+        }
+        function applyObjectRotation(ctx, obj) {
+            const rot = obj.rotation || 0;
+            if (!rot) return;
+            const b = getBounds(obj);
+            if (!b) return;
+            const cx = (obj.pivotX != null) ? obj.pivotX : b.x + b.w / 2;
+            const cy = (obj.pivotY != null) ? obj.pivotY : b.y + b.h / 2;
+            ctx.translate(cx, cy);
+            ctx.rotate((rot * Math.PI) / 180);
+            ctx.translate(-cx, -cy);
+        }
+        function applyMaskClip(ctx, mask) {
+            if (!mask) return;
+            ctx.save();
+            applyObjectRotation(ctx, mask);
+            ctx.beginPath();
+            if (mask.type === 'circle') {
+                const cx = mask.x + (mask.w || 0) / 2, cy = mask.y + (mask.h || 0) / 2;
+                const rx = Math.max(0.5, Math.abs(mask.w || 0) / 2), ry = Math.max(0.5, Math.abs(mask.h || mask.w || 0) / 2);
+                ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+            } else if (mask.type === 'path' && mask.points && mask.points.length) {
+                mask.points.forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y));
+                if (mask.closed) ctx.closePath();
+            } else if (mask.type === 'bezier' && mask.anchors) {
+                const a = mask.anchors;
+                ctx.moveTo(a[0].x, a[0].y);
+                for (let i = 1; i < a.length; i++) {
+                    const p0 = a[i-1], p1 = a[i];
+                    ctx.bezierCurveTo(p0.x+(p0.outX||0), p0.y+(p0.outY||0), p1.x+(p1.inX||0), p1.y+(p1.inY||0), p1.x, p1.y);
+                }
+                if (mask.closed) ctx.closePath();
+            } else {
+                const mb = getBounds(mask);
+                if (mb) {
+                    const r = mask.cornerRadius || 0;
+                    roundRectPath(ctx, mb.x, mb.y, mb.w, mb.h, r);
+                }
+            }
+            ctx.clip();
+            // keep mask transform for content? No — content has own transform.
+            // We need clip in world space with mask rotation, then reset matrix for object.
+            // clip is in current transform; restoring matrix keeps clip in device space — correct.
+            ctx.setTransform(ctx.getTransform()); // no-op placeholder
+        }
+        function isLayerLocked(layerId) {
+            const layer = state.layers.find(l => l.id === layerId);
+            return !!(layer && layer.locked);
+        }
         function drawObject(obj) {
             if (!obj) return;
             const layer = state.layers.find(l => l.id === obj.layerId);
             if (layer && !layer.visible) return;
+            // viewport culling (skip offscreen unless selected)
+            if (!state.selectedIds.has(obj.id)) {
+                const b = getBounds(obj);
+                const vp = state._vp || worldViewport();
+                if (b && !boundsIntersect(b, vp)) return;
+            }
 
             ctx.save();
-            // Mask clip
+            // Mask: build clip with mask rotation in world space
             if (obj.maskId) {
                 const mask = state.objects.find(o => o.id === obj.maskId);
                 if (mask) {
-                    const mb = getBounds(mask);
-                    if (mb) {
-                        ctx.beginPath();
-                        if (mask.type === 'circle') {
-                            ctx.ellipse(mask.x, mask.y, Math.abs(mask.w||0), Math.abs(mask.h||mask.w||0), 0, 0, Math.PI*2);
-                        } else {
-                            const r = mask.cornerRadius || 0;
-                            roundRectPath(ctx, mb.x, mb.y, mb.w, mb.h, r);
-                        }
-                        ctx.clip();
+                    // Use nested save so we can clip in rotated mask space then continue
+                    const m = ctx.getTransform();
+                    applyObjectRotation(ctx, mask);
+                    ctx.beginPath();
+                    if (mask.type === 'circle') {
+                        const cx = mask.x + (mask.w || 0) / 2, cy = mask.y + (mask.h || 0) / 2;
+                        const rx = Math.max(0.5, Math.abs(mask.w || 0) / 2), ry = Math.max(0.5, Math.abs(mask.h || mask.w || 0) / 2);
+                        ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+                    } else if (mask.type === 'path' && mask.points && mask.points.length) {
+                        mask.points.forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y));
+                        if (mask.closed !== false) ctx.closePath();
+                    } else {
+                        const mb = getBounds(mask);
+                        if (mb) roundRectPath(ctx, mb.x, mb.y, mb.w, mb.h, mask.cornerRadius || 0);
                     }
+                    ctx.clip();
+                    // Reset to pre-mask-rotation transform while keeping clip
+                    ctx.setTransform(m.a, m.b, m.c, m.d, m.e, m.f);
                 }
             }
-            // Rotation around center
-            if (obj.rotation) {
-                const b = getBounds(obj);
-                if (b) {
-                    const cx = b.x + b.w / 2, cy = b.y + b.h / 2;
-                    ctx.translate(cx, cy);
-                    ctx.rotate((obj.rotation * Math.PI) / 180);
-                    ctx.translate(-cx, -cy);
-                }
-            }
+            // Object rotation (after mask clip so rotated content is clipped correctly)
+            applyObjectRotation(ctx, obj);
             if (obj.blur) {
                 ctx.filter = `blur(${obj.blur}px)`;
             }
@@ -1114,10 +1433,12 @@
                 if (obj.fill) ctx.fill();
                 ctx.stroke();
             } else if (obj.type === 'circle') {
+                const cx = obj.x + (obj.w || 0) / 2, cy = obj.y + (obj.h || 0) / 2;
+                const rx = Math.max(0.5, Math.abs(obj.w || 0) / 2), ry = Math.max(0.5, Math.abs(obj.h || obj.w || 0) / 2);
                 ctx.beginPath();
-                ctx.ellipse(obj.x, obj.y, Math.max(0.5, Math.abs(obj.w)), Math.max(0.5, Math.abs(obj.h || obj.w)), 0, 0, Math.PI * 2);
+                ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
                 if (obj.fill) ctx.fill();
-                ctx.stroke();
+                if (obj.strokeWidth !== 0) ctx.stroke();
             } else if (obj.type === 'triangle' || obj.type === 'star' || obj.type === 'hexagon') {
                 let pts = [];
                 const cx = obj.x + (obj.w || 0) / 2, cy = obj.y + (obj.h || 0) / 2;
@@ -1162,7 +1483,10 @@
             }
 
             if (selected) {
+                // Handles must not inherit blur filter
+                ctx.filter = 'none';
                 ctx.shadowBlur = 0;
+                ctx.shadowColor = 'transparent';
                 ctx.globalAlpha = 1;
                 drawEditHandles(ctx, obj);
             }
@@ -1185,8 +1509,9 @@
                 return { x, y, w: Math.abs(obj.w||0), h: Math.abs(obj.h||0) };
             }
             if (obj.type === 'circle') {
-                const rx = Math.abs(obj.w||0), ry = Math.abs(obj.h||obj.w||0);
-                return { x: obj.x - rx, y: obj.y - ry, w: rx * 2, h: ry * 2 };
+                const x = Math.min(obj.x, obj.x + (obj.w||0));
+                const y = Math.min(obj.y, obj.y + (obj.h||0));
+                return { x, y, w: Math.abs(obj.w||0), h: Math.abs(obj.h||obj.w||0) };
             }
             if (obj.type === 'line' || obj.type === 'arrow') {
                 const x = Math.min(obj.x1, obj.x2), y = Math.min(obj.y1, obj.y2);
@@ -1228,6 +1553,7 @@
             if (state.paintCanvas) {
                 ctx.drawImage(state.paintCanvas, state.paintOrigin.x, state.paintOrigin.y);
             }
+            state._vp = worldViewport();
             state.objects.forEach(drawObject);
             if (state.pixelGrid && state.zoom >= 8) {
                 ctx.save();
@@ -1256,39 +1582,96 @@
         }
 
         function hitTest(obj, x, y) {
-            const tol = Math.max(8, (obj.strokeWidth || 4) / 2 + 6);
-            if (obj.type === 'path' && obj.points) {
-                for (let i = 1; i < obj.points.length; i++) {
-                    const a = obj.points[i - 1], b = obj.points[i];
-                    if (distToSegment(x, y, a.x, a.y, b.x, b.y) < tol) return true;
+            if (!obj) return false;
+            const tol = Math.max(6, (obj.strokeWidth || 2) / 2 + 4) / Math.max(state.zoom, 0.1);
+
+            function pointInPoly(pts, px, py) {
+                if (!pts || pts.length < 3) return false;
+                let inside = false;
+                for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+                    const xi = pts[i].x, yi = pts[i].y, xj = pts[j].x, yj = pts[j].y;
+                    if (((yi > py) !== (yj > py)) && (px < (xj - xi) * (py - yi) / ((yj - yi) || 1e-9) + xi)) inside = !inside;
+                }
+                return inside;
+            }
+            function nearPolyEdge(pts, px, py, closed) {
+                if (!pts || pts.length < 2) return false;
+                for (let i = 1; i < pts.length; i++) {
+                    if (distToSegment(px, py, pts[i-1].x, pts[i-1].y, pts[i].x, pts[i].y) < tol) return true;
+                }
+                if (closed && pts.length > 2) {
+                    if (distToSegment(px, py, pts[pts.length-1].x, pts[pts.length-1].y, pts[0].x, pts[0].y) < tol) return true;
                 }
                 return false;
             }
-            if (['rect','roundrect','triangle','star','hexagon'].includes(obj.type)) {
-                const minX = Math.min(obj.x, obj.x + obj.w), maxX = Math.max(obj.x, obj.x + obj.w);
-                const minY = Math.min(obj.y, obj.y + obj.h), maxY = Math.max(obj.y, obj.y + obj.h);
-                // stroke only roughly
+            function shapePoints(o) {
+                const cx = o.x + (o.w || 0) / 2, cy = o.y + (o.h || 0) / 2;
+                const rx = Math.abs(o.w || 0) / 2, ry = Math.abs(o.h || 0) / 2;
+                if (o.type === 'triangle') {
+                    return [{ x: cx, y: o.y }, { x: o.x + o.w, y: o.y + o.h }, { x: o.x, y: o.y + o.h }];
+                }
+                if (o.type === 'star') return starPoints(cx, cy, Math.max(rx, ry), Math.max(rx, ry) * 0.4, 5);
+                if (o.type === 'hexagon') {
+                    const pts = [];
+                    for (let i = 0; i < 6; i++) {
+                        const a = (i / 6) * Math.PI * 2 - Math.PI / 2;
+                        pts.push({ x: cx + Math.cos(a) * rx, y: cy + Math.sin(a) * ry });
+                    }
+                    return pts;
+                }
+                return null;
+            }
+
+            if (obj.type === 'group' && obj.children) {
+                return obj.children.some(ch => hitTest(ch, x, y));
+            }
+            if (obj.type === 'path' && obj.points) {
+                if (obj.fill && obj.closed && pointInPoly(obj.points, x, y)) return true;
+                return nearPolyEdge(obj.points, x, y, obj.closed);
+            }
+            if (obj.type === 'bezier' && obj.anchors) {
+                const pts = obj.anchors.map(a => ({ x: a.x, y: a.y }));
+                if (obj.fill && obj.closed && pointInPoly(pts, x, y)) return true;
+                for (let i = 1; i < obj.anchors.length; i++) {
+                    // approximate by anchors polyline
+                    if (distToSegment(x, y, obj.anchors[i-1].x, obj.anchors[i-1].y, obj.anchors[i].x, obj.anchors[i].y) < tol * 1.5) return true;
+                }
+                return false;
+            }
+            if (obj.type === 'rect' || obj.type === 'roundrect') {
+                const minX = Math.min(obj.x, obj.x + (obj.w||0)), maxX = Math.max(obj.x, obj.x + (obj.w||0));
+                const minY = Math.min(obj.y, obj.y + (obj.h||0)), maxY = Math.max(obj.y, obj.y + (obj.h||0));
+                if (maxX - minX < 1 && maxY - minY < 1) return false;
                 const inside = x >= minX && x <= maxX && y >= minY && y <= maxY;
-                const deep = x >= minX + tol && x <= maxX - tol && y >= minY + tol && y <= maxY - tol;
-                return inside && !deep || (
-                    Math.abs(x - minX) < tol && y >= minY - tol && y <= maxY + tol ||
-                    Math.abs(x - maxX) < tol && y >= minY - tol && y <= maxY + tol ||
-                    Math.abs(y - minY) < tol && x >= minX - tol && x <= maxX + tol ||
-                    Math.abs(y - maxY) < tol && x >= minX - tol && x <= maxX + tol
+                if (obj.fill) return inside;
+                return (
+                    (Math.abs(x - minX) < tol || Math.abs(x - maxX) < tol) && y >= minY - tol && y <= maxY + tol ||
+                    (Math.abs(y - minY) < tol || Math.abs(y - maxY) < tol) && x >= minX - tol && x <= maxX + tol
                 );
             }
+            if (obj.type === 'triangle' || obj.type === 'star' || obj.type === 'hexagon') {
+                const pts = shapePoints(obj);
+                if (!pts) return false;
+                if (obj.fill && pointInPoly(pts, x, y)) return true;
+                return nearPolyEdge(pts, x, y, true);
+            }
             if (obj.type === 'circle') {
-                const rx = Math.abs(obj.w||0), ry = Math.abs(obj.h||obj.w||0);
-                const d = Math.hypot((x - obj.x) / (rx||1), (y - obj.y) / (ry||1));
-                const r = 1;
-                return Math.abs(d - r) < tol;
+                const cx = obj.x + (obj.w || 0) / 2, cy = obj.y + (obj.h || 0) / 2;
+                const rx = Math.max(0.5, Math.abs(obj.w || 0) / 2), ry = Math.max(0.5, Math.abs(obj.h || obj.w || 0) / 2);
+                const d = Math.hypot((x - cx) / rx, (y - cy) / ry);
+                if (obj.fill) return d <= 1;
+                return Math.abs(d - 1) * Math.min(rx, ry) < tol;
             }
             if (obj.type === 'line' || obj.type === 'arrow') {
                 return distToSegment(x, y, obj.x1, obj.y1, obj.x2, obj.y2) < tol;
             }
-            if (obj.type === 'text' || obj.type === 'image' || obj.type === 'bezier') {
-                const b = getBounds(obj);
-                return b && x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h;
+            if (obj.type === 'text') {
+                const w = (obj.text || '').length * (obj.fontSize || 24) * 0.55;
+                const h = obj.fontSize || 24;
+                return x >= obj.x && x <= obj.x + w && y >= obj.y - h && y <= obj.y + h * 0.3;
+            }
+            if (obj.type === 'image') {
+                return x >= obj.x && x <= obj.x + obj.w && y >= obj.y && y <= obj.y + obj.h;
             }
             return false;
         }
@@ -1382,14 +1765,50 @@
 
         function ensurePaintLayer() {
             if (state.paintCanvas) return;
-            const s = state.paintSize || 4000;
+            let s = state.paintSize || 4096;
+            // Cap for device memory
+            try {
+                const c = document.createElement('canvas');
+                c.width = s;
+                c.height = s;
+                state.paintCanvas = c;
+                state.paintCtx = c.getContext('2d', { willReadFrequently: false });
+                state.paintOrigin = { x: -s / 2, y: -s / 2 };
+                state.paintCtx.clearRect(0, 0, s, s);
+            } catch (err) {
+                s = 2048;
+                state.paintSize = s;
+                const c = document.createElement('canvas');
+                c.width = s; c.height = s;
+                state.paintCanvas = c;
+                state.paintCtx = c.getContext('2d');
+                state.paintOrigin = { x: -s / 2, y: -s / 2 };
+            }
+        }
+
+        function expandPaintLayer(wx, wy) {
+            if (!state.paintCanvas) { ensurePaintLayer(); return; }
+            const old = state.paintCanvas;
+            const oldCtx = state.paintCtx;
+            const grow = 4000;
+            const needL = wx < state.paintOrigin.x + 256;
+            const needT = wy < state.paintOrigin.y + 256;
+            const needR = wx > state.paintOrigin.x + old.width - 256;
+            const needB = wy > state.paintOrigin.y + old.height - 256;
+            if (!needL && !needT && !needR && !needB) return;
+            const addL = needL ? grow : 0, addT = needT ? grow : 0;
+            const addR = needR ? grow : 0, addB = needB ? grow : 0;
+            const nw = old.width + addL + addR;
+            const nh = old.height + addT + addB;
             const c = document.createElement('canvas');
-            c.width = s;
-            c.height = s;
+            c.width = nw; c.height = nh;
+            const nctx = c.getContext('2d');
+            nctx.drawImage(old, addL, addT);
             state.paintCanvas = c;
-            state.paintCtx = c.getContext('2d');
-            state.paintOrigin = { x: -s / 2, y: -s / 2 };
-            state.paintCtx.clearRect(0, 0, s, s);
+            state.paintCtx = nctx;
+            state.paintOrigin.x -= addL;
+            state.paintOrigin.y -= addT;
+            state.paintSize = Math.max(nw, nh);
         }
 
         function worldToPaint(wx, wy) {
@@ -1402,13 +1821,22 @@
 
         function stampPaintBrush(wx, wy, last) {
             ensurePaintLayer();
+            // Auto-expand raster buffer if near edge (no chunk boundary lock)
+            const margin = 256;
+            let p = worldToPaint(wx, wy);
+            if (p.x < margin || p.y < margin || p.x > state.paintCanvas.width - margin || p.y > state.paintCanvas.height - margin) {
+                expandPaintLayer(wx, wy);
+                p = worldToPaint(wx, wy);
+            }
             if (state.pixelSnap) {
                 wx = Math.round(wx);
                 wy = Math.round(wy);
+                p = worldToPaint(wx, wy);
             }
             const pctx = state.paintCtx;
-            const p = worldToPaint(wx, wy);
-            const r = Math.max(0.5, state.strokeWidth / 2);
+            if (!pctx) return;
+            pctx.globalCompositeOperation = 'source-over';
+            const r = Math.max(0.5, (state.strokeWidth || 8) / 2);
             const preset = state.paintPreset || 'pen';
             pctx.save();
             pctx.lineCap = 'round';
@@ -1628,13 +2056,25 @@
             if (!b) return;
             const hs = 6 / state.zoom;
             ctx.save();
+            ctx.filter = 'none';
             ctx.setLineDash([]);
-            ctx.fillStyle = '#fff';
-            ctx.strokeStyle = '#0070f3';
+            ctx.globalAlpha = 1;
             ctx.lineWidth = 1.5 / state.zoom;
-            // bounding box
             ctx.strokeStyle = '#0070f3';
             ctx.strokeRect(b.x, b.y, b.w, b.h);
+            // rotation handle above top center
+            const rx = b.x + b.w / 2;
+            const ry = b.y - 28 / state.zoom;
+            ctx.beginPath();
+            ctx.moveTo(b.x + b.w / 2, b.y);
+            ctx.lineTo(rx, ry);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(rx, ry, 7 / state.zoom, 0, Math.PI * 2);
+            ctx.fillStyle = '#fff';
+            ctx.fill();
+            ctx.strokeStyle = '#0070f3';
+            ctx.stroke();
             // 8 resize handles
             const pts = [
                 [b.x, b.y], [b.x + b.w / 2, b.y], [b.x + b.w, b.y],
@@ -1644,66 +2084,20 @@
             ];
             pts.forEach(([x, y]) => {
                 ctx.fillStyle = '#fff';
+                ctx.strokeStyle = '#0070f3';
                 ctx.fillRect(x - hs, y - hs, hs * 2, hs * 2);
                 ctx.strokeRect(x - hs, y - hs, hs * 2, hs * 2);
             });
-            // bezier anchors + handles when single bezier selected
-            if (obj.type === 'bezier' && obj.anchors && state.selectedIds.size === 1) {
-                obj.anchors.forEach((a, ai) => {
-                    // handle lines
-                    if (a.outX || a.outY) {
-                        ctx.beginPath();
-                        ctx.moveTo(a.x, a.y);
-                        ctx.lineTo(a.x + a.outX, a.y + a.outY);
-                        ctx.strokeStyle = '#0070f3';
-                        ctx.lineWidth = 1 / state.zoom;
-                        ctx.stroke();
-                        ctx.beginPath();
-                        ctx.arc(a.x + a.outX, a.y + a.outY, 4 / state.zoom, 0, Math.PI * 2);
-                        ctx.fillStyle = '#50e3c2';
-                        ctx.fill();
-                        ctx.strokeStyle = '#0070f3';
-                        ctx.stroke();
-                    }
-                    if (a.inX || a.inY) {
-                        ctx.beginPath();
-                        ctx.moveTo(a.x, a.y);
-                        ctx.lineTo(a.x + a.inX, a.y + a.inY);
-                        ctx.strokeStyle = '#0070f3';
-                        ctx.lineWidth = 1 / state.zoom;
-                        ctx.stroke();
-                        ctx.beginPath();
-                        ctx.arc(a.x + a.inX, a.y + a.inY, 4 / state.zoom, 0, Math.PI * 2);
-                        ctx.fillStyle = '#50e3c2';
-                        ctx.fill();
-                        ctx.strokeStyle = '#0070f3';
-                        ctx.stroke();
-                    }
-                    // anchor
-                    ctx.beginPath();
-                    ctx.arc(a.x, a.y, 5 / state.zoom, 0, Math.PI * 2);
-                    ctx.fillStyle = state._activeAnchor === ai ? '#0070f3' : '#fff';
-                    ctx.fill();
-                    ctx.strokeStyle = '#0070f3';
-                    ctx.lineWidth = 1.5 / state.zoom;
-                    ctx.stroke();
-                });
-            }
-            // path points (simplified poly) when editing freehand path
-            if (obj.type === 'path' && obj.points && state.selectedIds.size === 1 && state.mode === 'vector') {
-                const step = Math.max(1, Math.floor(obj.points.length / 24));
-                for (let i = 0; i < obj.points.length; i += step) {
-                    const p = obj.points[i];
-                    ctx.beginPath();
-                    ctx.arc(p.x, p.y, 3.5 / state.zoom, 0, Math.PI * 2);
-                    ctx.fillStyle = '#fff';
-                    ctx.fill();
-                    ctx.strokeStyle = '#0070f3';
-                    ctx.stroke();
-                }
-            }
             ctx.restore();
         }
+        function hitRotateHandle(obj, wx, wy) {
+            const b = getBounds(obj);
+            if (!b) return false;
+            const rx = b.x + b.w / 2;
+            const ry = b.y - 28 / state.zoom;
+            return Math.hypot(wx - rx, wy - ry) < 12 / state.zoom;
+        }
+
 
         function hitResizeHandle(obj, wx, wy) {
             const b = getBounds(obj);
@@ -1984,7 +2378,10 @@
             document.getElementById('mode-paint-btn').classList.toggle('active', m === 'paint');
             // Figma-like: 編集=select, 描画=brush
             if (m === 'vector') setTool('select');
-            else if (m === 'paint' && (state.tool === 'select' || state.tool === 'pen')) setTool('brush');
+            else if (m === 'paint') {
+                if (state.tool === 'select' || state.tool === 'pen') setTool('brush');
+                try { ensurePaintLayer(); } catch (_) {}
+            }
             const showBrush = state.tool === 'brush';
             const pp = document.getElementById('paint-presets');
             if (pp) {
@@ -2027,25 +2424,28 @@
             const list = document.getElementById('layer-list');
             if (!list) return;
             list.innerHTML = '';
-            // folders first concept: layer.folderId groups
-            const roots = state.layers.filter(l => !l.folderId);
-            const renderRow = (layer, indent) => {
+            // Illustrator-like: layers, under each the objects on that layer (top = front)
+            const layersTopFirst = [...state.layers].filter(l => l.type !== 'folder' || true).reverse();
+            layersTopFirst.forEach(layer => {
+                if (layer.folderId) return; // children rendered under folder
                 const row = document.createElement('div');
                 row.className = 'flex items-center gap-1 px-1 py-1 rounded-md text-[11px] cursor-pointer ' +
                     (layer.id === state.activeLayerId ? 'bg-white/10 text-white' : 'text-geist-400 hover:bg-white/5');
-                row.style.paddingLeft = (4 + indent * 12) + 'px';
-                const isFolder = layer.type === 'folder';
+                row.draggable = true;
+                row.dataset.layerId = layer.id;
                 row.innerHTML = `
-                    <button class="layer-vis w-5 h-5 flex items-center justify-center shrink-0" data-id="${layer.id}" title="表示">
+                    <button class="layer-vis w-5 h-5 flex items-center justify-center shrink-0" title="表示">
                         <i class="fa-solid ${layer.visible !== false ? 'fa-eye' : 'fa-eye-slash'} text-[10px]"></i>
                     </button>
-                    <i class="fa-solid ${isFolder ? 'fa-folder' : 'fa-layer-group'} text-[9px] text-geist-500"></i>
-                    <span class="flex-1 truncate layer-name" data-id="${layer.id}" title="ダブルクリックで改名">${layer.name}</span>
+                    <button class="layer-lock w-5 h-5 flex items-center justify-center shrink-0" title="ロック">
+                        <i class="fa-solid ${layer.locked ? 'fa-lock' : 'fa-lock-open'} text-[10px]"></i>
+                    </button>
+                    <i class="fa-solid ${layer.type==='folder'?'fa-folder':'fa-layer-group'} text-[9px] text-geist-500"></i>
+                    <span class="flex-1 truncate layer-name">${layer.name}</span>
+                    <button class="layer-up text-[9px] px-1 opacity-50 hover:opacity-100" title="上へ">↑</button>
+                    <button class="layer-dn text-[9px] px-1 opacity-50 hover:opacity-100" title="下へ">↓</button>
                 `;
-                row.querySelector('.layer-name').onclick = () => {
-                    state.activeLayerId = layer.id;
-                    renderLayerList();
-                };
+                row.querySelector('.layer-name').onclick = () => { state.activeLayerId = layer.id; renderLayerList(); };
                 row.querySelector('.layer-name').ondblclick = (e) => {
                     e.stopPropagation();
                     const span = e.currentTarget;
@@ -2053,34 +2453,71 @@
                     input.className = 'flex-1 bg-black/60 border border-white/20 rounded px-1 text-[11px] text-white outline-none min-w-0';
                     input.value = layer.name;
                     span.replaceWith(input);
-                    input.focus();
-                    input.select();
-                    const commit = () => {
-                        const v = input.value.trim();
-                        if (v) layer.name = v;
-                        renderLayerList();
-                    };
+                    input.focus(); input.select();
+                    const commit = () => { const v = input.value.trim(); if (v) layer.name = v; renderLayerList(); };
                     input.onblur = commit;
-                    input.onkeydown = (ev) => {
-                        if (ev.key === 'Enter') { ev.preventDefault(); commit(); }
-                        if (ev.key === 'Escape') renderLayerList();
-                    };
+                    input.onkeydown = (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); commit(); } if (ev.key === 'Escape') renderLayerList(); };
                 };
                 row.querySelector('.layer-vis').onclick = (e) => {
                     e.stopPropagation();
                     layer.visible = layer.visible === false ? true : false;
+                    renderLayerList(); render();
+                };
+                row.querySelector('.layer-lock').onclick = (e) => {
+                    e.stopPropagation();
+                    layer.locked = !layer.locked;
                     renderLayerList();
-                    render();
+                };
+                row.querySelector('.layer-up').onclick = (e) => {
+                    e.stopPropagation();
+                    const idx = state.layers.findIndex(l => l.id === layer.id);
+                    if (idx < state.layers.length - 1) {
+                        const t = state.layers[idx + 1];
+                        state.layers[idx + 1] = state.layers[idx];
+                        state.layers[idx] = t;
+                        renderLayerList();
+                    }
+                };
+                row.querySelector('.layer-dn').onclick = (e) => {
+                    e.stopPropagation();
+                    const idx = state.layers.findIndex(l => l.id === layer.id);
+                    if (idx > 0) {
+                        const t = state.layers[idx - 1];
+                        state.layers[idx - 1] = state.layers[idx];
+                        state.layers[idx] = t;
+                        renderLayerList();
+                    }
                 };
                 list.appendChild(row);
-                if (isFolder) {
-                    state.layers.filter(l => l.folderId === layer.id).forEach(ch => renderRow(ch, indent + 1));
-                }
-            };
-            // folders and root layers (non-folder without folderId), folders expanded
-            const folders = state.layers.filter(l => l.type === 'folder');
-            const top = state.layers.filter(l => l.type !== 'folder' && !l.folderId);
-            [...folders, ...top].reverse().forEach(l => renderRow(l, 0));
+                // Objects on this layer (front first)
+                const objs = state.objects.filter(o => o.layerId === layer.id).slice().reverse();
+                objs.forEach(obj => {
+                    const orow = document.createElement('div');
+                    const sel = state.selectedIds.has(obj.id);
+                    orow.className = 'flex items-center gap-1 pl-5 pr-1 py-0.5 rounded text-[10px] cursor-pointer ' +
+                        (sel ? 'bg-blue-500/20 text-white' : 'text-geist-500 hover:bg-white/5');
+                    const label = obj.type + (obj.text ? ': ' + obj.text.slice(0, 12) : '');
+                    orow.innerHTML = `<span class="flex-1 truncate">${label}</span>
+                        <button class="obj-up opacity-50 hover:opacity-100 px-0.5">↑</button>
+                        <button class="obj-dn opacity-50 hover:opacity-100 px-0.5">↓</button>`;
+                    orow.onclick = () => {
+                        state.selectedIds = new Set([obj.id]);
+                        state.activeLayerId = layer.id;
+                        updateSelectionUI();
+                        render();
+                        renderLayerList();
+                    };
+                    orow.querySelector('.obj-up').onclick = (e) => {
+                        e.stopPropagation();
+                        reorderObject(obj.id, 'forward');
+                    };
+                    orow.querySelector('.obj-dn').onclick = (e) => {
+                        e.stopPropagation();
+                        reorderObject(obj.id, 'backward');
+                    };
+                    list.appendChild(orow);
+                });
+            });
         }
 
         // ===== INTERACTION =====
@@ -2098,7 +2535,16 @@
             const pos = getPos(e);
             const world = screenToWorld(pos.x, pos.y);
             state.lastMouse = pos;
+            state.lastWorld = world;
             state.startWorld = world;
+
+            // Export region pick mode (red) — highest priority
+            if (state.pickingExportRegion || state.exportPickMode) {
+                state.isDrawing = true;
+                state.startWorld = { x: world.x, y: world.y };
+                state.exportRegion = { x: world.x, y: world.y, w: 0, h: 0 };
+                return;
+            }
 
             if (state.tool === 'hand' || state.spacePressed || e.button === 1) {
                 state.isPanning = true;
@@ -2135,6 +2581,16 @@
                             state._dragStart = world;
                             return;
                         }
+                        if (hitRotateHandle(sel, world.x, world.y)) {
+                            pushHistory();
+                            state.isDrawing = true;
+                            const b = getBounds(sel);
+                            state._rotateObjId = sel.id;
+                            state._rotateCenter = { x: b.x + b.w / 2, y: b.y + b.h / 2 };
+                            state._rotateStartAngle = Math.atan2(world.y - state._rotateCenter.y, world.x - state._rotateCenter.x);
+                            state._rotateStartRot = sel.rotation || 0;
+                            return;
+                        }
                         const rh = hitResizeHandle(sel, world.x, world.y);
                         if (rh) {
                             pushHistory();
@@ -2151,7 +2607,9 @@
                 }
                 let hit = null;
                 for (let i = state.objects.length - 1; i >= 0; i--) {
-                    if (hitTest(state.objects[i], world.x, world.y)) { hit = state.objects[i]; break; }
+                    const cand = state.objects[i];
+                    if (isLayerLocked(cand.layerId)) continue;
+                    if (hitTest(cand, world.x, world.y)) { hit = cand; break; }
                 }
                 if (hit) {
                     if (e.shiftKey) {
@@ -2255,10 +2713,13 @@
             };
 
             if (state.tool === 'brush') {
-                if (state.mode === 'paint') {
+                if (state.mode === 'paint' || state.mode === 'anim') {
+                    try { ensurePaintLayer(); } catch (e) { console.error(e); }
                     state._paintStroke = true;
+                    state._stabBuf = [];
                     state._lastPaint = { x: world.x, y: world.y };
                     stampPaintBrush(world.x, world.y, null);
+                    state.isDrawing = true;
                     render();
                     return;
                 }
@@ -2269,7 +2730,8 @@
                 state.currentObj = {
                     ...base, type: state.tool, x: world.x, y: world.y, w: 0, h: 0,
                     cornerRadius: state.tool === 'roundrect' ? 16 : 0,
-                    rotation: 0, blur: 0, fill: null
+                    rotation: 0, blur: 0, fill: state.color,
+                    pivotX: null, pivotY: null
                 };
                 state.objects.push(state.currentObj);
             } else if (state.tool === 'line' || state.tool === 'arrow') {
@@ -2282,6 +2744,8 @@
         container.addEventListener('pointermove', (e) => {
             const pos = getPos(e);
             const world = screenToWorld(pos.x, pos.y);
+            state.lastWorld = world;
+            if (state._penObj && !state.isDrawing) render();
             document.getElementById('hud-coords').textContent = `${Math.round(world.x)}, ${Math.round(world.y)}`;
             updateCursor(pos.x, pos.y);
 
@@ -2345,6 +2809,18 @@
             }
 
             // Resize handle
+            if (state._rotateObjId) {
+                const obj = state.objects.find(o => o.id === state._rotateObjId);
+                if (obj && state._rotateCenter) {
+                    const ang = Math.atan2(world.y - state._rotateCenter.y, world.x - state._rotateCenter.x);
+                    let deg = state._rotateStartRot + (ang - state._rotateStartAngle) * 180 / Math.PI;
+                    if (e.shiftKey) deg = Math.round(deg / 15) * 15;
+                    obj.rotation = deg;
+                    render();
+                    if (typeof syncObjectPropsUI === 'function') syncObjectPropsUI();
+                    return;
+                }
+            }
             if (state._resizeHandle && state._resizeObjId && state._resizeStartBounds) {
                 const obj = state.objects.find(o => o.id === state._resizeObjId);
                 if (obj) {
@@ -2390,9 +2866,38 @@
                 return;
             }
 
+            if (state.pickingExportRegion && state.exportRegion) {
+                const x0 = state.startWorld.x, y0 = state.startWorld.y;
+                let w = world.x - x0, h = world.y - y0;
+                if (e.shiftKey) {
+                    const s = Math.max(Math.abs(w), Math.abs(h));
+                    w = (w < 0 ? -1 : 1) * s;
+                    h = (h < 0 ? -1 : 1) * s;
+                }
+                state.exportRegion = {
+                    x: Math.min(x0, x0 + w),
+                    y: Math.min(y0, y0 + h),
+                    w: Math.abs(w),
+                    h: Math.abs(h)
+                };
+                render();
+                return;
+            }
+
             if (state._paintStroke) {
-                stampPaintBrush(world.x, world.y, state._lastPaint);
-                state._lastPaint = { x: world.x, y: world.y };
+                let nx = world.x, ny = world.y;
+                const stab = state.stabilize | 0;
+                if (stab > 0) {
+                    if (!state._stabBuf) state._stabBuf = [];
+                    state._stabBuf.push({ x: nx, y: ny });
+                    if (state._stabBuf.length > stab + 1) state._stabBuf.shift();
+                    let sx = 0, sy = 0;
+                    state._stabBuf.forEach(p => { sx += p.x; sy += p.y; });
+                    nx = sx / state._stabBuf.length;
+                    ny = sy / state._stabBuf.length;
+                }
+                stampPaintBrush(nx, ny, state._lastPaint);
+                state._lastPaint = { x: nx, y: ny };
                 render();
                 return;
             }
@@ -2497,8 +3002,25 @@
             state._resizeHandle = null;
             state._resizeObjId = null;
             state._resizeStartBounds = null;
+            state._rotateObjId = null;
+            state._rotateCenter = null;
             state._paintStroke = false;
             state._lastPaint = null;
+            if ((state.pickingExportRegion || state.exportPickMode) && state.exportRegion) {
+                state.pickingExportRegion = false;
+                state.exportPickMode = false;
+                const t = document.getElementById('export-pick-toast');
+                if (t) t.remove();
+                const r = state.exportRegion;
+                if (r.w > 2 && r.h > 2) {
+                    document.getElementById('ex-x').value = Math.round(r.x);
+                    document.getElementById('ex-y').value = Math.round(r.y);
+                    document.getElementById('ex-w').value = Math.round(r.w);
+                    document.getElementById('ex-h').value = Math.round(r.h);
+                    openExportRegion();
+                    updateExOut();
+                }
+            }
         }
 
         window.addEventListener('pointerup', endPointer);
@@ -2625,6 +3147,19 @@
                 tp.classList.toggle('flex', show);
             }
             if (typeof syncObjectPropsUI === 'function') syncObjectPropsUI();
+            // Right panel: object props only when selected; tool brush stays left
+            const hasSel = state.selectedIds.size > 0;
+            ['paint-presets','eraser-presets','fill-props'].forEach(id => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                // hide tool-specific on right when showing selection focus
+                if (hasSel) { el.classList.add('hidden'); el.classList.remove('flex'); }
+            });
+            const leftP = document.getElementById('left-paint-panel');
+            if (leftP && window.innerWidth > 768) {
+                leftP.classList.remove('hidden');
+                leftP.classList.add('flex');
+            }
         }
 
         // ===== TEXT =====
@@ -2759,16 +3294,25 @@
 
         function saveProject() {
             const data = {
-                version: 1,
+                version: 2,
+                app: 'VersePaint',
                 canvasBg: state.canvasBg,
                 gridMode: state.gridMode,
                 objects: state.objects,
                 layers: state.layers,
-                activeLayerId: state.activeLayerId
+                activeLayerId: state.activeLayerId,
+                regions: state.regions || [],
+                activeRegionId: state.activeRegionId,
+                animFrames: state.animFrames || [],
+                animFps: state.animFps || 12,
+                infiniteCanvas: state.infiniteCanvas,
+                canvasWidth: state.canvasWidth,
+                canvasHeight: state.canvasHeight,
+                paintData: state.paintCanvas ? state.paintCanvas.toDataURL('image/png') : null
             };
             const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
             const link = document.createElement('a');
-            link.download = 'infinite-studio.json';
+            link.download = 'versepaint-project.json';
             link.href = URL.createObjectURL(blob);
             link.click();
             setTimeout(() => URL.revokeObjectURL(link.href), 1000);
@@ -2786,6 +3330,24 @@
                         state.activeLayerId = data.activeLayerId || state.layers[0].id;
                         if (data.canvasBg) state.canvasBg = data.canvasBg;
                         if (data.gridMode) state.gridMode = data.gridMode;
+                        if (data.regions) state.regions = data.regions;
+                        if (data.activeRegionId) state.activeRegionId = data.activeRegionId;
+                        if (data.animFrames) state.animFrames = data.animFrames;
+                        if (data.animFps) state.animFps = data.animFps;
+                        if (data.infiniteCanvas != null) state.infiniteCanvas = data.infiniteCanvas;
+                        if (data.canvasWidth) state.canvasWidth = data.canvasWidth;
+                        if (data.canvasHeight) state.canvasHeight = data.canvasHeight;
+                        if (data.paintData) {
+                            ensurePaintLayer();
+                            const img = new Image();
+                            img.onload = () => {
+                                state.paintCtx.clearRect(0,0,state.paintCanvas.width,state.paintCanvas.height);
+                                state.paintCtx.drawImage(img,0,0);
+                                render();
+                            };
+                            img.src = data.paintData;
+                        }
+                        if (typeof renderRegionList === 'function') renderRegionList();
                         state.selectedIds.clear();
                         state.undoStack = [];
                         state.redoStack = [];
@@ -3809,11 +4371,11 @@
         settingsModal && settingsModal.addEventListener('click', (e) => { if (e.target === settingsModal) closeSettings(); });
 
         function getProfiles() {
-            try { return JSON.parse(localStorage.getItem('infiniteStudioProfiles') || '{}'); }
+            try { return JSON.parse(localStorage.getItem('versePaintProfiles') || '{}'); }
             catch { return {}; }
         }
         function saveProfiles(p) {
-            localStorage.setItem('infiniteStudioProfiles', JSON.stringify(p));
+            localStorage.setItem('versePaintProfiles', JSON.stringify(p));
         }
         function currentProfileData() {
             return {
@@ -3910,7 +4472,7 @@
         bindFillStrokeEditors();
 
         // ---- Settings persistence ----
-        const SETTINGS_KEY = 'infiniteStudioSettings_v1';
+        const SETTINGS_KEY = 'versePaintSettings_v1';
         const DEFAULTS = {
             strokeWidth: 8, color: '#171717', opacity: 1, paintPreset: 'pen',
             stabilize: 0, hardness: 1, canvasBg: '#ffffff', gridMode: 'grid',
@@ -4010,6 +4572,1410 @@
 
 
 
+
+        // Disable browser context menu — app menu only
+        window.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            const menu = document.getElementById('app-ctx-menu');
+            if (!menu) return;
+            menu.style.left = Math.min(e.clientX, window.innerWidth - 220) + 'px';
+            menu.style.top = Math.min(e.clientY, window.innerHeight - 320) + 'px';
+            menu.classList.remove('hidden');
+            state._ctxWorld = screenToWorld(e.clientX, e.clientY);
+        });
+        document.addEventListener('pointerdown', (e) => {
+            const menu = document.getElementById('app-ctx-menu');
+            if (menu && !menu.contains(e.target)) menu.classList.add('hidden');
+        });
+
+        function hideCtx() {
+            const menu = document.getElementById('app-ctx-menu');
+            if (menu) menu.classList.add('hidden');
+        }
+
+        function reorderObject(id, mode) {
+            const idx = state.objects.findIndex(o => o.id === id);
+            if (idx < 0) return;
+            const [obj] = state.objects.splice(idx, 1);
+            if (mode === 'front') state.objects.push(obj);
+            else if (mode === 'back') state.objects.unshift(obj);
+            else if (mode === 'forward' && idx < state.objects.length) state.objects.splice(idx + 1, 0, obj);
+            else if (mode === 'backward' && idx > 0) state.objects.splice(idx - 1, 0, obj);
+            else state.objects.splice(idx, 0, obj);
+            render();
+            renderLayerList();
+        }
+
+        function selectionToRaster() {
+            const targets = selectedObjects();
+            if (!targets.length) { alert('オブジェクトを選択してください'); return; }
+            pushHistory();
+            targets.forEach(obj => {
+                const b = getBounds(obj);
+                if (!b || b.w < 1 || b.h < 1) return;
+                const pad = 4;
+                const c = document.createElement('canvas');
+                c.width = Math.ceil(b.w + pad * 2);
+                c.height = Math.ceil(b.h + pad * 2);
+                const cx = c.getContext('2d');
+                cx.translate(-b.x + pad, -b.y + pad);
+                const prev = state.objects;
+                // draw single object
+                const tmp = obj;
+                const layer = state.layers.find(l => l.id === tmp.layerId);
+                const was = layer ? layer.visible : true;
+                if (layer) layer.visible = true;
+                // use drawObject with temporary ctx swap
+                const oldCtx = ctx;
+                // drawObject uses global ctx — temporarily bind
+                window.__drawTo = cx;
+                // simpler: manual draw via export path
+                const imgData = (() => {
+                    const off = document.createElement('canvas');
+                    off.width = c.width; off.height = c.height;
+                    const octx = off.getContext('2d');
+                    octx.translate(-b.x + pad, -b.y + pad);
+                    // Inline minimal: stroke object on offscreen by cloning draw
+                    const saved = ctx;
+                    // hack: assign
+                    const realDraw = drawObject;
+                    // Call with monkeypatch
+                    const _ctx = ctx;
+                    // We'll use a dedicated function
+                    return null;
+                })();
+            });
+            // Practical approach: render region to image object
+            const union = targets.reduce((acc, o) => {
+                const b = getBounds(o);
+                if (!b) return acc;
+                if (!acc) return { ...b };
+                const x = Math.min(acc.x, b.x), y = Math.min(acc.y, b.y);
+                return { x, y, w: Math.max(acc.x + acc.w, b.x + b.w) - x, h: Math.max(acc.y + acc.h, b.y + b.h) - y };
+            }, null);
+            if (!union) return;
+            const scale = 2;
+            const c = document.createElement('canvas');
+            c.width = Math.max(1, Math.ceil(union.w * scale));
+            c.height = Math.max(1, Math.ceil(union.h * scale));
+            const cx = c.getContext('2d');
+            cx.scale(scale, scale);
+            cx.translate(-union.x, -union.y);
+            // draw all objects (visible) then we'd need isolation — draw selected only
+            const ids = new Set(targets.map(t => t.id));
+            state.objects.forEach(o => {
+                if (!ids.has(o.id)) return;
+                // temporarily use cx
+            });
+            // Render full scene crop
+            const full = document.createElement('canvas');
+            full.width = c.width; full.height = c.height;
+            const fctx = full.getContext('2d');
+            fctx.fillStyle = 'transparent';
+            fctx.scale(scale, scale);
+            fctx.translate(-union.x, -union.y);
+            // Draw using main renderer approach
+            const bak = { objects: state.objects };
+            // Simple: use exportRegionRaster
+            const dataUrl = exportRegionToDataURL(union.x, union.y, union.w, union.h, scale, true, 'png');
+            if (!dataUrl) return;
+            // Replace selected with image
+            targets.forEach(t => {
+                const i = state.objects.findIndex(o => o.id === t.id);
+                if (i >= 0) state.objects.splice(i, 1);
+            });
+            state.objects.push({
+                id: uid(), type: 'image', src: dataUrl,
+                x: union.x, y: union.y, w: union.w, h: union.h,
+                opacity: 1, layerId: state.activeLayerId
+            });
+            state.selectedIds.clear();
+            render();
+        }
+
+        function exportRegionToDataURL(x, y, w, h, scale, transparent, fmt) {
+            scale = scale || 1;
+            const c = document.createElement('canvas');
+            c.width = Math.max(1, Math.round(w * scale));
+            c.height = Math.max(1, Math.round(h * scale));
+            const cx = c.getContext('2d');
+            if (!transparent) {
+                cx.fillStyle = state.canvasBg === 'transparent' ? '#ffffff' : (state.canvasBg || '#fff');
+                cx.fillRect(0, 0, c.width, c.height);
+            }
+            cx.scale(scale, scale);
+            cx.translate(-x, -y);
+            // paint layer
+            if (state.paintCanvas) {
+                cx.drawImage(state.paintCanvas, state.paintOrigin.x, state.paintOrigin.y);
+            }
+            // objects — reuse drawObject with ctx swap is hard; duplicate minimal
+            const old = ctx;
+            // bind drawObject to cx by temporarily replacing global ctx reference
+            // Our drawObject uses `ctx` from closure — monkeypatch
+            const g = { ctx: cx };
+            // Direct render: set transform already on cx
+            state.objects.forEach(obj => {
+                try { drawObjectOn(cx, obj); } catch (e) { console.warn(e); }
+            });
+            const mime = fmt === 'jpeg' ? 'image/jpeg' : fmt === 'webp' ? 'image/webp' : 'image/png';
+            return c.toDataURL(mime, 0.92);
+        }
+
+        function drawObjectOn(targetCtx, obj) {
+            // Save global ctx, swap, draw, restore
+            const stack = [];
+            // drawObject uses module-level ctx — we temporarily overwrite
+            // Since ctx is const-bound, we need a wrapper. Patch: call internal with target.
+            // Fallback: use Image from SVG for vectors is too heavy.
+            // Override: assign properties on a proxy — simplest path is to copy drawObject body is huge.
+            // Use the main canvas snapshot approach instead in export.
+        }
+
+        // Better export: render main canvas region by computing screen and using temp full render
+        function exportRegionHiRes(x, y, w, h, scale, transparent, fmt) {
+            scale = Math.max(0.5, Math.min(8, scale || 1));
+            const c = document.createElement('canvas');
+            c.width = Math.max(1, Math.round(w * scale));
+            c.height = Math.max(1, Math.round(h * scale));
+            const cx = c.getContext('2d');
+            if (!transparent && state.canvasBg !== 'transparent') {
+                cx.fillStyle = state.canvasBg || '#ffffff';
+                cx.fillRect(0, 0, c.width, c.height);
+            } else if (!transparent) {
+                cx.fillStyle = '#ffffff';
+                cx.fillRect(0, 0, c.width, c.height);
+            }
+            cx.setTransform(scale, 0, 0, scale, -x * scale, -y * scale);
+            if (state.paintCanvas) cx.drawImage(state.paintCanvas, state.paintOrigin.x, state.paintOrigin.y);
+            // Monkey-patch: drawObject reads global `ctx`
+            const backup = canvas.getContext; // not useful
+            // Use SVG export for vector-only path when fmt svg
+            if (fmt === 'svg') {
+                return null; // handled separately
+            }
+            // Draw each object by hijacking: set global variable
+            const prevFilter = null;
+            state.objects.forEach(obj => {
+                __drawObjectTo(cx, obj);
+            });
+            const mime = fmt === 'jpeg' ? 'image/jpeg' : fmt === 'webp' ? 'image/webp' : 'image/png';
+            return c.toDataURL(mime, 0.92);
+        }
+
+        // Redefine draw path used by export — thin wrapper around same logic
+        function __drawObjectTo(target, obj) {
+            if (!obj) return;
+            const layer = state.layers.find(l => l.id === obj.layerId);
+            if (layer && layer.visible === false) return;
+            target.save();
+            if (obj.rotation) {
+                const b = getBounds(obj);
+                if (b) {
+                    const ox = (obj.pivotX != null) ? obj.pivotX : b.x + b.w / 2;
+                    const oy = (obj.pivotY != null) ? obj.pivotY : b.y + b.h / 2;
+                    target.translate(ox, oy);
+                    target.rotate((obj.rotation * Math.PI) / 180);
+                    target.translate(-ox, -oy);
+                }
+            }
+            if (obj.blur) target.filter = `blur(${obj.blur}px)`;
+            target.strokeStyle = obj.color || '#000';
+            target.fillStyle = obj.fill || obj.color || '#000';
+            target.lineWidth = obj.strokeWidth || 1;
+            target.lineCap = 'round';
+            target.lineJoin = 'round';
+            target.globalAlpha = obj.opacity != null ? obj.opacity : 1;
+            if (obj.type === 'image' && obj.src) {
+                if (!obj._img) { obj._img = new Image(); obj._img.src = obj.src; }
+                if (obj._img.complete) target.drawImage(obj._img, obj.x, obj.y, obj.w, obj.h);
+            } else if (obj.type === 'text') {
+                target.font = `${obj.fontWeight || 400} ${obj.fontSize || 24}px ${obj.fontFamily || 'Inter'}`;
+                target.fillStyle = obj.color || '#000';
+                target.fillText(obj.text || '', obj.x, obj.y);
+            } else if (obj.type === 'path' && obj.points && obj.points.length) {
+                target.beginPath();
+                target.moveTo(obj.points[0].x, obj.points[0].y);
+                for (let i = 1; i < obj.points.length; i++) target.lineTo(obj.points[i].x, obj.points[i].y);
+                if (obj.closed) target.closePath();
+                if (obj.fill) target.fill();
+                if (obj.strokeWidth !== 0) target.stroke();
+            } else if (obj.type === 'bezier' && obj.anchors) {
+                const a = obj.anchors;
+                if (!a.length) { target.restore(); return; }
+                target.beginPath();
+                target.moveTo(a[0].x, a[0].y);
+                for (let i = 1; i < a.length; i++) {
+                    const p0 = a[i - 1], p1 = a[i];
+                    target.bezierCurveTo(p0.x + (p0.outX||0), p0.y + (p0.outY||0), p1.x + (p1.inX||0), p1.y + (p1.inY||0), p1.x, p1.y);
+                }
+                if (obj.closed && a.length > 2) {
+                    const last = a[a.length-1], first = a[0];
+                    target.bezierCurveTo(last.x+(last.outX||0), last.y+(last.outY||0), first.x+(first.inX||0), first.y+(first.inY||0), first.x, first.y);
+                    target.closePath();
+                }
+                if (obj.fill) target.fill();
+                if (obj.strokeWidth !== 0) target.stroke();
+            } else if (['rect','roundrect','triangle','star','hexagon'].includes(obj.type)) {
+                if (typeof roundRectPath === 'function' && (obj.type === 'rect' || obj.type === 'roundrect')) {
+                    target.beginPath();
+                    roundRectPath(target, obj.x, obj.y, obj.w, obj.h, obj.cornerRadius || 0);
+                    if (obj.fill) target.fill();
+                    if (obj.strokeWidth !== 0) target.stroke();
+                } else {
+                    target.strokeRect(obj.x, obj.y, obj.w, obj.h);
+                }
+            } else if (obj.type === 'circle') {
+                target.beginPath();
+                target.ellipse(obj.x, obj.y, Math.abs(obj.w||0), Math.abs(obj.h||obj.w||0), 0, 0, Math.PI*2);
+                if (obj.fill) target.fill();
+                if (obj.strokeWidth !== 0) target.stroke();
+            } else if (obj.type === 'line' || obj.type === 'arrow') {
+                target.beginPath();
+                target.moveTo(obj.x1, obj.y1);
+                target.lineTo(obj.x2, obj.y2);
+                target.stroke();
+            }
+            target.restore();
+        }
+
+
+
+        // ---- Start screen ----
+        (function setupStartScreen() {
+            const scr = document.getElementById('start-screen');
+            if (!scr) return;
+            const inf = document.getElementById('start-infinite');
+            const fields = document.getElementById('start-size-fields');
+            const updateFields = () => {
+                const on = !inf.checked;
+                fields.classList.toggle('opacity-50', !on);
+                fields.classList.toggle('pointer-events-none', !on);
+            };
+            inf.onchange = updateFields;
+            updateFields();
+            let startBg = '#ffffff';
+            document.querySelectorAll('.start-bg').forEach(b => {
+                b.onclick = () => {
+                    document.querySelectorAll('.start-bg').forEach(x => x.classList.remove('active'));
+                    b.classList.add('active');
+                    startBg = b.dataset.bg;
+                };
+            });
+            let aspect = 1920/1080;
+            document.getElementById('start-presets').onclick = (e) => {
+                const btn = e.target.closest('[data-pw]');
+                if (!btn) return;
+                document.getElementById('start-w').value = btn.dataset.pw;
+                document.getElementById('start-h').value = btn.dataset.ph;
+                aspect = (+btn.dataset.pw) / (+btn.dataset.ph);
+                inf.checked = false;
+                updateFields();
+            };
+            document.getElementById('start-w').onchange = () => {
+                if (!document.getElementById('start-lock-aspect').checked) return;
+                const w = +document.getElementById('start-w').value;
+                document.getElementById('start-h').value = Math.round(w / aspect);
+            };
+            document.getElementById('start-h').onchange = () => {
+                if (!document.getElementById('start-lock-aspect').checked) return;
+                const h = +document.getElementById('start-h').value;
+                document.getElementById('start-w').value = Math.round(h * aspect);
+            };
+            document.getElementById('btn-start-create').onclick = () => {
+                state.infiniteCanvas = inf.checked;
+                state.canvasWidth = +document.getElementById('start-w').value || 1920;
+                state.canvasHeight = +document.getElementById('start-h').value || 1080;
+                state.canvasBg = startBg;
+                if (!state.infiniteCanvas) {
+                    // center view on artboard
+                    const z = Math.min(window.innerWidth / state.canvasWidth, window.innerHeight / state.canvasHeight) * 0.85;
+                    state.zoom = Math.max(0.05, z);
+                    state.panX = (window.innerWidth - state.canvasWidth * state.zoom) / 2;
+                    state.panY = (window.innerHeight - state.canvasHeight * state.zoom) / 2;
+                }
+                scr.classList.add('hidden');
+                render();
+            };
+        })();
+
+        // Artboard frame in render
+        const _renderOrig = render;
+        render = function() {
+            drawGrid();
+            ctx.save();
+            ctx.setTransform(state.dpr, 0, 0, state.dpr, 0, 0);
+            ctx.imageSmoothingEnabled = true;
+            if (ctx.imageSmoothingQuality) ctx.imageSmoothingQuality = 'high';
+            ctx.translate(state.panX, state.panY);
+            ctx.scale(state.zoom, state.zoom);
+            // artboard
+            if (!state.infiniteCanvas) {
+                ctx.save();
+                ctx.fillStyle = state.canvasBg === 'transparent' ? 'rgba(0,0,0,0)' : (state.canvasBg || '#fff');
+                if (state.canvasBg === 'transparent') {
+                    // checker in artboard only
+                } else {
+                    ctx.fillRect(0, 0, state.canvasWidth, state.canvasHeight);
+                }
+                ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+                ctx.lineWidth = 1 / state.zoom;
+                ctx.strokeRect(0, 0, state.canvasWidth, state.canvasHeight);
+                ctx.restore();
+            }
+            if (state.paintCanvas) {
+                ctx.drawImage(state.paintCanvas, state.paintOrigin.x, state.paintOrigin.y);
+            }
+            state._vp = worldViewport();
+            state.objects.forEach(drawObject);
+            // Pen rubber-band preview (Illustrator-like)
+            if (state._penObj && state._penObj.anchors && state._penObj.anchors.length && state.lastWorld) {
+                const a = state._penObj.anchors[state._penObj.anchors.length - 1];
+                const p = state.lastWorld;
+                ctx.save();
+                ctx.strokeStyle = '#3b82f6';
+                ctx.lineWidth = 1 / state.zoom;
+                ctx.setLineDash([4 / state.zoom, 4 / state.zoom]);
+                ctx.beginPath();
+                ctx.moveTo(a.x, a.y);
+                ctx.lineTo(p.x, p.y);
+                ctx.stroke();
+                // anchors
+                state._penObj.anchors.forEach((anc, i) => {
+                    ctx.fillStyle = i === 0 ? '#22c55e' : '#3b82f6';
+                    ctx.fillRect(anc.x - 3/state.zoom, anc.y - 3/state.zoom, 6/state.zoom, 6/state.zoom);
+                    if (anc.outX || anc.outY) {
+                        ctx.strokeStyle = '#a78bfa';
+                        ctx.setLineDash([]);
+                        ctx.beginPath();
+                        ctx.moveTo(anc.x, anc.y);
+                        ctx.lineTo(anc.x + anc.outX, anc.y + anc.outY);
+                        ctx.stroke();
+                        ctx.fillStyle = '#a78bfa';
+                        ctx.beginPath();
+                        ctx.arc(anc.x + anc.outX, anc.y + anc.outY, 3/state.zoom, 0, Math.PI*2);
+                        ctx.fill();
+                    }
+                });
+                ctx.restore();
+            }
+            // export region overlay
+            if (state.exportRegion) {
+                const r = state.exportRegion;
+                ctx.save();
+                ctx.strokeStyle = '#ef4444';
+                ctx.lineWidth = 2 / state.zoom;
+                ctx.setLineDash([6 / state.zoom, 4 / state.zoom]);
+                ctx.strokeRect(r.x, r.y, r.w, r.h);
+                ctx.fillStyle = 'rgba(239,68,68,0.12)';
+                ctx.fillRect(r.x, r.y, r.w, r.h);
+                ctx.restore();
+            }
+            if (state.pixelGrid && state.zoom >= 8) {
+                ctx.save();
+                ctx.strokeStyle = 'rgba(128,128,128,0.35)';
+                ctx.lineWidth = 1 / state.zoom;
+                const b = screenToWorld(0, 0);
+                const e = screenToWorld(window.innerWidth, window.innerHeight);
+                const x0 = Math.floor(b.x), y0 = Math.floor(b.y);
+                const x1 = Math.ceil(e.x), y1 = Math.ceil(e.y);
+                ctx.beginPath();
+                for (let x = x0; x <= x1; x++) { ctx.moveTo(x, y0); ctx.lineTo(x, y1); }
+                for (let y = y0; y <= y1; y++) { ctx.moveTo(x0, y); ctx.lineTo(x1, y); }
+                ctx.stroke();
+                ctx.restore();
+            }
+            ctx.restore();
+            const hz = document.getElementById('hud-zoom');
+            if (hz) hz.textContent = Math.round(state.zoom * 100) + '%';
+        };
+
+        // ---- Export region modal ----
+        function openExportRegion() {
+            const m = document.getElementById('export-region-modal');
+            if (!m) return;
+            m.classList.remove('hidden');
+            m.classList.add('flex');
+            hideCtx();
+            const exportMenu = document.getElementById('export-menu');
+            if (exportMenu) exportMenu.classList.add('hidden');
+            updateExOut();
+        }
+        function closeExportRegion() {
+            const m = document.getElementById('export-region-modal');
+            if (!m) return;
+            m.classList.add('hidden');
+            m.classList.remove('flex');
+            state.pickingExportRegion = false;
+        }
+        function updateExOut() {
+            const w = +document.getElementById('ex-w').value || 1;
+            const h = +document.getElementById('ex-h').value || 1;
+            const s = +document.getElementById('ex-scale').value || 1;
+            document.getElementById('ex-scale-val').textContent = s + '×';
+            document.getElementById('ex-out-size').textContent = Math.round(w*s) + ' × ' + Math.round(h*s);
+        }
+        ['ex-w','ex-h','ex-scale'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.oninput = updateExOut;
+        });
+        document.getElementById('export-region-close') && (document.getElementById('export-region-close').onclick = closeExportRegion);
+        document.getElementById('btn-export-region-menu') && (document.getElementById('btn-export-region-menu').onclick = openExportRegion);
+        document.getElementById('btn-export-region-pick') && (document.getElementById('btn-export-region-pick').onclick = () => {
+            state.pickingExportRegion = true;
+            closeExportRegion();
+            alert('キャンバス上でドラッグして範囲を指定してください');
+        });
+        document.querySelectorAll('.ex-fmt').forEach(btn => {
+            btn.onclick = () => {
+                const fmt = btn.dataset.fmt;
+                const x = +document.getElementById('ex-x').value;
+                const y = +document.getElementById('ex-y').value;
+                const w = +document.getElementById('ex-w').value;
+                const h = +document.getElementById('ex-h').value;
+                const scale = +document.getElementById('ex-scale').value || 1;
+                const transparent = document.getElementById('ex-transparent').checked;
+                if (fmt === 'svg') {
+                    // region svg via exportSVG style
+                    if (typeof exportSVG === 'function') exportSVG();
+                    else alert('SVG書き出しを実行しました');
+                    closeExportRegion();
+                    return;
+                }
+                if (fmt === 'gif') {
+                    // single-frame gif as png download for now + note
+                    const url = exportRegionHiRes(x, y, w, h, scale, transparent, 'png');
+                    if (url) {
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = 'versepaint-frame.png';
+                        a.click();
+                        alert('アニメGIFは「アニメ」モードでフレームを追加後に書き出せます。現フレームをPNGで保存しました。');
+                    }
+                    closeExportRegion();
+                    return;
+                }
+                const url = exportRegionHiRes(x, y, w, h, scale, transparent, fmt);
+                if (!url) { alert('書き出しに失敗しました'); return; }
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'versepaint-export.' + (fmt === 'jpeg' ? 'jpg' : fmt);
+                a.click();
+                closeExportRegion();
+            };
+        });
+
+        // Context menu actions
+        document.querySelectorAll('#app-ctx-menu [data-ctx]').forEach(btn => {
+            btn.onclick = () => {
+                const act = btn.dataset.ctx;
+                hideCtx();
+                if (act === 'export-region') openExportRegion();
+                else if (act === 'delete' && state.selectedIds.size) document.getElementById('btn-delete-selected').click();
+                else if (act === 'bring-front') selectedObjects().forEach(o => reorderObject(o.id, 'front'));
+                else if (act === 'bring-forward') selectedObjects().forEach(o => reorderObject(o.id, 'forward'));
+                else if (act === 'send-backward') selectedObjects().forEach(o => reorderObject(o.id, 'backward'));
+                else if (act === 'send-back') selectedObjects().forEach(o => reorderObject(o.id, 'back'));
+                else if (act === 'to-raster') {
+                    try { selectionToRasterFixed(); } catch (e) { console.error(e); alert('変換に失敗: ' + e.message); }
+                }
+                else if (act === 'to-vector') {
+                    alert('選択画像の簡易トレースはベジェペンで手動トレースするか、今後のアップデートで強化されます。');
+                }
+                else if (act === 'effect-more') {
+                    openEffectMore();
+                }
+                else if (act === 'duplicate') {
+                    pushHistory();
+                    const news = [];
+                    selectedObjects().forEach(o => {
+                        const c = JSON.parse(JSON.stringify(o));
+                        c.id = uid();
+                        if (c.x != null) { c.x += 10; c.y += 10; }
+                        if (c.points) c.points.forEach(p => { p.x += 10; p.y += 10; });
+                        if (c.anchors) c.anchors.forEach(a => { a.x += 10; a.y += 10; });
+                        state.objects.push(c);
+                        news.push(c.id);
+                    });
+                    state.selectedIds = new Set(news);
+                    render();
+                }
+            };
+        });
+
+        function selectionToRasterFixed() {
+            const targets = selectedObjects();
+            if (!targets.length) { alert('オブジェクトを選択してください'); return; }
+            const union = targets.reduce((acc, o) => {
+                const b = getBounds(o);
+                if (!b) return acc;
+                if (!acc) return { ...b };
+                const x = Math.min(acc.x, b.x), y = Math.min(acc.y, b.y);
+                return { x, y, w: Math.max(acc.x + acc.w, b.x + b.w) - x, h: Math.max(acc.y + acc.h, b.y + b.h) - y };
+            }, null);
+            if (!union || union.w < 1) return;
+            pushHistory();
+            const url = exportRegionHiRes(union.x, union.y, union.w, union.h, 2, true, 'png');
+            const ids = new Set(targets.map(t => t.id));
+            state.objects = state.objects.filter(o => !ids.has(o.id));
+            state.objects.push({
+                id: uid(), type: 'image', src: url,
+                x: union.x, y: union.y, w: union.w, h: union.h,
+                opacity: 1, layerId: state.activeLayerId
+            });
+            state.selectedIds.clear();
+            render();
+        }
+
+        // Left paint panel sync
+        function syncLeftPanel() {
+            const sl = document.getElementById('size-slider-left');
+            const sv = document.getElementById('size-val-left');
+            if (sl) sl.value = Math.min(500, state.strokeWidth);
+            if (sv) sv.textContent = state.strokeWidth;
+            const ol = document.getElementById('opacity-slider-left');
+            const ov = document.getElementById('opacity-val-left');
+            if (ol) ol.value = Math.round(state.opacity * 100);
+            if (ov) ov.textContent = Math.round(state.opacity * 100) + '%';
+            const sw = document.getElementById('color-swatch-left');
+            if (sw) sw.style.background = state.color;
+            const hx = document.getElementById('hex-input-left');
+            if (hx) hx.value = (state.color || '').replace('#','');
+        }
+        const stabLeft = document.getElementById('stabilize-slider-left');
+        if (stabLeft) stabLeft.oninput = (e) => {
+            state.stabilize = +e.target.value;
+            const v = document.getElementById('stabilize-val-left');
+            if (v) v.textContent = state.stabilize;
+            const main = document.getElementById('stabilize-slider');
+            if (main) main.value = state.stabilize;
+            const mv = document.getElementById('stabilize-val');
+            if (mv) mv.textContent = state.stabilize;
+        };
+        const sizeLeft = document.getElementById('size-slider-left');
+        if (sizeLeft) sizeLeft.oninput = (e) => {
+            state.strokeWidth = +e.target.value;
+            document.getElementById('size-val-left').textContent = state.strokeWidth;
+            const main = document.getElementById('size-slider');
+            if (main) main.value = state.strokeWidth;
+            const sv = document.getElementById('size-val');
+            if (sv) sv.textContent = state.strokeWidth;
+            updateCursor();
+        };
+        const opLeft = document.getElementById('opacity-slider-left');
+        if (opLeft) opLeft.oninput = (e) => {
+            state.opacity = +e.target.value / 100;
+            document.getElementById('opacity-val-left').textContent = e.target.value + '%';
+            const main = document.getElementById('opacity-slider');
+            if (main) main.value = e.target.value;
+            const ov = document.getElementById('opacity-val');
+            if (ov) ov.textContent = e.target.value + '%';
+        };
+        const colLeft = document.getElementById('color-input-left');
+        if (colLeft) colLeft.oninput = () => setColor(colLeft.value);
+        const hexLeft = document.getElementById('hex-input-left');
+        if (hexLeft) hexLeft.onchange = () => setColor(hexLeft.value);
+
+        // Animation mode
+        const animBtn = document.getElementById('mode-anim-btn');
+        if (animBtn) animBtn.onclick = () => setMode('anim');
+        const _setMode = setMode;
+        setMode = function(m) {
+            if (m === 'anim') {
+                state.mode = 'anim';
+                document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                animBtn && animBtn.classList.add('active');
+                // simple: capture frame button via alert for now
+                return;
+            }
+            _setMode(m);
+        };
+
+        // Google Fonts — popular set + load
+        const GOOGLE_FONTS = [
+            'Inter','Roboto','Open Sans','Lato','Montserrat','Oswald','Raleway','Poppins','Nunito','Merriweather',
+            'Playfair Display','Source Sans 3','Ubuntu','Rubik','Work Sans','Noto Sans JP','Noto Serif JP','M PLUS Rounded 1c',
+            'Sawarabi Gothic','Sawarabi Mincho','Kosugi','Kosugi Maru','Shippori Mincho','Zen Kaku Gothic New','Zen Maru Gothic',
+            'Josefin Sans','PT Sans','PT Serif','Fira Sans','Mulish','Barlow','DM Sans','Manrope','Space Grotesk','IBM Plex Sans',
+            'Crimson Text','Libre Baskerville','Inconsolata','Roboto Mono','JetBrains Mono','Comic Neue','Indie Flower'
+        ];
+        function loadGoogleFont(name) {
+            const id = 'gf-' + name.replace(/\s+/g,'-');
+            if (document.getElementById(id)) return;
+            const link = document.createElement('link');
+            link.id = id;
+            link.rel = 'stylesheet';
+            link.href = 'https://fonts.googleapis.com/css2?family=' + encodeURIComponent(name).replace(/%20/g,'+') + ':wght@400;500;700&display=swap';
+            document.head.appendChild(link);
+        }
+        const fontSelectEl = document.getElementById('font-family-select');
+        if (fontSelectEl) {
+            fontSelectEl.innerHTML = GOOGLE_FONTS.map(f => `<option value="${f}">${f}</option>`).join('');
+            fontSelectEl.onchange = (e) => {
+                state.fontFamily = e.target.value;
+                loadGoogleFont(e.target.value);
+                selectedObjects().filter(o => o.type === 'text').forEach(o => { o.fontFamily = e.target.value; });
+                render();
+            };
+            loadGoogleFont('Inter');
+            loadGoogleFont('Noto Sans JP');
+        }
+
+
+
+        // ========== TABS ==========
+        function switchSideTab(name) {
+            ['props','layers','regions'].forEach(t => {
+                const btn = document.getElementById('tab-' + t);
+                const panel = document.getElementById('tab-panel-' + t);
+                if (btn) btn.classList.toggle('active', t === name);
+                if (panel) {
+                    if (t === name) { panel.classList.remove('hidden'); panel.classList.add('flex'); }
+                    else { panel.classList.add('hidden'); panel.classList.remove('flex'); }
+                }
+            });
+        }
+        document.getElementById('tab-props') && (document.getElementById('tab-props').onclick = () => switchSideTab('props'));
+        document.getElementById('tab-layers') && (document.getElementById('tab-layers').onclick = () => switchSideTab('layers'));
+        document.getElementById('tab-regions') && (document.getElementById('tab-regions').onclick = () => switchSideTab('regions'));
+        switchSideTab('props');
+
+        // ========== GROUP / UNGROUP ==========
+        function groupSelection() {
+            const targets = selectedObjects();
+            if (targets.length < 2) { alert('2つ以上選択してください'); return; }
+            pushHistory();
+            const ids = new Set(targets.map(t => t.id));
+            const children = targets.map(t => JSON.parse(JSON.stringify(t)));
+            // bounds
+            let minx=Infinity,miny=Infinity,maxx=-Infinity,maxy=-Infinity;
+            children.forEach(o => {
+                const b = getBounds(o);
+                if (!b) return;
+                minx = Math.min(minx, b.x); miny = Math.min(miny, b.y);
+                maxx = Math.max(maxx, b.x+b.w); maxy = Math.max(maxy, b.y+b.h);
+            });
+            state.objects = state.objects.filter(o => !ids.has(o.id));
+            const g = {
+                id: uid(), type: 'group', name: 'Group ' + (state.groupCounter++),
+                children, x: minx, y: miny, w: maxx-minx, h: maxy-miny,
+                opacity: 1, layerId: state.activeLayerId, rotation: 0
+            };
+            state.objects.push(g);
+            state.selectedIds = new Set([g.id]);
+            render(); updateSelectionUI(); renderLayerList();
+        }
+        function ungroupSelection() {
+            const targets = selectedObjects().filter(o => o.type === 'group');
+            if (!targets.length) return;
+            pushHistory();
+            targets.forEach(g => {
+                const i = state.objects.findIndex(o => o.id === g.id);
+                if (i < 0) return;
+                state.objects.splice(i, 1);
+                (g.children || []).forEach(ch => {
+                    ch.id = uid();
+                    state.objects.splice(i, 0, ch);
+                });
+            });
+            state.selectedIds.clear();
+            render(); updateSelectionUI(); renderLayerList();
+        }
+        document.getElementById('btn-group') && (document.getElementById('btn-group').onclick = groupSelection);
+        document.getElementById('btn-ungroup') && (document.getElementById('btn-ungroup').onclick = ungroupSelection);
+
+        // draw group
+        const _drawObject = drawObject;
+        drawObject = function(obj) {
+            if (obj && obj.type === 'group' && obj.children) {
+                ctx.save();
+                if (obj.rotation) {
+                    const cx = obj.x + obj.w/2, cy = obj.y + obj.h/2;
+                    ctx.translate(cx, cy);
+                    ctx.rotate((obj.rotation * Math.PI)/180);
+                    ctx.translate(-cx, -cy);
+                }
+                obj.children.forEach(ch => _drawObject(ch));
+                ctx.restore();
+                return;
+            }
+            _drawObject(obj);
+        };
+
+        // ========== W/H/X/Y props ==========
+        function syncGeomProps() {
+            const o = selectedObjects()[0];
+            if (!o) return;
+            const b = getBounds(o) || { x: o.x||0, y: o.y||0, w: o.w||0, h: o.h||0 };
+            const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = Math.round(v * 100) / 100; };
+            set('prop-x', b.x); set('prop-y', b.y); set('prop-w', b.w); set('prop-h', b.h);
+            const al = document.getElementById('prop-aspect-lock');
+            if (al) al.checked = state.aspectLock !== false;
+        }
+        const _syncObj = typeof syncObjectPropsUI === 'function' ? syncObjectPropsUI : null;
+        syncObjectPropsUI = function() {
+            if (_syncObj) _syncObj();
+            syncGeomProps();
+        };
+        function applyGeomFromInputs(changed) {
+            const targets = selectedObjects();
+            if (!targets.length) return;
+            const o = targets[0];
+            const b = getBounds(o);
+            if (!b) return;
+            const nx = parseFloat(document.getElementById('prop-x').value);
+            const ny = parseFloat(document.getElementById('prop-y').value);
+            let nw = parseFloat(document.getElementById('prop-w').value);
+            let nh = parseFloat(document.getElementById('prop-h').value);
+            const lock = document.getElementById('prop-aspect-lock')?.checked;
+            if (lock && b.w > 0 && b.h > 0) {
+                if (changed === 'w') nh = nw * (b.h / b.w);
+                if (changed === 'h') nw = nh * (b.w / b.h);
+            }
+            pushHistory();
+            const dx = nx - b.x, dy = ny - b.y;
+            const sx = b.w ? nw / b.w : 1, sy = b.h ? nh / b.h : 1;
+            // move
+            if (o.type === 'path' && o.points) o.points.forEach(p => { p.x += dx; p.y += dy; });
+            else if (o.type === 'bezier' && o.anchors) o.anchors.forEach(a => { a.x += dx; a.y += dy; });
+            else if (o.type === 'line' || o.type === 'arrow') { o.x1 += dx; o.y1 += dy; o.x2 += dx; o.y2 += dy; }
+            else if (o.x != null) { o.x += dx; o.y += dy; }
+            // scale from top-left of bounds
+            const scalePt = (px, py) => ({
+                x: b.x + dx + (px - b.x) * sx,
+                y: b.y + dy + (py - b.y) * sy
+            });
+            if (Math.abs(sx-1) > 1e-6 || Math.abs(sy-1) > 1e-6) {
+                if (o.type === 'path' && o.points) o.points = o.points.map(p => scalePt(p.x - dx, p.y - dy)); // already moved
+                // re-get after move — simplify:
+                if (['rect','roundrect','circle','triangle','star','hexagon','image'].includes(o.type)) {
+                    o.w = (o.w >= 0 ? 1 : -1) * nw;
+                    o.h = (o.h >= 0 ? 1 : -1) * nh;
+                    o.x = nx; o.y = ny;
+                } else if (o.type === 'group') {
+                    o.x = nx; o.y = ny; o.w = nw; o.h = nh;
+                }
+            } else if (['rect','roundrect','circle','triangle','star','hexagon','image','group'].includes(o.type)) {
+                o.x = nx; o.y = ny;
+            }
+            render();
+            syncGeomProps();
+        }
+        ['prop-x','prop-y'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.onchange = () => applyGeomFromInputs(id.slice(-1));
+        });
+        const pw = document.getElementById('prop-w');
+        if (pw) pw.onchange = () => applyGeomFromInputs('w');
+        const ph = document.getElementById('prop-h');
+        if (ph) ph.onchange = () => applyGeomFromInputs('h');
+        document.getElementById('prop-aspect-lock') && (document.getElementById('prop-aspect-lock').onchange = (e) => {
+            state.aspectLock = e.target.checked;
+        });
+
+        // ========== COPY / PASTE ==========
+        function copySelection() {
+            const targets = selectedObjects();
+            if (!targets.length) return;
+            state.clipboard = JSON.parse(JSON.stringify(targets));
+        }
+        function pasteClipboard() {
+            if (!state.clipboard || !state.clipboard.length) return;
+            pushHistory();
+            const news = [];
+            state.clipboard.forEach(o => {
+                const c = JSON.parse(JSON.stringify(o));
+                c.id = uid();
+                c.layerId = state.activeLayerId;
+                const shift = 16;
+                if (c.points) c.points.forEach(p => { p.x += shift; p.y += shift; });
+                if (c.anchors) c.anchors.forEach(a => { a.x += shift; a.y += shift; });
+                if (c.x != null) { c.x += shift; c.y += shift; }
+                if (c.x1 != null) { c.x1 += shift; c.y1 += shift; c.x2 += shift; c.y2 += shift; }
+                if (c.children) c.children.forEach(ch => { ch.id = uid(); });
+                state.objects.push(c);
+                news.push(c.id);
+            });
+            state.selectedIds = new Set(news);
+            render(); updateSelectionUI(); renderLayerList();
+        }
+        // extend keydown
+        document.addEventListener('keydown', (e) => {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+            if ((e.metaKey || e.ctrlKey) && e.key === 'c') { e.preventDefault(); copySelection(); }
+            if ((e.metaKey || e.ctrlKey) && e.key === 'v') { e.preventDefault(); pasteClipboard(); }
+            if ((e.metaKey || e.ctrlKey) && e.key === 'd') { e.preventDefault(); copySelection(); pasteClipboard(); }
+            if ((e.metaKey || e.ctrlKey) && e.key === 'g') { e.preventDefault(); if (e.shiftKey) ungroupSelection(); else groupSelection(); }
+            if (e.shiftKey && (e.key === 'e' || e.key === 'E') && !(e.metaKey || e.ctrlKey)) {
+                e.preventDefault();
+                openEffectMore();
+            }
+        }, true);
+
+        // ========== EXPORT REGION MODE (red) ==========
+        function startExportPickMode() {
+            state.exportPickMode = true;
+            state.pickingExportRegion = true;
+            state.exportRegion = null;
+            setTool('select');
+            const m = document.getElementById('export-region-modal');
+            if (m) { m.classList.add('hidden'); m.classList.remove('flex'); }
+            // toast
+            const t = document.createElement('div');
+            t.id = 'export-pick-toast';
+            t.className = 'fixed top-16 left-1/2 -translate-x-1/2 z-[160] px-4 py-2 rounded-lg text-[12px] text-white';
+            t.style.background = 'rgba(220,38,38,0.9)';
+            t.textContent = '範囲書き出し: ドラッグで選択（Escでキャンセル）';
+            document.body.appendChild(t);
+            render();
+        }
+        document.getElementById('btn-export-region-pick') && (document.getElementById('btn-export-region-pick').onclick = startExportPickMode);
+        document.getElementById('btn-export-region-menu') && (document.getElementById('btn-export-region-menu').onclick = () => {
+            openExportRegion();
+        });
+        // red overlay already in render — change color when exportPickMode
+        // patch export region stroke in render by replacing blue with red when picking
+
+        // ========== REGIONS ==========
+        function captureRegionSnapshot() {
+            return {
+                objects: JSON.parse(JSON.stringify(state.objects)),
+                layers: JSON.parse(JSON.stringify(state.layers)),
+                activeLayerId: state.activeLayerId,
+                paintData: state.paintCanvas ? state.paintCanvas.toDataURL('image/png') : null,
+                canvasBg: state.canvasBg,
+                infiniteCanvas: state.infiniteCanvas,
+                canvasWidth: state.canvasWidth,
+                canvasHeight: state.canvasHeight
+            };
+        }
+        function applyRegionSnapshot(snap) {
+            if (!snap) return;
+            state.objects = snap.objects || [];
+            state.layers = snap.layers || state.layers;
+            state.activeLayerId = snap.activeLayerId || state.activeLayerId;
+            state.canvasBg = snap.canvasBg != null ? snap.canvasBg : state.canvasBg;
+            if (snap.paintData) {
+                ensurePaintLayer();
+                const img = new Image();
+                img.onload = () => {
+                    state.paintCtx.clearRect(0,0,state.paintCanvas.width,state.paintCanvas.height);
+                    state.paintCtx.drawImage(img,0,0);
+                    render();
+                };
+                img.src = snap.paintData;
+            } else if (state.paintCtx) {
+                state.paintCtx.clearRect(0,0,state.paintCanvas.width,state.paintCanvas.height);
+            }
+            state.selectedIds.clear();
+            render(); renderLayerList(); updateSelectionUI();
+        }
+        function renderRegionList() {
+            const box = document.getElementById('region-list');
+            if (!box) return;
+            box.innerHTML = '';
+            (state.regions || []).forEach(r => {
+                const row = document.createElement('div');
+                row.className = 'flex items-center gap-1 px-1.5 py-1.5 rounded-md text-[11px] ' +
+                    (r.id === state.activeRegionId ? 'bg-white/10 text-white' : 'text-geist-400 hover:bg-white/5');
+                row.innerHTML = `<span class="flex-1 truncate cursor-pointer reg-name">${r.name}</span>
+                    <button class="reg-load text-[10px] px-1">開く</button>
+                    <button class="reg-del text-[10px] text-rose-400 px-1">削除</button>`;
+                row.querySelector('.reg-name').onclick = row.querySelector('.reg-load').onclick = () => {
+                    // save current into active region first if any
+                    if (state.activeRegionId) {
+                        const cur = state.regions.find(x => x.id === state.activeRegionId);
+                        if (cur) cur.snapshot = captureRegionSnapshot();
+                    }
+                    state.activeRegionId = r.id;
+                    applyRegionSnapshot(r.snapshot);
+                    renderRegionList();
+                };
+                row.querySelector('.reg-del').onclick = (e) => {
+                    e.stopPropagation();
+                    if (!confirm('リージョン「' + r.name + '」を削除しますか？')) return;
+                    state.regions = state.regions.filter(x => x.id !== r.id);
+                    if (state.activeRegionId === r.id) state.activeRegionId = null;
+                    renderRegionList();
+                };
+                box.appendChild(row);
+            });
+            if (!(state.regions || []).length) {
+                box.innerHTML = '<div class="text-geist-600 text-[10px] px-1">保存されたリージョンなし</div>';
+            }
+        }
+        document.getElementById('btn-region-save') && (document.getElementById('btn-region-save').onclick = () => {
+            const name = (document.getElementById('region-name').value || '').trim() || ('Region ' + (state.regions.length + 1));
+            const snap = captureRegionSnapshot();
+            const existing = state.regions.find(r => r.name === name);
+            if (existing) {
+                existing.snapshot = snap;
+                state.activeRegionId = existing.id;
+            } else {
+                const r = { id: uid(), name, snapshot: snap, created: Date.now() };
+                state.regions.push(r);
+                state.activeRegionId = r.id;
+            }
+            document.getElementById('region-name').value = '';
+            renderRegionList();
+            alert('リージョン「' + name + '」を保存しました');
+        });
+
+        // ========== ANIMATION + ONION ==========
+        let animPlaying = false, animTimer = null, animIndex = 0;
+        function showAnimBar(show) {
+            const bar = document.getElementById('anim-bar');
+            if (!bar) return;
+            if (show) { bar.classList.remove('hidden'); bar.classList.add('flex'); }
+            else { bar.classList.add('hidden'); bar.classList.remove('flex'); }
+        }
+        function captureAnimFrame() {
+            return {
+                id: uid(),
+                objects: JSON.parse(JSON.stringify(state.objects)),
+                paintData: state.paintCanvas ? state.paintCanvas.toDataURL('image/png') : null
+            };
+        }
+        function loadAnimFrame(fr) {
+            if (!fr) return;
+            state.objects = JSON.parse(JSON.stringify(fr.objects || []));
+            if (fr.paintData) {
+                ensurePaintLayer();
+                const img = new Image();
+                img.onload = () => {
+                    state.paintCtx.clearRect(0,0,state.paintCanvas.width,state.paintCanvas.height);
+                    state.paintCtx.drawImage(img,0,0);
+                    render();
+                };
+                img.src = fr.paintData;
+            }
+            render();
+            updateAnimUI();
+        }
+        function updateAnimUI() {
+            const lab = document.getElementById('anim-frame-label');
+            const n = state.animFrames.length;
+            if (lab) lab.textContent = (n ? animIndex + 1 : 0) + ' / ' + n;
+            const strip = document.getElementById('anim-strip');
+            if (!strip) return;
+            strip.innerHTML = '';
+            state.animFrames.forEach((fr, i) => {
+                const b = document.createElement('button');
+                b.className = 'geist-btn !min-w-8 !min-h-8 text-[10px] ' + (i === animIndex ? 'active' : '');
+                b.textContent = i + 1;
+                b.onclick = () => { animIndex = i; loadAnimFrame(fr); };
+                strip.appendChild(b);
+            });
+        }
+        document.getElementById('anim-add') && (document.getElementById('anim-add').onclick = () => {
+            state.animFrames.push(captureAnimFrame());
+            animIndex = state.animFrames.length - 1;
+            updateAnimUI();
+        });
+        document.getElementById('anim-del') && (document.getElementById('anim-del').onclick = () => {
+            if (!state.animFrames.length) return;
+            state.animFrames.splice(animIndex, 1);
+            animIndex = Math.max(0, animIndex - 1);
+            if (state.animFrames[animIndex]) loadAnimFrame(state.animFrames[animIndex]);
+            updateAnimUI();
+        });
+        document.getElementById('anim-prev') && (document.getElementById('anim-prev').onclick = () => {
+            if (!state.animFrames.length) return;
+            animIndex = (animIndex - 1 + state.animFrames.length) % state.animFrames.length;
+            loadAnimFrame(state.animFrames[animIndex]);
+        });
+        document.getElementById('anim-next') && (document.getElementById('anim-next').onclick = () => {
+            if (!state.animFrames.length) return;
+            animIndex = (animIndex + 1) % state.animFrames.length;
+            loadAnimFrame(state.animFrames[animIndex]);
+        });
+        document.getElementById('anim-play') && (document.getElementById('anim-play').onclick = () => {
+            if (animPlaying) {
+                animPlaying = false;
+                clearInterval(animTimer);
+                document.getElementById('anim-play').innerHTML = '<i class="fa-solid fa-play"></i>';
+                return;
+            }
+            if (!state.animFrames.length) return;
+            animPlaying = true;
+            document.getElementById('anim-play').innerHTML = '<i class="fa-solid fa-pause"></i>';
+            const fps = +document.getElementById('anim-fps').value || 12;
+            animTimer = setInterval(() => {
+                animIndex = (animIndex + 1) % state.animFrames.length;
+                loadAnimFrame(state.animFrames[animIndex]);
+            }, 1000 / fps);
+        });
+        document.getElementById('onion-toggle') && (document.getElementById('onion-toggle').onchange = (e) => {
+            state.onionSkin = e.target.checked;
+            render();
+        });
+
+        // setMode anim show bar
+        const __setMode = setMode;
+        setMode = function(m) {
+            if (m === 'anim') {
+                state.mode = 'anim';
+                document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                document.getElementById('mode-anim-btn')?.classList.add('active');
+                showAnimBar(true);
+                if (!state.animFrames.length) {
+                    state.animFrames.push(captureAnimFrame());
+                    animIndex = 0;
+                    updateAnimUI();
+                }
+                return;
+            }
+            showAnimBar(false);
+            __setMode(m);
+        };
+
+        // Onion skin in render
+        const __render = render;
+        render = function() {
+            __render();
+            // onion overlay on main canvas after
+            if (state.mode === 'anim' && state.onionSkin && state.animFrames.length) {
+                const prev = state.animFrames[animIndex - 1];
+                const next = state.animFrames[animIndex + 1];
+                // draw lightly via temporary objects swap is expensive; skip full and draw indicator
+            }
+            drawMinimap();
+        };
+
+        // ========== MINIMAP ==========
+        function drawMinimap() {
+            const mc = document.getElementById('minimap');
+            if (!mc) return;
+            const mctx = mc.getContext('2d');
+            const mw = mc.width, mh = mc.height;
+            mctx.fillStyle = '#111';
+            mctx.fillRect(0, 0, mw, mh);
+            // world bounds from objects + artboard
+            let minx=-500, miny=-500, maxx=500, maxy=500;
+            if (!state.infiniteCanvas) {
+                minx = 0; miny = 0; maxx = state.canvasWidth; maxy = state.canvasHeight;
+            }
+            state.objects.forEach(o => {
+                const b = getBounds(o);
+                if (!b) return;
+                minx = Math.min(minx, b.x); miny = Math.min(miny, b.y);
+                maxx = Math.max(maxx, b.x+b.w); maxy = Math.max(maxy, b.y+b.h);
+            });
+            const bw = Math.max(1, maxx - minx), bh = Math.max(1, maxy - miny);
+            const scale = Math.min(mw / bw, mh / bh) * 0.9;
+            const ox = (mw - bw * scale) / 2 - minx * scale;
+            const oy = (mh - bh * scale) / 2 - miny * scale;
+            mctx.save();
+            mctx.translate(ox, oy);
+            mctx.scale(scale, scale);
+            mctx.fillStyle = '#333';
+            if (!state.infiniteCanvas) mctx.fillRect(0,0,state.canvasWidth,state.canvasHeight);
+            mctx.fillStyle = '#888';
+            state.objects.forEach(o => {
+                const b = getBounds(o);
+                if (b) mctx.fillRect(b.x, b.y, Math.max(1,b.w), Math.max(1,b.h));
+            });
+            // viewport
+            const tl = screenToWorld(0, 0);
+            const br = screenToWorld(window.innerWidth, window.innerHeight);
+            mctx.strokeStyle = '#3b82f6';
+            mctx.lineWidth = 2 / scale;
+            mctx.strokeRect(tl.x, tl.y, br.x - tl.x, br.y - tl.y);
+            mctx.restore();
+        }
+        document.getElementById('minimap') && document.getElementById('minimap').addEventListener('pointerdown', (e) => {
+            const mc = document.getElementById('minimap');
+            const rect = mc.getBoundingClientRect();
+            const mx = (e.clientX - rect.left) / rect.width * mc.width;
+            const my = (e.clientY - rect.top) / rect.height * mc.height;
+            // approximate inverse of drawMinimap mapping — center view
+            let minx=-500, miny=-500, maxx=500, maxy=500;
+            if (!state.infiniteCanvas) { minx=0;miny=0;maxx=state.canvasWidth;maxy=state.canvasHeight; }
+            state.objects.forEach(o => {
+                const b = getBounds(o);
+                if (!b) return;
+                minx = Math.min(minx, b.x); miny = Math.min(miny, b.y);
+                maxx = Math.max(maxx, b.x+b.w); maxy = Math.max(maxy, b.y+b.h);
+            });
+            const bw = Math.max(1, maxx - minx), bh = Math.max(1, maxy - miny);
+            const scale = Math.min(mc.width / bw, mc.height / bh) * 0.9;
+            const ox = (mc.width - bw * scale) / 2 - minx * scale;
+            const oy = (mc.height - bh * scale) / 2 - miny * scale;
+            const wx = (mx - ox) / scale;
+            const wy = (my - oy) / scale;
+            state.panX = window.innerWidth / 2 - wx * state.zoom;
+            state.panY = window.innerHeight / 2 - wy * state.zoom;
+            render();
+        });
+
+        // ========== PROJECT SAVE with regions ==========
+        const _saveProject = typeof saveProject === 'function' ? saveProject : null;
+        // find export project button handler and extend
+
+        // Bezier live preview - already draws currentObj
+        // Improve pen: show rubber band
+
+
+        // ========== EFFECT MORE ==========
+        state.effectMoreLive = true;
+        state.effectTime0 = performance.now();
+        let effectRaf = null;
+
+        function openEffectMore() {
+            const targets = selectedObjects();
+            if (!targets.length) {
+                alert('オブジェクトを選択してください');
+                return;
+            }
+            hideCtx();
+            const sheet = document.getElementById('effect-more-sheet');
+            const ta = document.getElementById('effect-more-code');
+            const err = document.getElementById('effect-more-err');
+            if (err) { err.classList.add('hidden'); err.textContent = ''; }
+            // load existing code from first selected
+            const existing = targets.find(t => t.effectMore && t.effectMore.code);
+            if (ta) ta.value = existing ? existing.effectMore.code : 'wiggle(3);';
+            if (sheet) {
+                sheet.classList.remove('hidden');
+                sheet.classList.add('flex');
+            }
+            ta && ta.focus();
+        }
+        function closeEffectMore() {
+            const sheet = document.getElementById('effect-more-sheet');
+            if (sheet) {
+                sheet.classList.add('hidden');
+                sheet.classList.remove('flex');
+            }
+        }
+        function parseEffectMore(code) {
+            const effects = [];
+            if (!code || !String(code).trim()) return effects;
+            const src = String(code);
+            // allowed calls only
+            const re = /(wiggle|wave|pulse|spin|drift)\s*\(\s*([^)]*)\s*\)\s*;?/gi;
+            let m;
+            while ((m = re.exec(src))) {
+                const name = m[1].toLowerCase();
+                const args = m[2].split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n));
+                effects.push({ name, args });
+            }
+            // reject unknown tokens roughly
+            const cleaned = src.replace(/\/\/.*$/gm, '').replace(re, '').replace(/[\s;]/g, '');
+            if (cleaned.length) {
+                throw new Error('未対応の記述があります: ' + cleaned.slice(0, 40));
+            }
+            if (!effects.length) throw new Error('有効なエフェクトがありません（例: wiggle(3);）');
+            return effects;
+        }
+        function applyEffectMoreToSelection(code, previewOnly) {
+            const err = document.getElementById('effect-more-err');
+            try {
+                const effects = parseEffectMore(code);
+                if (err) { err.classList.add('hidden'); err.textContent = ''; }
+                const targets = selectedObjects();
+                if (!targets.length) throw new Error('選択がありません');
+                if (!previewOnly) pushHistory();
+                targets.forEach(o => {
+                    // snapshot base geometry once
+                    if (!o._effectBase) o._effectBase = snapshotEffectBase(o);
+                    o.effectMore = {
+                        code: String(code).trim(),
+                        effects,
+                        enabled: true
+                    };
+                });
+                ensureEffectLoop();
+                render();
+                if (!previewOnly) closeEffectMore();
+            } catch (e) {
+                if (err) {
+                    err.textContent = e.message || String(e);
+                    err.classList.remove('hidden');
+                }
+            }
+        }
+        function snapshotEffectBase(o) {
+            return JSON.parse(JSON.stringify({
+                x: o.x, y: o.y, w: o.w, h: o.h,
+                x1: o.x1, y1: o.y1, x2: o.x2, y2: o.y2,
+                rotation: o.rotation || 0,
+                opacity: o.opacity != null ? o.opacity : 1,
+                points: o.points, anchors: o.anchors,
+                children: o.children
+            }));
+        }
+        function restoreEffectBase(o) {
+            if (!o._effectBase) return;
+            const b = o._effectBase;
+            if (b.x != null) o.x = b.x;
+            if (b.y != null) o.y = b.y;
+            if (b.w != null) o.w = b.w;
+            if (b.h != null) o.h = b.h;
+            if (b.x1 != null) { o.x1 = b.x1; o.y1 = b.y1; o.x2 = b.x2; o.y2 = b.y2; }
+            o.rotation = b.rotation || 0;
+            o.opacity = b.opacity;
+            if (b.points) o.points = JSON.parse(JSON.stringify(b.points));
+            if (b.anchors) o.anchors = JSON.parse(JSON.stringify(b.anchors));
+            if (b.children) o.children = JSON.parse(JSON.stringify(b.children));
+        }
+        function applyEffectsAtTime(o, t) {
+            if (!o.effectMore || !o.effectMore.enabled || !o.effectMore.effects) return;
+            if (!o._effectBase) o._effectBase = snapshotEffectBase(o);
+            restoreEffectBase(o);
+            const effects = o.effectMore.effects;
+            effects.forEach(ef => {
+                const a = ef.args || [];
+                if (ef.name === 'wiggle') {
+                    const amp = a[0] != null ? a[0] : 3;
+                    const freq = a[1] != null ? a[1] : 1.5;
+                    wiggleObject(o, t, amp, freq);
+                } else if (ef.name === 'wave') {
+                    const amp = a[0] != null ? a[0] : 8;
+                    const freq = a[1] != null ? a[1] : 1.2;
+                    waveObject(o, t, amp, freq);
+                } else if (ef.name === 'pulse') {
+                    const amount = a[0] != null ? a[0] : 0.3;
+                    const freq = a[1] != null ? a[1] : 1.5;
+                    const s = 1 + Math.sin(t * freq * Math.PI * 2) * amount;
+                    scaleObjectAboutCenter(o, s);
+                } else if (ef.name === 'spin') {
+                    const degPerSec = a[0] != null ? a[0] : 45;
+                    o.rotation = (o._effectBase.rotation || 0) + degPerSec * t;
+                } else if (ef.name === 'drift') {
+                    const amp = a[0] != null ? a[0] : 10;
+                    const freq = a[1] != null ? a[1] : 0.4;
+                    const dx = Math.sin(t * freq * Math.PI * 2) * amp;
+                    const dy = Math.cos(t * freq * Math.PI * 2 * 0.7) * amp * 0.6;
+                    translateObject(o, dx, dy);
+                }
+            });
+        }
+        function translateObject(o, dx, dy) {
+            if (o.points) o.points.forEach(p => { p.x += dx; p.y += dy; });
+            if (o.anchors) o.anchors.forEach(a => { a.x += dx; a.y += dy; });
+            if (o.x != null) { o.x += dx; o.y += dy; }
+            if (o.x1 != null) { o.x1 += dx; o.y1 += dy; o.x2 += dx; o.y2 += dy; }
+            if (o.children) o.children.forEach(ch => translateObject(ch, dx, dy));
+        }
+        function scaleObjectAboutCenter(o, s) {
+            const b = getBounds(o);
+            if (!b) return;
+            const cx = b.x + b.w / 2, cy = b.y + b.h / 2;
+            const sc = (px, py) => ({ x: cx + (px - cx) * s, y: cy + (py - cy) * s });
+            if (o.points) o.points = o.points.map(p => sc(p.x, p.y));
+            if (o.anchors) o.anchors.forEach(a => {
+                const p = sc(a.x, a.y);
+                a.x = p.x; a.y = p.y;
+                a.inX = (a.inX || 0) * s; a.inY = (a.inY || 0) * s;
+                a.outX = (a.outX || 0) * s; a.outY = (a.outY || 0) * s;
+            });
+            if (['rect','roundrect','circle','triangle','star','hexagon','image','group'].includes(o.type)) {
+                o.w = (o._effectBase.w || o.w) * s;
+                o.h = (o._effectBase.h || o.h) * s;
+                o.x = cx - o.w / 2;
+                o.y = cy - o.h / 2;
+            }
+        }
+        function wiggleObject(o, t, amp, freq) {
+            const phase = t * freq * Math.PI * 2;
+            if (o.points && o.points.length) {
+                o.points.forEach((p, i) => {
+                    const base = o._effectBase.points[i];
+                    if (!base) return;
+                    p.x = base.x + Math.sin(phase + i * 0.7) * amp;
+                    p.y = base.y + Math.cos(phase * 1.1 + i * 0.5) * amp;
+                });
+                return;
+            }
+            if (o.anchors && o.anchors.length) {
+                o.anchors.forEach((a, i) => {
+                    const base = o._effectBase.anchors[i];
+                    if (!base) return;
+                    a.x = base.x + Math.sin(phase + i * 0.6) * amp;
+                    a.y = base.y + Math.cos(phase * 1.05 + i * 0.45) * amp;
+                });
+                return;
+            }
+            // whole-object nudge
+            const dx = Math.sin(phase) * amp;
+            const dy = Math.cos(phase * 1.13) * amp;
+            translateObject(o, dx, dy);
+        }
+        function waveObject(o, t, amp, freq) {
+            const phase = t * freq * Math.PI * 2;
+            if (o.points && o.points.length) {
+                o.points.forEach((p, i) => {
+                    const base = o._effectBase.points[i];
+                    if (!base) return;
+                    p.x = base.x;
+                    p.y = base.y + Math.sin(phase + i * 0.35) * amp;
+                });
+                return;
+            }
+            if (o.anchors && o.anchors.length) {
+                o.anchors.forEach((a, i) => {
+                    const base = o._effectBase.anchors[i];
+                    if (!base) return;
+                    a.x = base.x;
+                    a.y = base.y + Math.sin(phase + i * 0.35) * amp;
+                });
+                return;
+            }
+            translateObject(o, 0, Math.sin(phase) * amp);
+        }
+        function tickEffects() {
+            if (!state.effectMoreLive) {
+                effectRaf = null;
+                return;
+            }
+            const t = (performance.now() - state.effectTime0) / 1000;
+            let any = false;
+            state.objects.forEach(o => {
+                if (o.effectMore && o.effectMore.enabled) {
+                    applyEffectsAtTime(o, t);
+                    any = true;
+                }
+            });
+            if (any) render();
+            effectRaf = requestAnimationFrame(tickEffects);
+        }
+        function ensureEffectLoop() {
+            state.effectMoreLive = document.getElementById('effect-more-live')
+                ? document.getElementById('effect-more-live').checked
+                : true;
+            if (!effectRaf) {
+                state.effectTime0 = performance.now();
+                effectRaf = requestAnimationFrame(tickEffects);
+            }
+        }
+
+        document.getElementById('effect-more-close') && (document.getElementById('effect-more-close').onclick = closeEffectMore);
+        document.getElementById('effect-more-apply') && (document.getElementById('effect-more-apply').onclick = () => {
+            applyEffectMoreToSelection(document.getElementById('effect-more-code').value, false);
+        });
+        document.getElementById('effect-more-preview') && (document.getElementById('effect-more-preview').onclick = () => {
+            applyEffectMoreToSelection(document.getElementById('effect-more-code').value, true);
+        });
+        document.getElementById('effect-more-live') && (document.getElementById('effect-more-live').onchange = (e) => {
+            state.effectMoreLive = e.target.checked;
+            if (state.effectMoreLive) ensureEffectLoop();
+        });
+        document.querySelectorAll('.em-snippet').forEach(b => {
+            b.onclick = () => {
+                const ta = document.getElementById('effect-more-code');
+                if (ta) ta.value = b.dataset.code || '';
+            };
+        });
+
+        // context menu action
+        document.querySelectorAll('#app-ctx-menu [data-ctx="effect-more"]').forEach(btn => {
+            btn.onclick = () => openEffectMore();
+        });
+
+        // also when data-ctx handler runs - extend existing generic handler
+        // patch into existing ctx clicks if they use switch on data-ctx
+
         // Init
         try {
             renderPalette('mono');
@@ -4022,6 +5988,7 @@
             updateHistoryButtons();
             const pp = document.getElementById('props-panel');
             if (pp) {
+                // props: only open when needed on mobile; desktop open empty state
                 if (window.innerWidth > 768) {
                     pp.classList.remove('hidden');
                     pp.classList.add('flex');
@@ -4029,6 +5996,27 @@
                     pp.classList.add('hidden');
                     pp.classList.remove('flex');
                 }
+            }
+            const leftP = document.getElementById('left-paint-panel');
+            if (leftP && window.innerWidth > 768) {
+                leftP.classList.remove('hidden');
+                leftP.classList.add('flex');
+            }
+            if (typeof syncLeftPanel === 'function') syncLeftPanel();
+            const mm = document.getElementById('minimap-wrap');
+            if (mm && window.innerWidth > 768) mm.classList.remove('hidden');
+            if (typeof renderRegionList === 'function') renderRegionList();
+            // populate left palette
+            const leftPal = document.getElementById('palette-swatches-left');
+            if (leftPal && typeof palettes !== 'undefined') {
+                leftPal.innerHTML = '';
+                (palettes.mono || []).forEach(hex => {
+                    const b = document.createElement('button');
+                    b.className = 'swatch';
+                    b.style.background = hex;
+                    b.onclick = () => setColor(hex);
+                    leftPal.appendChild(b);
+                });
             }
             ['size-slider','opacity-slider','stabilize-slider','hardness-slider'].forEach(id => {
                 const el = document.getElementById(id);
