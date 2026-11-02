@@ -1107,7 +1107,8 @@
             <span class="font-mono">フレーム</span>
             <span id="anim-frame-label" class="font-mono text-white">0 / 0</span>
             <label class="ml-auto flex items-center gap-1 text-[10px]"><input type="checkbox" id="onion-toggle" checked class="accent-white">オニオン</label>
-            <span class="text-[10px] text-geist-500">前後フレームを半透明表示</span>
+            <span class="text-[10px] text-geist-500">前後フレーム半透明</span>
+            <span class="text-[10px] text-geist-600">｜ペン・図形OK</span>
         </div>
         <div class="flex items-center gap-1">
             <button id="anim-prev" class="geist-btn !min-w-8 !min-h-8"><i class="fa-solid fa-caret-left"></i></button>
@@ -2574,6 +2575,8 @@ return null;
                 try { ensurePaintLayer(); } catch (_) {}
                 if (typeof showAnimBar === 'function') showAnimBar(false);
             } else if (m === 'anim') {
+                // 映像: ベクターペン・図形・選択すべて利用可（フレームに objects を保存）
+                if (state.tool === 'hand') setTool('select');
                 if (typeof showAnimBar === 'function') showAnimBar(true);
                 if (typeof ensureAnimSeed === 'function') ensureAnimSeed();
                 if (typeof updateAnimUI === 'function') updateAnimUI();
@@ -2912,7 +2915,8 @@ return null;
             };
 
             if (state.tool === 'brush') {
-                if (state.mode === 'paint' || state.mode === 'anim') {
+                // 描画モードのみラスター。映像モードはベクターブラシ（パス）も可
+                if (state.mode === 'paint') {
                     try { ensurePaintLayer(); } catch (e) { console.error(e); }
                     state._paintStroke = true;
                     state._stabBuf = [];
@@ -5746,27 +5750,48 @@ return null;
             else { bar.classList.add('hidden'); bar.classList.remove('flex'); }
         }
         function captureAnimFrame() {
+            // ベクター（ペン/図形/グループ）+ ラスター両方をフレームに保存
+            let objectsCopy = [];
+            try {
+                objectsCopy = JSON.parse(JSON.stringify(state.objects, (k, v) => {
+                    if (k === '_img' || k === '_effectBase') return undefined;
+                    return v;
+                }));
+            } catch (e) {
+                objectsCopy = state.objects.map(o => ({ ...o }));
+            }
             return {
                 id: uid(),
-                objects: JSON.parse(JSON.stringify(state.objects)),
-                paintData: state.paintCanvas ? state.paintCanvas.toDataURL('image/png') : null
+                objects: objectsCopy,
+                paintData: state.paintCanvas ? state.paintCanvas.toDataURL('image/png') : null,
+                note: 'vector+raster'
             };
         }
         function loadAnimFrame(fr) {
             if (!fr) return;
-            state.objects = JSON.parse(JSON.stringify(fr.objects || []));
+            try {
+                state.objects = JSON.parse(JSON.stringify(fr.objects || []));
+            } catch (_) {
+                state.objects = fr.objects || [];
+            }
+            state.selectedIds.clear();
             if (fr.paintData) {
                 ensurePaintLayer();
                 const img = new Image();
                 img.onload = () => {
                     state.paintCtx.clearRect(0,0,state.paintCanvas.width,state.paintCanvas.height);
                     state.paintCtx.drawImage(img,0,0);
+                    if (typeof invalidateScene === 'function') invalidateScene();
                     render();
                 };
                 img.src = fr.paintData;
+            } else if (state.paintCtx && state.paintCanvas) {
+                state.paintCtx.clearRect(0,0,state.paintCanvas.width,state.paintCanvas.height);
             }
+            if (typeof invalidateScene === 'function') invalidateScene();
             render();
-            updateAnimUI();
+            if (typeof updateAnimUI === 'function') updateAnimUI();
+            if (typeof updateSelectionUI === 'function') updateSelectionUI();
         }
         function updateAnimUI() {
             const lab = document.getElementById('anim-frame-label');
@@ -5784,6 +5809,7 @@ return null;
             });
         }
         document.getElementById('anim-add') && (document.getElementById('anim-add').onclick = () => {
+            if (state.animFrames.length) saveCurrentAnimFrame();
             state.animFrames.push(captureAnimFrame());
             animIndex = state.animFrames.length - 1;
             updateAnimUI();
@@ -5795,13 +5821,20 @@ return null;
             if (state.animFrames[animIndex]) loadAnimFrame(state.animFrames[animIndex]);
             updateAnimUI();
         });
+        function saveCurrentAnimFrame() {
+            if (!state.animFrames || !state.animFrames.length) return;
+            if (animIndex < 0 || animIndex >= state.animFrames.length) return;
+            state.animFrames[animIndex] = captureAnimFrame();
+        }
         document.getElementById('anim-prev') && (document.getElementById('anim-prev').onclick = () => {
             if (!state.animFrames.length) return;
+            saveCurrentAnimFrame();
             animIndex = (animIndex - 1 + state.animFrames.length) % state.animFrames.length;
             loadAnimFrame(state.animFrames[animIndex]);
         });
         document.getElementById('anim-next') && (document.getElementById('anim-next').onclick = () => {
             if (!state.animFrames.length) return;
+            saveCurrentAnimFrame();
             animIndex = (animIndex + 1) % state.animFrames.length;
             loadAnimFrame(state.animFrames[animIndex]);
         });
