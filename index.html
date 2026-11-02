@@ -448,7 +448,74 @@
         .brush-chip:hover { background: rgba(255,255,255,0.06); color: #fff; }
         .brush-chip.active { background: #fafafa; color: #0a0a0a; border-color: #fff; }
         .side-tab.active { background: rgba(255,255,255,0.12); color: #fff; }
+
+        #app-menubar .menu-btn {
+            background: transparent; border: none; color: #a3a3a3;
+            font-size: 12px; padding: 4px 10px; border-radius: 6px; cursor: pointer;
+        }
+        #app-menubar .menu-btn:hover, #app-menubar .menu-root:hover > .menu-btn {
+            background: rgba(255,255,255,0.08); color: #fff;
+        }
+        #app-menubar .menu-dd {
+            position: absolute; top: 100%; left: 0; min-width: 180px;
+            background: #171717; border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px; padding: 4px; z-index: 60;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+        }
+        #app-menubar .menu-root:hover .menu-dd { display: block !important; }
+        #app-menubar .menu-dd button {
+            display: block; width: 100%; text-align: left;
+            background: transparent; border: none; color: #e5e5e5;
+            font-size: 12px; padding: 7px 10px; border-radius: 6px; cursor: pointer;
+        }
+        #app-menubar .menu-dd button:hover { background: rgba(255,255,255,0.08); }
+        #app-menubar .menu-sep { height: 1px; background: rgba(255,255,255,0.08); margin: 4px 0; }
+        .mode-toggle {
+            display: flex; background: rgba(0,0,0,0.35); border-radius: 8px; padding: 2px; gap: 2px;
+        }
+        .mode-toggle-btn {
+            border: none; background: transparent; color: #a3a3a3;
+            font-size: 11px; padding: 5px 10px; border-radius: 6px; cursor: pointer;
+        }
+        .mode-toggle-btn.active {
+            background: rgba(255,255,255,0.12); color: #fff; font-weight: 500;
+        }
+
+        /* Leave space under menubar */
+        #top-bar { top: 44px !important; }
+        #left-toolbar { top: calc(50% + 18px) !important; }
+        #props-panel, #panel-layers, #panel-regions, #panel-brush {
+            top: 48px !important;
+        }
+        /* Hover bridge for tool flyouts */
+        .tool-flyout-wrap { position: relative; }
+        .tool-flyout-wrap::after {
+            content: ''; position: absolute; left: 100%; top: 0;
+            width: 16px; height: 100%; 
+        }
+        .tool-flyout {
+            display: none; position: absolute; left: calc(100% + 6px); top: 0;
+            geist-surface: ; 
+            background: #171717; border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px; padding: 8px; z-index: 40; min-width: 160px;
+            box-shadow: 0 8px 28px rgba(0,0,0,0.45);
+        }
+        .tool-flyout-wrap:hover .tool-flyout,
+        .tool-flyout:hover { display: block !important; }
+        .tool-flyout-wrap:hover::after { width: 20px; height: 120%; }
+        /* Minimap window */
+        #minimap-wrap {
+            resize: both; overflow: hidden; min-width: 120px; min-height: 80px;
+            max-width: 360px; max-height: 280px; width: 180px; height: 120px;
+            cursor: default;
+        }
+        #minimap-wrap .mm-title {
+            font-size: 10px; color: #a3a3a3; padding: 2px 6px; cursor: move;
+            user-select: none; border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+
         #minimap-wrap { box-shadow: 0 0 0 1px rgba(255,255,255,0.08); }
+
         #effect-more-sheet:not(.hidden) { display: flex !important; }
         #effect-more-sheet .geist-surface {
             animation: emSlideUp 0.22s ease-out;
@@ -598,7 +665,89 @@
         <button data-ctx="delete" class="ctx-item w-full text-left px-3 py-2 hover:bg-white/8 text-rose-400">削除</button>
     </div>
 
-<!-- Canvas -->
+
+    <!-- APP MENUBAR -->
+    <nav id="app-menubar" class="absolute top-0 left-0 right-0 h-9 z-[50] flex items-center gap-0 px-2 pointer-events-auto border-b border-white/10" style="background:rgba(12,12,12,0.92);backdrop-filter:blur(12px);">
+        <span class="text-[12px] font-semibold text-white mr-3 tracking-tight">VersePaint</span>
+        <div class="menu-root relative" data-menu="file"><button type="button" class="menu-btn">ファイル</button>
+            <div class="menu-dd hidden">
+                <button data-menu-act="new">新規</button>
+                <button data-menu-act="open">開く…</button>
+                <button data-menu-act="save">プロジェクト保存</button>
+                <div class="menu-sep"></div>
+                <button data-menu-act="export-region">範囲を書き出し…</button>
+                <button data-menu-act="export-png">PNG書き出し</button>
+            </div>
+        </div>
+        <div class="menu-root relative" data-menu="edit"><button type="button" class="menu-btn">編集</button>
+            <div class="menu-dd hidden">
+                <button data-menu-act="undo">元に戻す</button>
+                <button data-menu-act="redo">やり直す</button>
+                <div class="menu-sep"></div>
+                <button data-menu-act="copy">コピー</button>
+                <button data-menu-act="paste">貼り付け</button>
+                <button data-menu-act="duplicate">複製</button>
+            </div>
+        </div>
+        <div class="menu-root relative" data-menu="select"><button type="button" class="menu-btn">選択</button>
+            <div class="menu-dd hidden">
+                <button data-menu-act="select-all">すべて選択 (⌘A)</button>
+                <button data-menu-act="invert-sel">選択を反転 (⌘⇧I)</button>
+                <button data-menu-act="deselect">選択解除</button>
+            </div>
+        </div>
+        <div class="menu-root relative" data-menu="object"><button type="button" class="menu-btn">オブジェクト</button>
+            <div class="menu-dd hidden">
+                <button data-menu-act="group">グループ化</button>
+                <button data-menu-act="ungroup">グループ解除</button>
+                <button data-menu-act="bring-front">最前面へ</button>
+                <button data-menu-act="send-back">最背面へ</button>
+                <div class="menu-sep"></div>
+                <button data-menu-act="to-raster">ラスターに変換</button>
+            </div>
+        </div>
+        <div class="menu-root relative" data-menu="effect"><button type="button" class="menu-btn">効果</button>
+            <div class="menu-dd hidden">
+                <button data-menu-act="effect-more">エフェクトモア…</button>
+                <button data-menu-act="clear-effects">エフェクトをクリア</button>
+            </div>
+        </div>
+        <div class="menu-root relative" data-menu="view"><button type="button" class="menu-btn">表示</button>
+            <div class="menu-dd hidden">
+                <button data-menu-act="zoom-in">ズームイン</button>
+                <button data-menu-act="zoom-out">ズームアウト</button>
+                <button data-menu-act="zoom-fit">全体表示</button>
+                <div class="menu-sep"></div>
+                <button data-menu-act="toggle-minimap">ミニマップ表示/非表示</button>
+                <button data-menu-act="toggle-grid">グリッド</button>
+            </div>
+        </div>
+        <div class="menu-root relative" data-menu="panel"><button type="button" class="menu-btn">パネル</button>
+            <div class="menu-dd hidden">
+                <button data-menu-act="panel-props">プロパティ</button>
+                <button data-menu-act="panel-layers">レイヤー</button>
+                <button data-menu-act="panel-regions">リージョン</button>
+                <button data-menu-act="panel-brush">ブラシ</button>
+            </div>
+        </div>
+        <div class="menu-root relative" data-menu="ext"><button type="button" class="menu-btn">拡張機能</button>
+            <div class="menu-dd hidden">
+                <button data-menu-act="anim">アニメーション</button>
+                <button data-menu-act="help">ヘルプ</button>
+            </div>
+        </div>
+        <div class="flex-1"></div>
+        <div class="flex items-center gap-2 text-[11px] text-geist-400 font-mono pr-1">
+            <span id="hud-coords" class="min-w-[90px]">0, 0</span>
+            <span class="text-white/20">|</span>
+            <button id="zoom-out" class="geist-btn !min-w-6 !min-h-6 text-[10px]">−</button>
+            <span id="hud-zoom" class="text-white min-w-[40px] text-center">100%</span>
+            <button id="zoom-in" class="geist-btn !min-w-6 !min-h-6 text-[10px]">+</button>
+            <button id="btn-help-top" class="geist-btn !min-w-7 !min-h-7" title="ヘルプ"><i class="fa-regular fa-circle-question text-[11px]"></i></button>
+        </div>
+    </nav>
+
+    <!-- Canvas -->
     <div id="canvas-container" class="absolute inset-0 w-full h-full cursor-crosshair">
         <canvas id="main-canvas"></canvas>
         <div id="selection-box" class="selection-box"></div>
@@ -610,11 +759,14 @@
     <header id="top-bar" class="absolute top-2 left-2 right-2 flex items-center justify-between pointer-events-none z-40">
         <div class="geist-surface px-2 py-1 rounded-lg flex items-center gap-1.5 pointer-events-auto">
             <div class="mode-toggle flex">
-                <button id="mode-vector-btn" class="mode-toggle-btn active flex items-center gap-1" title="編集モード (オブジェクトを選択・変形)">
+                <button id="mode-vector-btn" class="mode-toggle-btn active flex items-center gap-1" title="編集モード">
                     <i class="fa-solid fa-arrow-pointer text-[9px]"></i><span class="hide-sm">編集</span>
                 </button>
-                <button id="mode-paint-btn" class="mode-toggle-btn flex items-center gap-1" title="描画モード (ブラシ・塗り)">
+                <button id="mode-paint-btn" class="mode-toggle-btn flex items-center gap-1" title="描画モード（ラスター）">
                     <i class="fa-solid fa-paintbrush text-[9px]"></i><span class="hide-sm">描画</span>
+                </button>
+                <button id="mode-anim-btn" class="mode-toggle-btn flex items-center gap-1" title="映像モード（アニメーション）">
+                    <i class="fa-solid fa-film text-[9px]"></i><span class="hide-sm">映像</span>
                 </button>
             </div>
         </div>
@@ -669,7 +821,22 @@
         <button id="tool-hand" class="geist-btn" title="移動 (H / Space)"><i class="fa-solid fa-hand text-[14px]"></i></button>
         <button id="tool-select" class="geist-btn" title="選択 (V)"><i class="fa-solid fa-arrow-pointer text-[14px]"></i></button>
         <div class="h-px w-full bg-white/10 my-0.5"></div>
+        <div class="tool-flyout-wrap">
         <button id="tool-brush" class="geist-btn active" title="ブラシ (B)"><i class="fa-solid fa-pen-nib text-[14px]"></i></button>
+        <div class="tool-flyout text-[11px] text-geist-300">
+            <div class="text-[10px] text-geist-500 mb-1">ブラシ</div>
+            <div class="grid grid-cols-2 gap-1 mb-2">
+                <button class="paint-preset geist-btn py-1 text-[9px]" data-preset="pen">ペン</button>
+                <button class="paint-preset geist-btn py-1 text-[9px]" data-preset="marker">マーカー</button>
+                <button class="paint-preset geist-btn py-1 text-[9px]" data-preset="airbrush">エア</button>
+                <button class="paint-preset geist-btn py-1 text-[9px]" data-preset="pixel">ピクセル</button>
+            </div>
+            <div class="text-[10px] mb-0.5">サイズ</div>
+            <input type="range" min="1" max="200" value="8" class="slider w-full fly-size" data-bind="strokeWidth">
+            <div class="text-[10px] mt-1 mb-0.5">手ブレ補正</div>
+            <input type="range" min="0" max="20" value="0" class="slider w-full fly-stab" data-bind="stabilize">
+        </div>
+    </div>
         <button id="tool-text" class="geist-btn" title="テキスト (T)"><i class="fa-solid fa-font text-[14px]"></i></button>
         <div class="relative" id="shapes-wrap">
             <button id="tool-shapes" class="geist-btn w-full" title="図形"><i id="shape-icon" class="fa-regular fa-square text-[14px]"></i></button>
@@ -685,7 +852,16 @@
             </div>
         </div>
         <button id="tool-pen" class="geist-btn" title="ペン / ベジェ (P)"><i class="fa-solid fa-bezier-curve text-[14px]"></i></button>
+        <div class="tool-flyout-wrap">
         <button id="tool-eraser" class="geist-btn" title="消しゴム (E)"><i class="fa-solid fa-eraser text-[14px]"></i></button>
+        <div class="tool-flyout text-[11px] text-geist-300">
+            <div class="text-[10px] text-geist-500 mb-1">消しゴム</div>
+            <button class="eraser-mode-btn geist-btn py-1 text-[9px] w-full mb-1" data-emode="partial">部分消し</button>
+            <button class="eraser-mode-btn geist-btn py-1 text-[9px] w-full" data-emode="object">一筆消し</button>
+            <div class="text-[10px] mt-2 mb-0.5">サイズ</div>
+            <input type="range" min="1" max="200" value="20" class="slider w-full fly-size">
+        </div>
+    </div>
         <button id="tool-eyedropper" class="geist-btn" title="スポイト (I)"><i class="fa-solid fa-eye-dropper text-[14px]"></i></button>
         <div class="h-px w-full bg-white/10 my-0.5"></div>
         <button id="btn-props-toggle" class="geist-btn" title="設定"><i class="fa-solid fa-sliders text-[14px]"></i></button>
@@ -920,8 +1096,9 @@
 
     
     <!-- MINIMAP -->
-    <div id="minimap-wrap" class="absolute bottom-14 right-4 z-30 geist-surface rounded-lg p-1 pointer-events-auto hidden md:block" style="width:160px;height:100px;">
-        <canvas id="minimap" width="160" height="100" style="width:100%;height:100%;border-radius:6px;cursor:crosshair;"></canvas>
+    <div id="minimap-wrap" class="absolute bottom-14 right-4 z-30 geist-surface rounded-lg pointer-events-auto" style="width:180px;height:130px;">
+        <div class="mm-title flex justify-between items-center"><span>ミニマップ</span><button id="mm-close" class="text-geist-500 hover:text-white px-1">×</button></div>
+        <canvas id="minimap" style="width:100%;height:calc(100% - 22px);cursor:crosshair;display:block;"></canvas>
     </div>
 
     <!-- ANIMATION BAR -->
@@ -930,6 +1107,7 @@
             <span class="font-mono">フレーム</span>
             <span id="anim-frame-label" class="font-mono text-white">0 / 0</span>
             <label class="ml-auto flex items-center gap-1 text-[10px]"><input type="checkbox" id="onion-toggle" checked class="accent-white">オニオン</label>
+            <span class="text-[10px] text-geist-500">前後フレームを半透明表示</span>
         </div>
         <div class="flex items-center gap-1">
             <button id="anim-prev" class="geist-btn !min-w-8 !min-h-8"><i class="fa-solid fa-caret-left"></i></button>
@@ -945,13 +1123,13 @@
     <!-- BOTTOM HUD -->
     <footer id="bottom-hud" class="absolute bottom-2 left-2 right-2 flex items-center justify-between pointer-events-none z-20">
         <div class="geist-surface px-2 py-1 rounded-md text-[10px] font-mono text-geist-400 flex items-center gap-2 pointer-events-auto">
-            <span id="hud-coords">0, 0</span>
-            <span id="hud-zoom" class="text-white">100%</span>
+            <span id="hud-coords-legacy">0, 0</span>
+            <span id="hud-zoom-legacy" class="text-white">100%</span>
         </div>
         <div class="geist-surface px-0.5 py-0.5 rounded-md flex items-center pointer-events-auto">
             <button id="zoom-out" class="geist-btn !min-w-7 !min-h-7 rounded" title="縮小"><i class="fa-solid fa-minus text-[10px]"></i></button>
             <button id="zoom-reset" class="geist-btn !min-w-0 px-1.5 !min-h-7 rounded text-[10px] font-mono">100%</button>
-            <button id="zoom-in" class="geist-btn !min-w-7 !min-h-7 rounded" title="拡大"><i class="fa-solid fa-plus text-[10px]"></i></button>
+            <button id="zoom-in-legacy" class="geist-btn !min-w-7 !min-h-7 rounded" title="拡大"><i class="fa-solid fa-plus text-[10px]"></i></button>
         </div>
         <button id="btn-help" class="geist-surface px-2 py-1 rounded-md text-[10px] font-mono text-geist-400 hover:text-white pointer-events-auto">?</button>
     </footer>
@@ -1538,7 +1716,19 @@
                 });
                 return { x: minx, y: miny, w: maxx - minx, h: maxy - miny };
             }
-            return null;
+                        if (obj.type === 'group') {
+                if (obj.w != null && obj.h != null) return { x: obj.x||0, y: obj.y||0, w: Math.abs(obj.w), h: Math.abs(obj.h) };
+                let minx=Infinity,miny=Infinity,maxx=-Infinity,maxy=-Infinity;
+                (obj.children||[]).forEach(ch => {
+                    const b = getBounds(ch);
+                    if (!b) return;
+                    minx=Math.min(minx,b.x); miny=Math.min(miny,b.y);
+                    maxx=Math.max(maxx,b.x+b.w); maxy=Math.max(maxy,b.y+b.h);
+                });
+                if (!isFinite(minx)) return { x:0,y:0,w:0,h:0 };
+                return { x:minx,y:miny,w:maxx-minx,h:maxy-miny };
+            }
+return null;
         }
 
         function render() {
@@ -2374,13 +2564,22 @@
 
         function setMode(m) {
             state.mode = m;
-            document.getElementById('mode-vector-btn').classList.toggle('active', m === 'vector');
-            document.getElementById('mode-paint-btn').classList.toggle('active', m === 'paint');
+            document.getElementById('mode-vector-btn')?.classList.toggle('active', m === 'vector');
+            document.getElementById('mode-paint-btn')?.classList.toggle('active', m === 'paint');
+            document.getElementById('mode-anim-btn')?.classList.toggle('active', m === 'anim');
             // Figma-like: 編集=select, 描画=brush
             if (m === 'vector') setTool('select');
             else if (m === 'paint') {
                 if (state.tool === 'select' || state.tool === 'pen') setTool('brush');
                 try { ensurePaintLayer(); } catch (_) {}
+                if (typeof showAnimBar === 'function') showAnimBar(false);
+            } else if (m === 'anim') {
+                if (typeof showAnimBar === 'function') showAnimBar(true);
+                if (typeof ensureAnimSeed === 'function') ensureAnimSeed();
+                if (typeof updateAnimUI === 'function') updateAnimUI();
+                invalidateScene();
+            } else if (m === 'vector') {
+                if (typeof showAnimBar === 'function') showAnimBar(false);
             }
             const showBrush = state.tool === 'brush';
             const pp = document.getElementById('paint-presets');
@@ -2720,7 +2919,6 @@
                     state._lastPaint = { x: world.x, y: world.y };
                     stampPaintBrush(world.x, world.y, null);
                     state.isDrawing = true;
-                    render();
                     return;
                 }
                 state.currentObj = { ...base, type: 'path', points: [{ x: world.x, y: world.y }] };
@@ -2753,6 +2951,7 @@
                 state.panX += pos.x - state.lastMouse.x;
                 state.panY += pos.y - state.lastMouse.y;
                 state.lastMouse = pos;
+                invalidateScene();
                 render();
                 return;
             }
@@ -2898,7 +3097,7 @@
                 }
                 stampPaintBrush(nx, ny, state._lastPaint);
                 state._lastPaint = { x: nx, y: ny };
-                render();
+                // render throttled inside stampPaintBrush
                 return;
             }
 
@@ -3004,6 +3203,7 @@
             state._resizeStartBounds = null;
             state._rotateObjId = null;
             state._rotateCenter = null;
+            if (state._paintStroke) invalidateScene();
             state._paintStroke = false;
             state._lastPaint = null;
             if ((state.pickingExportRegion || state.exportPickMode) && state.exportRegion) {
@@ -3781,6 +3981,7 @@
                 // ===== UI BINDINGS =====
         document.getElementById('mode-vector-btn').onclick = () => setMode('vector');
         document.getElementById('mode-paint-btn').onclick = () => setMode('paint');
+        document.getElementById('mode-anim-btn') && (document.getElementById('mode-anim-btn').onclick = () => setMode('anim'));
 
         ['hand','select','brush','text','eraser','eyedropper','fill','pen'].forEach(t => {
             const el = document.getElementById('tool-' + t);
@@ -5406,6 +5607,21 @@
             if ((e.metaKey || e.ctrlKey) && e.key === 'v') { e.preventDefault(); pasteClipboard(); }
             if ((e.metaKey || e.ctrlKey) && e.key === 'd') { e.preventDefault(); copySelection(); pasteClipboard(); }
             if ((e.metaKey || e.ctrlKey) && e.key === 'g') { e.preventDefault(); if (e.shiftKey) ungroupSelection(); else groupSelection(); }
+            if ((e.metaKey || e.ctrlKey) && e.key === 'a') {
+                e.preventDefault();
+                state.selectedIds = new Set(state.objects.filter(o => !isLayerLocked(o.layerId)).map(o => o.id));
+                updateSelectionUI(); render();
+            }
+            if ((e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === 'i' || e.key === 'I')) {
+                e.preventDefault();
+                const next = new Set();
+                state.objects.forEach(o => {
+                    if (isLayerLocked(o.layerId)) return;
+                    if (!state.selectedIds.has(o.id)) next.add(o.id);
+                });
+                state.selectedIds = next;
+                updateSelectionUI(); render();
+            }
             if (e.shiftKey && (e.key === 'e' || e.key === 'E') && !(e.metaKey || e.ctrlKey)) {
                 e.preventDefault();
                 openEffectMore();
@@ -5975,6 +6191,610 @@
 
         // also when data-ctx handler runs - extend existing generic handler
         // patch into existing ctx clicks if they use switch on data-ctx
+
+
+        // ========== MENUBAR ACTIONS ==========
+        document.querySelectorAll('#app-menubar .menu-dd button[data-menu-act]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const act = btn.dataset.menuAct;
+                document.querySelectorAll('#app-menubar .menu-dd').forEach(d => d.classList.add('hidden'));
+                if (act === 'new') { if (confirm('新規キャンバス？未保存は消えます')) location.reload(); }
+                else if (act === 'open') document.getElementById('file-input')?.click();
+                else if (act === 'save') saveProject();
+                else if (act === 'export-region') openExportRegion();
+                else if (act === 'export-png') typeof exportRaster === 'function' && exportRaster('png');
+                else if (act === 'undo') document.getElementById('btn-undo')?.click();
+                else if (act === 'redo') document.getElementById('btn-redo')?.click();
+                else if (act === 'copy') copySelection();
+                else if (act === 'paste') pasteClipboard();
+                else if (act === 'duplicate') { copySelection(); pasteClipboard(); }
+                else if (act === 'select-all') {
+                    state.selectedIds = new Set(state.objects.filter(o => !isLayerLocked(o.layerId)).map(o => o.id));
+                    updateSelectionUI(); render();
+                }
+                else if (act === 'deselect') { state.selectedIds.clear(); updateSelectionUI(); render(); }
+                else if (act === 'invert-sel') {
+                    const next = new Set();
+                    state.objects.forEach(o => {
+                        if (isLayerLocked(o.layerId)) return;
+                        if (!state.selectedIds.has(o.id)) next.add(o.id);
+                    });
+                    state.selectedIds = next;
+                    updateSelectionUI(); render();
+                }
+                else if (act === 'group') groupSelection();
+                else if (act === 'ungroup') ungroupSelection();
+                else if (act === 'bring-front') selectedObjects().forEach(o => reorderObject(o.id, 'front'));
+                else if (act === 'send-back') selectedObjects().forEach(o => reorderObject(o.id, 'back'));
+                else if (act === 'to-raster') { try { selectionToRasterFixed(); } catch(err){ alert(err.message);} }
+                else if (act === 'effect-more') openEffectMore();
+                else if (act === 'clear-effects') {
+                    pushHistory();
+                    selectedObjects().forEach(o => {
+                        if (o._effectBase) restoreEffectBase(o);
+                        delete o.effectMore; delete o._effectBase;
+                    });
+                    render();
+                }
+                else if (act === 'zoom-in') document.getElementById('zoom-in')?.click();
+                else if (act === 'zoom-out') document.getElementById('zoom-out')?.click();
+                else if (act === 'zoom-fit') fitViewAll();
+                else if (act === 'toggle-minimap') toggleMinimap();
+                else if (act === 'toggle-grid') {
+                    state.gridMode = state.gridMode === 'none' ? 'grid' : 'none';
+                    render();
+                }
+                else if (act === 'panel-props') togglePanel('props-panel');
+                else if (act === 'panel-layers') { switchSideTab('layers'); togglePanel('props-panel', true); }
+                else if (act === 'panel-regions') { switchSideTab('regions'); togglePanel('props-panel', true); }
+                else if (act === 'panel-brush') togglePanel('left-paint-panel');
+                else if (act === 'anim') setMode('anim');
+                else if (act === 'help') document.getElementById('help-modal')?.classList.remove('hidden');
+            });
+        });
+        document.getElementById('btn-help-top')?.addEventListener('click', () => {
+            document.getElementById('help-modal')?.classList.remove('hidden');
+        });
+        function togglePanel(id, forceShow) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            if (forceShow) { el.classList.remove('hidden'); el.classList.add('flex'); return; }
+            el.classList.toggle('hidden');
+            el.classList.toggle('flex');
+        }
+        function fitViewAll() {
+            let minx=Infinity,miny=Infinity,maxx=-Infinity,maxy=-Infinity;
+            if (!state.infiniteCanvas) {
+                minx=0;miny=0;maxx=state.canvasWidth;maxy=state.canvasHeight;
+            }
+            state.objects.forEach(o => {
+                const b = getBounds(o);
+                if (!b) return;
+                minx=Math.min(minx,b.x); miny=Math.min(miny,b.y);
+                maxx=Math.max(maxx,b.x+b.w); maxy=Math.max(maxy,b.y+b.h);
+            });
+            if (!isFinite(minx)) { minx=-200;miny=-200;maxx=200;maxy=200; }
+            const pad=48, bw=Math.max(1,maxx-minx), bh=Math.max(1,maxy-miny);
+            const z = Math.min((window.innerWidth-pad*2)/bw, (window.innerHeight-80-pad*2)/bh, 8);
+            state.zoom = Math.max(0.05, z);
+            state.panX = (window.innerWidth - bw*state.zoom)/2 - minx*state.zoom;
+            state.panY = (window.innerHeight - bh*state.zoom)/2 - miny*state.zoom + 20;
+            render();
+        }
+        state.showMinimap = true;
+        function toggleMinimap() {
+            state.showMinimap = !state.showMinimap;
+            const w = document.getElementById('minimap-wrap');
+            if (w) w.style.display = state.showMinimap ? '' : 'none';
+            scheduleSaveSettings && scheduleSaveSettings();
+        }
+        document.getElementById('mm-close')?.addEventListener('click', () => {
+            state.showMinimap = false;
+            const w = document.getElementById('minimap-wrap');
+            if (w) w.style.display = 'none';
+        });
+        // Minimap drag
+        (function() {
+            const wrap = document.getElementById('minimap-wrap');
+            if (!wrap) return;
+            let dragging = false, ox=0, oy=0;
+            const title = wrap.querySelector('.mm-title');
+            title?.addEventListener('pointerdown', (e) => {
+                if (e.target.id === 'mm-close') return;
+                dragging = true;
+                ox = e.clientX - wrap.offsetLeft;
+                oy = e.clientY - wrap.offsetTop;
+                title.setPointerCapture(e.pointerId);
+            });
+            title?.addEventListener('pointermove', (e) => {
+                if (!dragging) return;
+                wrap.style.left = (e.clientX - ox) + 'px';
+                wrap.style.top = (e.clientY - oy) + 'px';
+                wrap.style.right = 'auto';
+                wrap.style.bottom = 'auto';
+            });
+            title?.addEventListener('pointerup', () => { dragging = false; });
+        })();
+
+        // Settings: minimap toggle checkbox if settings modal
+        (function() {
+            const box = document.querySelector('#settings-modal .flex.flex-col.gap-1');
+            // append to settings modal body
+            const modal = document.getElementById('settings-modal');
+            if (!modal) return;
+            const host = modal.querySelector('.geist-surface') || modal;
+            if (host.querySelector('#setting-minimap')) return;
+            const row = document.createElement('div');
+            row.className = 'flex justify-between items-center';
+            row.innerHTML = '<label class="text-[11px] text-geist-400">ミニマップ</label><input type="checkbox" id="setting-minimap" checked class="accent-white">';
+            host.appendChild(row);
+            document.getElementById('setting-minimap').onchange = (e) => {
+                state.showMinimap = e.target.checked;
+                const w = document.getElementById('minimap-wrap');
+                if (w) w.style.display = state.showMinimap ? '' : 'none';
+            };
+        })();
+
+        // ========== RASTER PERF: throttle render during paint ==========
+        state._paintDirty = false;
+        const _stampPaintBrush = stampPaintBrush;
+        stampPaintBrush = function(wx, wy, last) {
+            _stampPaintBrush(wx, wy, last);
+            state._paintDirty = true;
+            if (!state._paintRaf) {
+                state._paintRaf = requestAnimationFrame(() => {
+                    state._paintRaf = null;
+                    if (state._paintDirty) {
+                        state._paintDirty = false;
+                        // fast path: skip minimap during stroke
+                        const sm = state.showMinimap;
+                        state.showMinimap = false;
+                        render();
+                        state.showMinimap = sm;
+                    }
+                });
+            }
+        };
+        // Don't call render() immediately in paint move — stamp already schedules
+        // Patch: paint move still calls render — replace heavy path by searching later
+
+        // ========== FIX GROUP ==========
+        groupSelection = function() {
+            let targets = state.objects.filter(o => state.selectedIds.has(o.id));
+            if (targets.length < 2) {
+                alert('グループ化には2つ以上の選択が必要です。\nShift+クリックで追加選択してください。');
+                return;
+            }
+            // flatten existing groups into children list optionally keep nested
+            pushHistory();
+            const ids = new Set(targets.map(t => t.id));
+            const children = targets.map(t => {
+                const c = JSON.parse(JSON.stringify(t));
+                return c;
+            });
+            let minx=Infinity,miny=Infinity,maxx=-Infinity,maxy=-Infinity;
+            targets.forEach(o => {
+                const b = getBounds(o);
+                if (!b) return;
+                minx = Math.min(minx, b.x); miny = Math.min(miny, b.y);
+                maxx = Math.max(maxx, b.x + b.w); maxy = Math.max(maxy, b.y + b.h);
+            });
+            if (!isFinite(minx)) { minx=0;miny=0;maxx=100;maxy=100; }
+            // remove originals
+            state.objects = state.objects.filter(o => !ids.has(o.id));
+            const g = {
+                id: uid(),
+                type: 'group',
+                name: 'Group ' + (state.groupCounter = (state.groupCounter||1) + 1),
+                children,
+                x: minx, y: miny,
+                w: Math.max(1, maxx - minx),
+                h: Math.max(1, maxy - miny),
+                opacity: 1,
+                layerId: targets[0].layerId || state.activeLayerId,
+                rotation: 0
+            };
+            state.objects.push(g);
+            state.selectedIds = new Set([g.id]);
+            invalidateScene();
+            render();
+            if (typeof updateSelectionUI === 'function') updateSelectionUI();
+            if (typeof renderLayerList === 'function') renderLayerList();
+        };
+        ungroupSelection = function() {
+            const groups = state.objects.filter(o => state.selectedIds.has(o.id) && o.type === 'group');
+            if (!groups.length) { alert('グループを選択してください'); return; }
+            pushHistory();
+            groups.forEach(g => {
+                const i = state.objects.findIndex(o => o.id === g.id);
+                if (i < 0) return;
+                state.objects.splice(i, 1);
+                const kids = (g.children || []).map(ch => {
+                    const c = JSON.parse(JSON.stringify(ch));
+                    c.id = uid();
+                    c.layerId = g.layerId || c.layerId;
+                    return c;
+                });
+                state.objects.splice(i, 0, ...kids);
+            });
+            state.selectedIds.clear();
+            invalidateScene();
+            render();
+            if (typeof updateSelectionUI === 'function') updateSelectionUI();
+            if (typeof renderLayerList === 'function') renderLayerList();
+        };
+
+        // ========== MORE EFFECT MORE ==========
+        // extend parseEffectMore allowed names by patching applyEffectsAtTime
+        const _applyEffectsAtTime = applyEffectsAtTime;
+        applyEffectsAtTime = function(o, t) {
+            if (!o.effectMore || !o.effectMore.enabled || !o.effectMore.effects) return;
+            if (!o._effectBase) o._effectBase = snapshotEffectBase(o);
+            restoreEffectBase(o);
+            o.effectMore.effects.forEach(ef => {
+                const a = ef.args || [];
+                const name = ef.name;
+                if (name === 'wiggle' || name === 'wave' || name === 'pulse' || name === 'spin' || name === 'drift') {
+                    // use original single-effect path via temporary
+                    const tmp = { effectMore: { enabled: true, effects: [ef] }, _effectBase: o._effectBase };
+                    Object.assign(tmp, JSON.parse(JSON.stringify(o._effectBase)));
+                    tmp.type = o.type; tmp.points = o.points; tmp.anchors = o.anchors;
+                    // call original helpers
+                }
+            });
+            // Full rewrite of effect application
+            o.effectMore.effects.forEach(ef => {
+                const a = ef.args || [];
+                if (ef.name === 'wiggle') wiggleObject(o, t, a[0]??3, a[1]??1.5);
+                else if (ef.name === 'wave') waveObject(o, t, a[0]??8, a[1]??1.2);
+                else if (ef.name === 'pulse') scaleObjectAboutCenter(o, 1 + Math.sin(t * (a[1]??1.5) * Math.PI * 2) * (a[0]??0.3));
+                else if (ef.name === 'spin') o.rotation = (o._effectBase.rotation||0) + (a[0]??45) * t;
+                else if (ef.name === 'drift') translateObject(o, Math.sin(t*(a[1]??0.4)*Math.PI*2)*(a[0]??10), Math.cos(t*(a[1]??0.4)*Math.PI*2*0.7)*(a[0]??10)*0.6);
+                else if (ef.name === 'bounce') {
+                    const amp = a[0]??20, freq = a[1]??1.2;
+                    const y = Math.abs(Math.sin(t * freq * Math.PI)) * amp;
+                    translateObject(o, 0, -y);
+                }
+                else if (ef.name === 'shake') {
+                    const amp = a[0]??4;
+                    translateObject(o, (Math.random()-0.5)*2*amp, (Math.random()-0.5)*2*amp);
+                }
+                else if (ef.name === 'orbit') {
+                    const rad = a[0]??30, freq = a[1]??0.5;
+                    const ang = t * freq * Math.PI * 2;
+                    translateObject(o, Math.cos(ang)*rad, Math.sin(ang)*rad);
+                }
+                else if (ef.name === 'gravity') {
+                    // visual only: fall and wrap
+                    const g = a[0]??40;
+                    const y = ((t * t * g * 0.5) % 200);
+                    translateObject(o, 0, y);
+                }
+                else if (ef.name === 'float') {
+                    const amp = a[0]??12, freq = a[1]??0.6;
+                    translateObject(o, Math.sin(t*freq)*amp*0.3, Math.sin(t*freq*Math.PI*2)*amp);
+                }
+                else if (ef.name === 'glitch') {
+                    const amp = a[0]??8;
+                    if (Math.sin(t*20) > 0.7) translateObject(o, (Math.random()-0.5)*amp*2, 0);
+                }
+                else if (ef.name === 'breathe') {
+                    const amount = a[0]??0.12, freq = a[1]??0.8;
+                    scaleObjectAboutCenter(o, 1 + Math.sin(t*freq*Math.PI*2)*amount);
+                }
+                else if (ef.name === 'swing') {
+                    const deg = a[0]??15, freq = a[1]??0.7;
+                    o.rotation = (o._effectBase.rotation||0) + Math.sin(t*freq*Math.PI*2)*deg;
+                }
+            });
+        };
+        // Expand parser regex
+        const _parseEffectMore = parseEffectMore;
+        parseEffectMore = function(code) {
+            const effects = [];
+            if (!code || !String(code).trim()) return effects;
+            const src = String(code);
+            const re = /(wiggle|wave|pulse|spin|drift|bounce|shake|orbit|gravity|float|glitch|breathe|swing)\s*\(\s*([^)]*)\s*\)\s*;?/gi;
+            let m;
+            while ((m = re.exec(src))) {
+                const name = m[1].toLowerCase();
+                const args = m[2].split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n));
+                effects.push({ name, args });
+            }
+            const cleaned = src.replace(/\/\/.*$/gm,'').replace(re,'').replace(/[\s;]/g,'');
+            if (cleaned.length) throw new Error('未対応: ' + cleaned.slice(0,40));
+            if (!effects.length) throw new Error('有効なエフェクトがありません');
+            return effects;
+        };
+        // Snippet buttons update
+        (function() {
+            const host = document.querySelector('#effect-more-sheet .flex.flex-wrap');
+            if (!host) return;
+            const extra = ['bounce(20)','shake(5)','orbit(30)','gravity(40)','float(12)','glitch(8)','breathe(0.12)','swing(15)'];
+            extra.forEach(code => {
+                const b = document.createElement('button');
+                b.type = 'button';
+                b.className = 'em-snippet geist-btn px-2 py-1 rounded-md';
+                b.dataset.code = code.replace(/\)/, ');').replace('(', '(');
+                if (!b.dataset.code.endsWith(';')) b.dataset.code += ';';
+                // fix
+                const name = code.replace(/\(.*/,'');
+                const args = code.match(/\((.*)\)/)[1];
+                b.dataset.code = name + '(' + args + ');';
+                b.textContent = name;
+                b.onclick = () => {
+                    const ta = document.getElementById('effect-more-code');
+                    if (ta) ta.value = (ta.value ? ta.value.trim() + '\n' : '') + b.dataset.code;
+                };
+                host.appendChild(b);
+            });
+        })();
+
+        // ========== ANIMATION: always show usable bar ==========
+        function ensureAnimSeed() {
+            if (!state.animFrames) state.animFrames = [];
+            if (!state.animFrames.length) {
+                state.animFrames.push(captureAnimFrame());
+            }
+        }
+
+        // ========== MINIMAP DRAW FIX ==========
+        drawMinimap = function() {
+            if (state.showMinimap === false) return;
+            const mc = document.getElementById('minimap');
+            const wrap = document.getElementById('minimap-wrap');
+            if (!mc || !wrap || wrap.style.display === 'none') return;
+            const cssW = Math.max(80, wrap.clientWidth || 180);
+            const cssH = Math.max(60, (wrap.clientHeight || 130) - 22);
+            // low-res internal buffer for speed
+            const scaleRes = 0.5;
+            const mw = Math.max(40, Math.floor(cssW * scaleRes));
+            const mh = Math.max(30, Math.floor(cssH * scaleRes));
+            if (mc.width !== mw || mc.height !== mh) {
+                mc.width = mw; mc.height = mh;
+            }
+            mc.style.width = '100%';
+            mc.style.height = 'calc(100% - 22px)';
+            const mctx = mc.getContext('2d');
+            mctx.setTransform(1,0,0,1,0,0);
+            mctx.fillStyle = '#111';
+            mctx.fillRect(0,0,mw,mh);
+
+            let minx, miny, maxx, maxy;
+            if (!state.infiniteCanvas) {
+                minx=0; miny=0; maxx=state.canvasWidth||1920; maxy=state.canvasHeight||1080;
+            } else {
+                minx=Infinity; miny=Infinity; maxx=-Infinity; maxy=-Infinity;
+                state.objects.forEach(o => {
+                    const b = getBounds(o);
+                    if (!b) return;
+                    minx=Math.min(minx,b.x); miny=Math.min(miny,b.y);
+                    maxx=Math.max(maxx,b.x+b.w); maxy=Math.max(maxy,b.y+b.h);
+                });
+                if (state.paintCanvas) {
+                    minx=Math.min(minx, state.paintOrigin.x);
+                    miny=Math.min(miny, state.paintOrigin.y);
+                    maxx=Math.max(maxx, state.paintOrigin.x + state.paintCanvas.width);
+                    maxy=Math.max(maxy, state.paintOrigin.y + state.paintCanvas.height);
+                }
+                if (!isFinite(minx)) { minx=-300;miny=-200;maxx=300;maxy=200; }
+                const tl=screenToWorld(0,40), br=screenToWorld(window.innerWidth,window.innerHeight);
+                minx=Math.min(minx,tl.x,br.x); miny=Math.min(miny,tl.y,br.y);
+                maxx=Math.max(maxx,tl.x,br.x); maxy=Math.max(maxy,tl.y,br.y);
+                const margin = Math.max(80, Math.max(maxx-minx, maxy-miny)*0.12);
+                minx-=margin; miny-=margin; maxx+=margin; maxy+=margin;
+            }
+            const bw=Math.max(1,maxx-minx), bh=Math.max(1,maxy-miny);
+            const sc = Math.min(mw/bw, mh/bh) * 0.9;
+            const ox = (mw - bw*sc)/2 - minx*sc;
+            const oy = (mh - bh*sc)/2 - miny*sc;
+            mctx.save();
+            mctx.translate(ox, oy);
+            mctx.scale(sc, sc);
+            if (!state.infiniteCanvas) {
+                mctx.fillStyle = '#1c1c1c';
+                mctx.fillRect(0,0,state.canvasWidth,state.canvasHeight);
+            }
+            // paint
+            if (state.paintCanvas) {
+                mctx.globalAlpha = 0.9;
+                mctx.drawImage(state.paintCanvas, state.paintOrigin.x, state.paintOrigin.y);
+                mctx.globalAlpha = 1;
+            }
+            // real-ish object draw (simplified)
+            state.objects.forEach(o => {
+                try { __drawObjectTo(mctx, o); } catch(_) {
+                    const b = getBounds(o);
+                    if (b) {
+                        mctx.fillStyle = o.color || '#888';
+                        mctx.globalAlpha = 0.7;
+                        mctx.fillRect(b.x, b.y, Math.max(1,b.w), Math.max(1,b.h));
+                        mctx.globalAlpha = 1;
+                    }
+                }
+            });
+            // viewport
+            const tl=screenToWorld(0,40), br=screenToWorld(window.innerWidth,window.innerHeight);
+            mctx.strokeStyle = '#3b82f6';
+            mctx.lineWidth = 2/sc;
+            mctx.strokeRect(tl.x, tl.y, br.x-tl.x, br.y-tl.y);
+            mctx.restore();
+            state._mm = { minx, miny, scale: sc, ox, oy, mw, mh };
+        };
+
+
+
+        document.querySelectorAll('.fly-size').forEach(el => {
+            el.addEventListener('input', () => {
+                state.strokeWidth = +el.value;
+                const sv = document.getElementById('size-val');
+                if (sv) sv.textContent = state.strokeWidth;
+                const sl = document.getElementById('size-slider');
+                if (sl) sl.value = state.strokeWidth;
+                updateCursor();
+            });
+        });
+        document.querySelectorAll('.fly-stab').forEach(el => {
+            el.addEventListener('input', () => {
+                state.stabilize = +el.value;
+            });
+        });
+
+
+        // ========== SCENE CACHE (raster paint performance) ==========
+        state.sceneCache = null;
+        state.sceneCacheDirty = true;
+        state._paintOnlyFrames = 0;
+
+        function invalidateScene() {
+            state.sceneCacheDirty = true;
+        }
+        function ensureSceneCache() {
+            const w = canvas.width, h = canvas.height;
+            if (!state.sceneCache || state.sceneCache.width !== w || state.sceneCache.height !== h) {
+                state.sceneCache = document.createElement('canvas');
+                state.sceneCache.width = w;
+                state.sceneCache.height = h;
+                state.sceneCacheDirty = true;
+            }
+            return state.sceneCache;
+        }
+        function rebuildSceneCache() {
+            const sc = ensureSceneCache();
+            const sctx = sc.getContext('2d');
+            sctx.setTransform(1,0,0,1,0,0);
+            sctx.clearRect(0,0,sc.width,sc.height);
+            sctx.setTransform(state.dpr, 0, 0, state.dpr, 0, 0);
+            sctx.translate(state.panX, state.panY);
+            sctx.scale(state.zoom, state.zoom);
+            state._vp = worldViewport();
+            // onion under objects in 映像 mode
+            if (state.mode === 'anim' && state.onionSkin && state.animFrames && state.animFrames.length) {
+                drawOnionFrames(sctx);
+            }
+            const prevCtx = ctx;
+            // temporarily draw objects using main drawObject but need ctx = sctx
+            // Monkey: assign is hard for const ctx. Use __drawObjectTo for each.
+            state.objects.forEach(obj => {
+                try { __drawObjectTo(sctx, obj); } catch (e) {
+                    // fallback: skip
+                }
+            });
+            state.sceneCacheDirty = false;
+        }
+        function drawOnionFrames(targetCtx) {
+            const idx = typeof animIndex === 'number' ? animIndex : 0;
+            const frames = state.animFrames || [];
+            const prev = frames[idx - 1];
+            const prev2 = frames[idx - 2];
+            const next = frames[idx + 1];
+            const drawFrame = (fr, alpha, color) => {
+                if (!fr || !fr.objects) return;
+                targetCtx.save();
+                targetCtx.globalAlpha = alpha;
+                (fr.objects || []).forEach(o => {
+                    try {
+                        const copy = o;
+                        __drawObjectTo(targetCtx, copy);
+                    } catch (_) {}
+                });
+                targetCtx.restore();
+            };
+            if (prev2) drawFrame(prev2, 0.12);
+            if (prev) drawFrame(prev, 0.28);
+            if (next) drawFrame(next, 0.15);
+        }
+
+        // Wrap pushHistory / object mutations to dirty cache
+        const _pushHistory = pushHistory;
+        pushHistory = function() {
+            invalidateScene();
+            return _pushHistory.apply(this, arguments);
+        };
+
+        // Fast render path
+        const __renderCore = typeof render === 'function' ? render : null;
+        function renderFast(opts) {
+            opts = opts || {};
+            const paintOnly = opts.paintOnly || state._paintStroke;
+            drawGrid();
+            ctx.save();
+            ctx.setTransform(state.dpr, 0, 0, state.dpr, 0, 0);
+            ctx.imageSmoothingEnabled = true;
+            if (!paintOnly || state.sceneCacheDirty || !state.sceneCache) {
+                rebuildSceneCache();
+            }
+            // blit scene
+            if (state.sceneCache) {
+                ctx.setTransform(1,0,0,1,0,0);
+                ctx.drawImage(state.sceneCache, 0, 0);
+            }
+            // paint layer in world space
+            ctx.setTransform(state.dpr, 0, 0, state.dpr, 0, 0);
+            ctx.translate(state.panX, state.panY);
+            ctx.scale(state.zoom, state.zoom);
+            if (state.paintCanvas) {
+                ctx.drawImage(state.paintCanvas, state.paintOrigin.x, state.paintOrigin.y);
+            }
+            // selection handles only (on top)
+            state._vp = worldViewport();
+            state.objects.forEach(obj => {
+                if (state.selectedIds.has(obj.id)) {
+                    ctx.save();
+                    applyObjectRotation(ctx, obj);
+                    ctx.filter = 'none';
+                    drawEditHandles(ctx, obj);
+                    ctx.restore();
+                }
+            });
+            // pen rubber band
+            if (state._penObj && state._penObj.anchors && state.lastWorld) {
+                const a = state._penObj.anchors[state._penObj.anchors.length - 1];
+                const p = state.lastWorld;
+                ctx.save();
+                ctx.strokeStyle = '#3b82f6';
+                ctx.lineWidth = 1 / state.zoom;
+                ctx.setLineDash([4 / state.zoom, 4 / state.zoom]);
+                ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(p.x, p.y); ctx.stroke();
+                ctx.restore();
+            }
+            if (state.exportRegion) {
+                const r = state.exportRegion;
+                ctx.save();
+                ctx.strokeStyle = '#ef4444';
+                ctx.lineWidth = 2 / state.zoom;
+                ctx.setLineDash([6 / state.zoom, 4 / state.zoom]);
+                ctx.strokeRect(r.x, r.y, r.w, r.h);
+                ctx.fillStyle = 'rgba(239,68,68,0.12)';
+                ctx.fillRect(r.x, r.y, r.w, r.h);
+                ctx.restore();
+            }
+            ctx.restore();
+            const hz = document.getElementById('hud-zoom');
+            if (hz) hz.textContent = Math.round(state.zoom * 100) + '%';
+            if (!paintOnly && state.showMinimap) {
+                if (!state._mmRaf) {
+                    state._mmRaf = requestAnimationFrame(() => {
+                        state._mmRaf = null;
+                        try { drawMinimap(); } catch(_) {}
+                    });
+                }
+            }
+        }
+        // Replace render
+        render = function() {
+            try {
+                renderFast({ paintOnly: !!state._paintStroke });
+            } catch (e) {
+                console.error('render', e);
+                if (__renderCore) try { __renderCore(); } catch(_) {}
+            }
+        };
+
+        // After paint stroke ends, full rebuild
+        const _endPaintFlag = true;
+
 
         // Init
         try {
