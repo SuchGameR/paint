@@ -309,14 +309,21 @@
             left: auto !important;
             right: 12px !important;
             top: 56px !important;
-            bottom: 56px !important;
+            bottom: auto !important;
             transform: none !important;
             width: 280px !important;
-            max-height: none !important;
+            max-height: calc(100vh - 120px) !important;
             max-width: calc(100vw - 24px);
             border-radius: 12px !important;
             padding: 14px !important;
-            gap: 12px !important;
+            gap: 10px !important;
+            display: none;
+            flex-direction: column;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        #props-panel.flex {
+            display: flex !important;
         }
         #props-panel .prop-section {
             display: flex;
@@ -404,6 +411,12 @@
         }
         #shapes-menu {
             display: none;
+            position: absolute;
+            left: 100%;
+            top: 0;
+            margin-left: 4px;
+            flex-direction: column;
+            z-index: 40;
         }
         body.tools-top #shapes-menu,
         body.tools-bottom #shapes-menu {
@@ -1995,13 +2008,15 @@
         }
 
         function renderPalette(name) {
-            const grid = document.getElementById('palette-grid');
+            const grid = document.getElementById('palette-swatches') || document.getElementById('palette-grid');
+            if (!grid) return;
             grid.innerHTML = '';
             (palettes[name] || palettes.mono).forEach(hex => {
                 const b = document.createElement('button');
-                b.className = 'swatch' + (hex.toLowerCase() === state.color ? ' active' : '');
+                b.className = 'swatch' + (hex.toLowerCase() === (state.color || '').toLowerCase() ? ' active' : '');
                 b.style.background = hex;
                 b.dataset.hex = hex.toLowerCase();
+                b.title = hex;
                 b.addEventListener('click', () => setColor(hex));
                 grid.appendChild(b);
             });
@@ -3527,7 +3542,8 @@
 
         document.getElementById('color-input').oninput = (e) => setColor(e.target.value);
         document.getElementById('hex-input').onchange = (e) => setColor(e.target.value);
-        document.getElementById('palette-select').onchange = (e) => renderPalette(e.target.value);
+        const paletteSelect = document.getElementById('palette-select');
+        if (paletteSelect) paletteSelect.onchange = (e) => renderPalette(e.target.value);
 
         document.querySelectorAll('.bg-picker').forEach(b => {
             b.onclick = () => { state.canvasBg = b.dataset.color; render(); };
@@ -3995,23 +4011,33 @@
 
 
         // Init
-        renderPalette('mono');
-        setColor('#171717');
-        loadSettings();
-        renderLayerList();
-        resize();
-        pushHistory();
-        updateHistoryButtons();
-        // open props on desktop
-        if (window.innerWidth > 768) {
+        try {
+            renderPalette('mono');
+            setColor('#171717');
+            if (typeof loadSettings === 'function') loadSettings();
+            else if (typeof applyToolbarDock === 'function') applyToolbarDock('left');
+            renderLayerList();
+            resize();
+            pushHistory();
+            updateHistoryButtons();
             const pp = document.getElementById('props-panel');
-            if (pp) { pp.classList.remove('hidden'); pp.classList.add('flex'); }
+            if (pp) {
+                if (window.innerWidth > 768) {
+                    pp.classList.remove('hidden');
+                    pp.classList.add('flex');
+                } else {
+                    pp.classList.add('hidden');
+                    pp.classList.remove('flex');
+                }
+            }
+            ['size-slider','opacity-slider','stabilize-slider','hardness-slider'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.addEventListener('change', scheduleSaveSettings);
+            });
+        } catch (err) {
+            console.error('Init error', err);
+            try { resize(); render(); } catch (_) {}
         }
-        // auto-save on various controls
-        ['size-slider','opacity-slider','stabilize-slider','hardness-slider'].forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.addEventListener('change', scheduleSaveSettings);
-        });
     });
     </script>
 </body>
