@@ -1331,58 +1331,85 @@
         // Call BEFORE mutating the canvas. Stores the pre-change state.
         function pushHistory() {
             if (state.historyLocked) return;
-            const snap = makeSnapshot();
+            let snap;
+            try { snap = makeSnapshot(); } catch (e) { console.warn('snapshot failed', e); return; }
             const last = state.undoStack[state.undoStack.length - 1];
-            if (last && snapshotsEqual(last, snap)) return; // skip duplicate
+            try {
+                if (last && typeof snapshotsEqual === 'function' && snapshotsEqual(last, snap)) return;
+            } catch (_) {}
             state.undoStack.push(snap);
-            if (state.undoStack.length > state.maxHistory) state.undoStack.shift();
+            while (state.undoStack.length > (state.maxHistory || 80)) state.undoStack.shift();
             state.redoStack = [];
             updateHistoryButtons();
         }
 
         function applySnapshot(snap) {
-            state.objects = snap.objects;
-            state.layers = snap.layers;
-            state.activeLayerId = snap.activeLayerId;
-            state.selectedIds.clear();
-            state.currentObj = null;
-            state.isDrawing = false;
-            if (snap.paintData) {
-                ensurePaintLayer();
-                const img = new Image();
-                img.onload = () => {
+            if (!snap) return;
+            state.historyLocked = true;
+            try {
+                state.objects = snap.objects ? JSON.parse(JSON.stringify(snap.objects)) : [];
+                state.layers = snap.layers ? JSON.parse(JSON.stringify(snap.layers)) : state.layers;
+                state.activeLayerId = snap.activeLayerId || (state.layers[0] && state.layers[0].id);
+                state.selectedIds.clear();
+                state.currentObj = null;
+                state.isDrawing = false;
+                state._penObj = null;
+                state._paintStroke = false;
+                if (snap.paintData) {
+                    ensurePaintLayer();
+                    const img = new Image();
+                    img.onload = () => {
+                        if (state.paintCtx) {
+                            state.paintCtx.clearRect(0, 0, state.paintCanvas.width, state.paintCanvas.height);
+                            state.paintCtx.drawImage(img, 0, 0);
+                        }
+                        if (typeof invalidateScene === 'function') invalidateScene();
+                        render();
+                    };
+                    img.src = snap.paintData;
+                } else if (state.paintCtx && state.paintCanvas) {
                     state.paintCtx.clearRect(0, 0, state.paintCanvas.width, state.paintCanvas.height);
-                    state.paintCtx.drawImage(img, 0, 0);
-                    render();
-                };
-                img.src = snap.paintData;
-            } else if (state.paintCtx) {
-                state.paintCtx.clearRect(0, 0, state.paintCanvas.width, state.paintCanvas.height);
+                }
+                if (typeof invalidateScene === 'function') invalidateScene();
+                updateHistoryButtons();
+                if (typeof updateSelectionUI === 'function') updateSelectionUI();
+                if (typeof renderLayerList === 'function') renderLayerList();
+                render();
+            } finally {
+                state.historyLocked = false;
             }
-            updateHistoryButtons();
-            updateSelectionUI();
-            renderLayerList();
-            render();
         }
 
         function undo() {
-            if (state.undoStack.length === 0) return;
-            state.redoStack.push(makeSnapshot());
-            const snap = state.undoStack.pop();
-            applySnapshot(snap);
+            if (!state.undoStack || state.undoStack.length === 0) return;
+            try {
+                const current = makeSnapshot();
+                const snap = state.undoStack.pop();
+                state.redoStack.push(current);
+                applySnapshot(snap);
+            } catch (e) {
+                console.error('undo failed', e);
+            }
+            updateHistoryButtons();
         }
 
         function redo() {
-            if (state.redoStack.length === 0) return;
-            state.undoStack.push(makeSnapshot());
-            const snap = state.redoStack.pop();
-            applySnapshot(snap);
+            if (!state.redoStack || state.redoStack.length === 0) return;
+            try {
+                const current = makeSnapshot();
+                const snap = state.redoStack.pop();
+                state.undoStack.push(current);
+                applySnapshot(snap);
+            } catch (e) {
+                console.error('redo failed', e);
+            }
+            updateHistoryButtons();
         }
 
         function updateHistoryButtons() {
             const u = document.getElementById('btn-undo');
             const r = document.getElementById('btn-redo');
-            u.disabled = state.undoStack.length === 0;
+            u.disabled = !state.undoStack || state.undoStack.length === 0;
             r.disabled = state.redoStack.length === 0;
             u.style.opacity = state.undoStack.length ? '1' : '0.35';
             r.style.opacity = state.redoStack.length ? '1' : '0.35';
@@ -4329,8 +4356,8 @@ return null;
             render();
         };
 
-        document.getElementById('btn-undo').onclick = undo;
-        document.getElementById('btn-redo').onclick = redo;
+        document.getElementById('btn-undo').onclick = () => undo();
+        document.getElementById('btn-redo').onclick = () => redo();
 
         document.getElementById('btn-clear').onclick = () => {
             if (confirm('キャンバスの内容をすべて消去しますか？')) {
@@ -4420,10 +4447,26 @@ return null;
 
         // Keyboard
         window.addEventListener('keydown', (e) => {
-            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            const tag = (e.target && e.target.tagName) || '';
+            const typing = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || e.target.isContentEditable;
+            // Ctrl/Cmd+Z always works even from some fields (except true text editing with content)
+            const mod = e.metaKey || e.ctrlKey;
+            if (mod && (e.code === 'KeyZ' || e.key === 'z' || e.key === 'Z') && !e.shiftKey) {
+                if (!typing || tag === 'BODY' || tag === 'DIV') {
+                    e.preventDefault();
+                    undo();
+                    return;
+                }
+            }
+            if (mod && ((e.code === 'KeyY') || (e.code === 'KeyZ' && e.shiftKey) || (e.key === 'y' || e.key === 'Y'))) {
+                if (!typing || tag === 'BODY' || tag === 'DIV') {
+                    e.preventDefault();
+                    redo();
+                    return;
+                }
+            }
+            if (typing) return;
             if (e.code === 'Space') { state.spacePressed = true; container.style.cursor = 'grab'; e.preventDefault(); }
-            if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
-            if ((e.metaKey || e.ctrlKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) { e.preventDefault(); redo(); }
             if (e.key === 'g' || e.key === 'G') document.getElementById('btn-grid-toggle').click();
             if (e.key === 'b' || e.key === 'B') setTool('brush');
             if (e.key === 'e' || e.key === 'E') setTool('eraser');
@@ -6828,6 +6871,24 @@ return null;
         // After paint stroke ends, full rebuild
         const _endPaintFlag = true;
 
+
+
+        // Capture-phase undo/redo (確実に動かす)
+        window.addEventListener('keydown', (e) => {
+            if (!(e.metaKey || e.ctrlKey)) return;
+            const t = e.target;
+            const tag = t && t.tagName;
+            if (tag === 'TEXTAREA' || (tag === 'INPUT' && t.type === 'text')) return;
+            if (e.code === 'KeyZ' && !e.shiftKey) {
+                e.preventDefault();
+                e.stopPropagation();
+                undo();
+            } else if (e.code === 'KeyY' || (e.code === 'KeyZ' && e.shiftKey)) {
+                e.preventDefault();
+                e.stopPropagation();
+                redo();
+            }
+        }, true);
 
         // Init
         try {
