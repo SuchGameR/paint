@@ -2,7 +2,7 @@
 <html lang="ja" class="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VersePaint</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -50,7 +50,7 @@
             font-family: 'Inter', system-ui, sans-serif;
             background: #000;
             -webkit-tap-highlight-color: transparent;
-            touch-action: none;
+            touch-action: manipulation;
         }
         .geist-surface {
             background: rgba(10, 10, 10, 0.9);
@@ -132,7 +132,7 @@
             border-radius: 5px;
             font-size: 11px;
             font-weight: 500;
-            transition: all 0.12s ease;
+            transition: color 0.12s ease, background-color 0.12s ease;
             color: #737373;
             min-height: 28px;
         }
@@ -495,7 +495,6 @@
         }
         .tool-flyout {
             display: none; position: absolute; left: calc(100% + 6px); top: 0;
-            geist-surface: ; 
             background: #171717; border: 1px solid rgba(255,255,255,0.1);
             border-radius: 10px; padding: 8px; z-index: 40; min-width: 160px;
             box-shadow: 0 8px 28px rgba(0,0,0,0.45);
@@ -519,6 +518,184 @@
         #effect-more-sheet:not(.hidden) { display: flex !important; }
         #effect-more-sheet .geist-surface {
             animation: emSlideUp 0.22s ease-out;
+        }
+        .anim-timeline {
+            width: min(960px, calc(100vw - 32px));
+            max-height: min(38vh, 360px);
+            padding: 5px;
+            gap: 3px;
+            border: 1px solid #333;
+            border-radius: 6px;
+            background: #111;
+            box-shadow: 0 8px 24px rgba(0,0,0,.36);
+        }
+        .anim-timeline-head, .anim-title, .anim-transport { display: flex; align-items: center; }
+        .anim-timeline-head { gap: 6px; min-height: 20px; }
+        .anim-title { gap: 5px; color: #ededed; font-size: 11px; font-weight: 600; }
+        .anim-title strong, .anim-duration {
+            color: #a3a3a3;
+            font: 11px ui-monospace, SFMono-Regular, Consolas, monospace;
+            font-variant-numeric: tabular-nums;
+        }
+        .anim-onion, .anim-fps-label { display: inline-flex; align-items: center; gap: 6px; color: #a3a3a3; font-size: 11px; }
+        .anim-onion { cursor: pointer; }
+        .anim-duration { margin-left: auto; }
+        .anim-onion input { accent-color: #0070f3; }
+        .anim-transport { gap: 1px; min-height: 28px; }
+        .anim-control, .anim-action {
+            min-width: 27px; height: 27px; border: 1px solid transparent; border-radius: 5px;
+            background: transparent; color: #a3a3a3; display: inline-flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: background-color .12s, color .12s, border-color .12s;
+        }
+        .anim-control:hover, .anim-action:hover { background: #262626; border-color: #404040; color: #fff; }
+        .anim-control:disabled, .anim-action:disabled { opacity: .4; cursor: default; }
+        .anim-control:focus-visible, .anim-action:focus-visible, .anim-cel:focus-visible,
+        .anim-frame-head:focus-visible, .anim-layer-select:focus-visible, .anim-layer-vis:focus-visible {
+            outline: 2px solid #0070f3;
+            outline-offset: 2px;
+        }
+        .anim-play { background: #0070f3; color: #fff; min-width: 30px; }
+        .anim-play:hover { background: #0060df; color: #fff; }
+        .anim-delete:hover { color: #f87171; }
+        .anim-divider { height: 16px; width: 1px; background: #333; margin: 0 2px; }
+        .anim-fps-label { gap: 4px; }
+        #anim-fps {
+            width: 40px; height: 25px; padding: 1px 3px; border: 1px solid #404040;
+            border-radius: 5px; background: #0a0a0a; color: #ededed; text-align: center;
+            font: 11px ui-monospace, monospace; font-variant-numeric: tabular-nums;
+        }
+        .anim-action {
+            width: auto; padding: 0 7px; gap: 4px; background: #171717; color: #ededed;
+            border-color: #404040; font-size: 10px;
+        }
+        .anim-strip {
+            display: grid;
+            flex: 1 1 auto;
+            min-height: 0;
+            grid-template-columns: 152px repeat(var(--anim-frame-count, 1), 112px);
+            grid-auto-rows: 58px;
+            align-content: start;
+            overflow: auto;
+            overscroll-behavior: contain;
+            scrollbar-width: thin;
+            scrollbar-color: #404040 transparent;
+            border: 1px solid #2a2a2a;
+            border-radius: 5px;
+            touch-action: pan-x pan-y;
+        }
+        .anim-corner, .anim-frame-head, .anim-layer-head, .anim-cel {
+            min-width: 0;
+            border-right: 1px solid #2a2a2a;
+            border-bottom: 1px solid #2a2a2a;
+        }
+        .anim-frame-head, .anim-cel {
+            appearance: none;
+            border-top: 0;
+            border-left: 0;
+            padding: 0;
+            font-family: inherit;
+        }
+        .anim-corner, .anim-frame-head {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            height: 34px;
+            background: #171717;
+        }
+        .anim-corner {
+            left: 0;
+            z-index: 4;
+            display: flex;
+            align-items: center;
+            padding-left: 10px;
+            color: #737373;
+            font: 10px ui-monospace, monospace;
+            letter-spacing: .04em;
+        }
+        .anim-frame-head {
+            color: #a3a3a3;
+            font: 11px ui-monospace, monospace;
+            font-variant-numeric: tabular-nums;
+            cursor: pointer;
+        }
+        .anim-frame-head:hover, .anim-layer-head:hover { color: #fff; background-color: #202020; }
+        .anim-frame-head.active { color: #fff; box-shadow: inset 0 -2px #0070f3; }
+        .anim-layer-head {
+            position: sticky;
+            left: 0;
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            padding: 0 3px;
+            background: #111;
+        }
+        .anim-layer-head.selected { background: #171717; }
+        .anim-layer-select {
+            min-width: 0;
+            flex: 1;
+            border: 0;
+            padding: 0;
+            background: transparent;
+            overflow: hidden;
+            color: #a3a3a3;
+            font-size: 11px;
+            text-align: left;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            cursor: pointer;
+        }
+        .anim-layer-head.selected .anim-layer-select { color: #fff; }
+        .anim-layer-vis {
+            flex: 0 0 22px;
+            width: 22px;
+            height: 24px;
+            border: 0;
+            padding: 0;
+            background: transparent;
+            color: #737373;
+            cursor: pointer;
+        }
+        .anim-cel {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #0f0f0f;
+            color: #525252;
+            cursor: pointer;
+            content-visibility: auto;
+            contain-intrinsic-size: 112px 58px;
+        }
+        .anim-cel:hover { background: #1a1a1a; color: #d4d4d4; }
+        .anim-cel.has-content::before {
+            width: 18px;
+            height: 18px;
+            border-radius: 5px;
+            background: #333;
+            content: "";
+        }
+        .anim-cel-count {
+            position: absolute;
+            color: #a3a3a3;
+            font: 10px ui-monospace, monospace;
+            font-variant-numeric: tabular-nums;
+        }
+        .anim-cel.active { background: #10233a; box-shadow: inset 0 0 0 1px #0070f3; }
+        .anim-cel.active.has-content::before { background: #0070f3; }
+        .anim-cel.active .anim-cel-count { color: #fff; }
+        .anim-layer-head.raster .anim-layer-select { color: #737373; }
+        @media (max-width: 768px) {
+            .anim-timeline { bottom: calc(60px + env(safe-area-inset-bottom)) !important; padding: 4px; gap: 2px; }
+            .anim-strip { grid-template-columns: 116px repeat(var(--anim-frame-count, 1), 104px); grid-auto-rows: 54px; }
+            .anim-layer-head { padding: 0 2px; }
+            .anim-title { font-size: 10px; }
+            .anim-transport { flex-wrap: nowrap; gap: 0; }
+            .anim-timeline-head { gap: 4px; }
+            .anim-onion { gap: 2px; font-size: 9px; white-space: nowrap; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .anim-control, .anim-action { transition: none; }
         }
         @keyframes emSlideUp {
             from { transform: translateY(100%); opacity: 0.6; }
@@ -1097,29 +1274,30 @@
     
     <!-- MINIMAP -->
     <div id="minimap-wrap" class="absolute bottom-14 right-4 z-30 geist-surface rounded-lg pointer-events-auto" style="width:180px;height:130px;">
-        <div class="mm-title flex justify-between items-center"><span>ミニマップ</span><button id="mm-close" class="text-geist-500 hover:text-white px-1">×</button></div>
-        <canvas id="minimap" style="width:100%;height:calc(100% - 22px);cursor:crosshair;display:block;"></canvas>
+        <div class="mm-title flex justify-between items-center"><span>ミニマップ</span><div class="flex items-center"><button id="mm-fit" type="button" class="text-geist-500 hover:text-white px-1" title="全体を表示" aria-label="ミニマップを全体表示"><i class="fa-solid fa-compress" aria-hidden="true"></i></button><button id="mm-close" type="button" class="text-geist-500 hover:text-white px-1" title="閉じる" aria-label="ミニマップを閉じる">×</button></div></div>
+        <canvas id="minimap" tabindex="0" role="img" aria-label="ミニマップ。ドラッグで移動、ホイールで拡大縮小、Homeキーで全体表示" style="width:100%;height:calc(100% - 22px);cursor:grab;display:block;"></canvas>
     </div>
 
-    <!-- ANIMATION BAR -->
-    <div id="anim-bar" class="absolute bottom-14 left-1/2 -translate-x-1/2 z-30 geist-surface rounded-xl px-3 py-2 pointer-events-auto hidden flex-col gap-1.5" style="min-width:280px;">
-        <div class="flex items-center gap-2 text-[11px] text-geist-300">
-            <span class="font-mono">フレーム</span>
-            <span id="anim-frame-label" class="font-mono text-white">0 / 0</span>
-            <label class="ml-auto flex items-center gap-1 text-[10px]"><input type="checkbox" id="onion-toggle" checked class="accent-white">オニオン</label>
-            <span class="text-[10px] text-geist-500">前後フレーム半透明</span>
-            <span class="text-[10px] text-geist-600">｜ペン・図形OK</span>
+    <!-- ANIMATION TIMELINE -->
+    <section id="anim-bar" class="anim-timeline absolute bottom-14 left-1/2 -translate-x-1/2 z-30 pointer-events-auto hidden flex-col" aria-labelledby="anim-heading">
+        <header class="anim-timeline-head">
+            <h2 id="anim-heading" class="anim-title">タイムライン<strong id="anim-frame-label" aria-live="polite" aria-atomic="true">0 / 0</strong></h2>
+            <label class="anim-onion"><input type="checkbox" id="onion-toggle" name="onionSkin" autocomplete="off" checked><span>オニオン</span></label>
+            <label class="anim-onion"><input type="checkbox" id="anim-loop" name="loopPlayback" autocomplete="off" checked><span>ループ</span></label>
+            <span id="anim-duration" class="anim-duration">0.0s</span>
+        </header>
+        <div class="anim-transport">
+            <button id="anim-prev" class="anim-control" type="button" title="前のフレーム (←)" aria-label="前のフレーム"><i class="fa-solid fa-caret-left" aria-hidden="true"></i></button>
+            <button id="anim-play" class="anim-control anim-play" type="button" title="再生 / 一時停止 (Space)" aria-label="アニメーションを再生"><i class="fa-solid fa-play" aria-hidden="true"></i></button>
+            <button id="anim-next" class="anim-control" type="button" title="次のフレーム (→)" aria-label="次のフレーム"><i class="fa-solid fa-caret-right" aria-hidden="true"></i></button>
+            <span class="anim-divider"></span>
+            <label class="anim-fps-label" for="anim-fps">FPS<input id="anim-fps" name="animFps" type="number" min="1" max="60" value="12" inputmode="numeric" autocomplete="off"></label>
+            <button id="anim-add" class="anim-action" type="button" title="選択レイヤーに空コマを追加" aria-label="選択レイヤーにコマを追加"><i class="fa-solid fa-plus" aria-hidden="true"></i><span>コマ追加</span></button>
+            <button id="anim-duplicate" class="anim-control" type="button" title="フレームを複製" aria-label="フレームを複製"><i class="fa-regular fa-copy" aria-hidden="true"></i></button>
+            <button id="anim-del" class="anim-control anim-delete" type="button" title="フレームを削除" aria-label="フレームを削除"><i class="fa-solid fa-trash-can" aria-hidden="true"></i></button>
         </div>
-        <div class="flex items-center gap-1">
-            <button id="anim-prev" class="geist-btn !min-w-8 !min-h-8"><i class="fa-solid fa-caret-left"></i></button>
-            <button id="anim-play" class="geist-btn !min-w-8 !min-h-8"><i class="fa-solid fa-play"></i></button>
-            <button id="anim-next" class="geist-btn !min-w-8 !min-h-8"><i class="fa-solid fa-caret-right"></i></button>
-            <button id="anim-add" class="geist-btn px-2 !min-h-8 text-[10px]">＋フレーム</button>
-            <button id="anim-del" class="geist-btn px-2 !min-h-8 text-[10px]">削除</button>
-            <input id="anim-fps" type="number" min="1" max="60" value="12" class="w-12 prop-input text-center" title="FPS">
-        </div>
-        <div id="anim-strip" class="flex gap-1 overflow-x-auto max-w-[360px]"></div>
-    </div>
+        <div id="anim-strip" class="anim-strip" role="group" aria-label="レイヤー別アニメーションコマ"></div>
+    </section>
 
     <!-- BOTTOM HUD -->
     <footer id="bottom-hud" class="absolute bottom-2 left-2 right-2 flex items-center justify-between pointer-events-none z-20">
@@ -1254,7 +1432,12 @@
             paintCanvas: null,
             paintCtx: null,
             paintOrigin: { x: -2000, y: -2000 },
-            paintSize: 16000,
+            paintSize: 1024,
+            paintChunks: new Map(),
+            paintRevision: 0,
+            paintCowSet: new Set(),
+            paintRestoreId: 0,
+            activeStrokeCanvas: null,
             pixelGrid: false,
             pixelSnap: false,
             profiles: {},
@@ -1265,6 +1448,8 @@
             pickingExportRegion: false,
             animFrames: [],
             animFps: 12,
+            animTrackId: null,
+            animFrameLoading: false,
             onionSkin: true,
             regions: [],
             activeRegionId: null,
@@ -1293,6 +1478,164 @@
             return 'id-' + Math.random().toString(36).slice(2, 11) + Date.now().toString(36);
         }
 
+        const PAINT_CHUNK_SIZE = 1024;
+        const OBJECT_CHUNK_SIZE = 512;
+
+        function ensurePaintLayer() {
+            if (!(state.paintChunks instanceof Map)) state.paintChunks = new Map();
+            return state.paintChunks;
+        }
+
+        function paintChunk(cx, cy, create) {
+            const chunks = ensurePaintLayer();
+            const key = `${cx},${cy}`;
+            let tile = chunks.get(key);
+            if (!tile && create) {
+                const c = document.createElement('canvas');
+                c.width = PAINT_CHUNK_SIZE;
+                c.height = PAINT_CHUNK_SIZE;
+                tile = { canvas: c, ctx: c.getContext('2d') };
+                chunks.set(key, tile);
+            }
+            return tile || null;
+        }
+
+        function writablePaintChunk(cx, cy) {
+            const key = `${cx},${cy}`;
+            let current = ensurePaintLayer().get(key);
+            if (!current) {
+                current = paintChunk(cx, cy, true);
+                state.paintCowSet.add(key);
+                return current;
+            }
+            if (!state.paintCowSet.has(key)) {
+                const canvasCopy = document.createElement('canvas');
+                canvasCopy.width = PAINT_CHUNK_SIZE;
+                canvasCopy.height = PAINT_CHUNK_SIZE;
+                const copy = { canvas: canvasCopy, ctx: canvasCopy.getContext('2d') };
+                copy.ctx.drawImage(current.canvas, 0, 0);
+                state.paintChunks.set(key, copy);
+                state.paintCowSet.add(key);
+                return copy;
+            }
+            return current;
+        }
+
+        function drawPaintLayer(targetCtx, viewport) {
+            const chunks = ensurePaintLayer();
+            if (!viewport || !chunks.size) {
+                if (!viewport) chunks.forEach((tile, key) => {
+                    const [cx, cy] = key.split(',').map(Number);
+                    targetCtx.drawImage(tile.canvas, cx * PAINT_CHUNK_SIZE, cy * PAINT_CHUNK_SIZE);
+                });
+                return;
+            }
+            const minCX = Math.floor(viewport.x / PAINT_CHUNK_SIZE);
+            const minCY = Math.floor(viewport.y / PAINT_CHUNK_SIZE);
+            const maxCX = Math.floor((viewport.x + viewport.w) / PAINT_CHUNK_SIZE);
+            const maxCY = Math.floor((viewport.y + viewport.h) / PAINT_CHUNK_SIZE);
+            const cells = (maxCX - minCX + 1) * (maxCY - minCY + 1);
+            if (cells > chunks.size * 4) {
+                chunks.forEach((tile, key) => {
+                    const [cx, cy] = key.split(',').map(Number);
+                    const x = cx * PAINT_CHUNK_SIZE;
+                    const y = cy * PAINT_CHUNK_SIZE;
+                    if (boundsIntersect({ x, y, w: PAINT_CHUNK_SIZE, h: PAINT_CHUNK_SIZE }, viewport)) {
+                        targetCtx.drawImage(tile.canvas, x, y);
+                    }
+                });
+                return;
+            }
+            for (let cy = minCY; cy <= maxCY; cy++) {
+                for (let cx = minCX; cx <= maxCX; cx++) {
+                    const tile = chunks.get(`${cx},${cy}`);
+                    if (tile) {
+                        targetCtx.drawImage(tile.canvas, cx * PAINT_CHUNK_SIZE, cy * PAINT_CHUNK_SIZE);
+                    }
+                }
+            }
+        }
+
+        function paintLayerBounds() {
+            const chunks = ensurePaintLayer();
+            if (!chunks.size) return null;
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            chunks.forEach((tile, key) => {
+                const [cx, cy] = key.split(',').map(Number);
+                minX = Math.min(minX, cx * PAINT_CHUNK_SIZE);
+                minY = Math.min(minY, cy * PAINT_CHUNK_SIZE);
+                maxX = Math.max(maxX, (cx + 1) * PAINT_CHUNK_SIZE);
+                maxY = Math.max(maxY, (cy + 1) * PAINT_CHUNK_SIZE);
+            });
+            return { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
+        }
+
+        function serializePaintLayer(chunks = ensurePaintLayer()) {
+            const tiles = [];
+            chunks.forEach((tile, key) => {
+                const [x, y] = key.split(',').map(Number);
+                tiles.push({ x, y, data: tile.canvas.toDataURL('image/png') });
+            });
+            return tiles.length ? { format: 'chunks-v1', tiles } : null;
+        }
+
+        function restorePaintLayer(data, legacyOrigin) {
+            const chunks = ensurePaintLayer();
+            state.paintChunks = new Map();
+            state.paintCowSet = new Set();
+            state.paintCanvas = null;
+            state.paintCtx = null;
+            const restoreId = ++state.paintRestoreId;
+            if (!data) {
+                state.paintRevision++;
+                return;
+            }
+
+            const loadImage = (src) => new Promise((resolve, reject) => {
+                const image = new Image();
+                image.onload = () => resolve(image);
+                image.onerror = () => reject(new Error('Failed to restore raster paint data'));
+                image.src = src;
+            });
+            const load = async () => {
+                if (data && data.format === 'chunks-v1' && Array.isArray(data.tiles)) {
+                    for (const tileData of data.tiles) {
+                        const image = await loadImage(tileData.data);
+                        if (restoreId !== state.paintRestoreId) return;
+                        const tile = paintChunk(tileData.x, tileData.y, true);
+                        tile.ctx.drawImage(image, 0, 0, PAINT_CHUNK_SIZE, PAINT_CHUNK_SIZE);
+                    }
+                } else if (typeof data === 'string') {
+                    const image = await loadImage(data);
+                    if (restoreId !== state.paintRestoreId) return;
+                    const origin = legacyOrigin || { x: -image.width / 2, y: -image.height / 2 };
+                    const minCX = Math.floor(origin.x / PAINT_CHUNK_SIZE);
+                    const minCY = Math.floor(origin.y / PAINT_CHUNK_SIZE);
+                    const maxCX = Math.ceil((origin.x + image.width) / PAINT_CHUNK_SIZE);
+                    const maxCY = Math.ceil((origin.y + image.height) / PAINT_CHUNK_SIZE);
+                    for (let cy = minCY; cy < maxCY; cy++) {
+                        for (let cx = minCX; cx < maxCX; cx++) {
+                            const left = Math.max(origin.x, cx * PAINT_CHUNK_SIZE);
+                            const top = Math.max(origin.y, cy * PAINT_CHUNK_SIZE);
+                            const right = Math.min(origin.x + image.width, (cx + 1) * PAINT_CHUNK_SIZE);
+                            const bottom = Math.min(origin.y + image.height, (cy + 1) * PAINT_CHUNK_SIZE);
+                            if (right <= left || bottom <= top) continue;
+                            const tile = paintChunk(cx, cy, true);
+                            tile.ctx.drawImage(
+                                image,
+                                left - origin.x, top - origin.y, right - left, bottom - top,
+                                left - cx * PAINT_CHUNK_SIZE, top - cy * PAINT_CHUNK_SIZE, right - left, bottom - top
+                            );
+                        }
+                    }
+                }
+                state.paintRevision++;
+                invalidateScene();
+                render();
+            };
+            load().catch((error) => console.error('Raster paint restore failed', error));
+        }
+
         // ===== RESIZE =====
         function resize() {
             const w = window.innerWidth;
@@ -1317,7 +1660,8 @@
                 objects: cloneObjects(state.objects),
                 layers: JSON.parse(JSON.stringify(state.layers)),
                 activeLayerId: state.activeLayerId,
-                paintData: state.paintCanvas ? state.paintCanvas.toDataURL('image/png') : null
+                paintChunks: new Map(ensurePaintLayer()),
+                paintRevision: state.paintRevision
             };
         }
 
@@ -1325,6 +1669,7 @@
             if (!a || !b) return false;
             if (a.activeLayerId !== b.activeLayerId) return false;
             if (a.layers.length !== b.layers.length) return false;
+            if (a.paintRevision !== b.paintRevision) return false;
             return JSON.stringify(a.objects) === JSON.stringify(b.objects);
         }
 
@@ -1340,7 +1685,17 @@
             state.undoStack.push(snap);
             while (state.undoStack.length > (state.maxHistory || 80)) state.undoStack.shift();
             state.redoStack = [];
+            state.paintCowSet = new Set();
             updateHistoryButtons();
+        }
+
+        function pushRasterHistory() {
+            state._rasterHistoryOnly = true;
+            try {
+                pushHistory();
+            } finally {
+                state._rasterHistoryOnly = false;
+            }
         }
 
         function applySnapshot(snap) {
@@ -1352,25 +1707,19 @@
                 state.activeLayerId = snap.activeLayerId || (state.layers[0] && state.layers[0].id);
                 state.selectedIds.clear();
                 state.currentObj = null;
+                state.activeStrokeCanvas = null;
                 state.isDrawing = false;
                 state._penObj = null;
                 state._paintStroke = false;
-                if (snap.paintData) {
-                    ensurePaintLayer();
-                    const img = new Image();
-                    img.onload = () => {
-                        if (state.paintCtx) {
-                            state.paintCtx.clearRect(0, 0, state.paintCanvas.width, state.paintCanvas.height);
-                            state.paintCtx.drawImage(img, 0, 0);
-                        }
-                        if (typeof invalidateScene === 'function') invalidateScene();
-                        render();
-                    };
-                    img.src = snap.paintData;
-                } else if (state.paintCtx && state.paintCanvas) {
-                    state.paintCtx.clearRect(0, 0, state.paintCanvas.width, state.paintCanvas.height);
+                if (snap.paintChunks instanceof Map) {
+                    state.paintChunks = new Map(snap.paintChunks);
+                    state.paintRevision = snap.paintRevision || 0;
+                    state.paintCowSet = new Set();
+                } else {
+                    restorePaintLayer(snap.paintData, snap.paintOrigin);
                 }
                 if (typeof invalidateScene === 'function') invalidateScene();
+                invalidateObjectIndex();
                 updateHistoryButtons();
                 if (typeof updateSelectionUI === 'function') updateSelectionUI();
                 if (typeof renderLayerList === 'function') renderLayerList();
@@ -1759,6 +2108,135 @@
 return null;
         }
 
+        state.objectChunks = new Map();
+        state.objectIndexEntries = [];
+        state.objectIndexDirty = true;
+        const frameObjectIndexes = new WeakMap();
+
+        function invalidateObjectIndex() {
+            state.objectIndexDirty = true;
+            if (state._activeAnimFrame) frameObjectIndexes.delete(state._activeAnimFrame);
+        }
+
+        function getRenderBounds(obj) {
+            const bounds = getBounds(obj);
+            if (!bounds) return null;
+            const pad = (obj.strokeWidth || 1) / 2 + Math.max(0, obj.blur || 0) * 3;
+            let result = {
+                x: bounds.x - pad,
+                y: bounds.y - pad,
+                w: bounds.w + pad * 2,
+                h: bounds.h + pad * 2
+            };
+            const rotation = (obj.rotation || 0) * Math.PI / 180;
+            if (rotation) {
+                const cx = obj.pivotX != null ? obj.pivotX : bounds.x + bounds.w / 2;
+                const cy = obj.pivotY != null ? obj.pivotY : bounds.y + bounds.h / 2;
+                const radius = Math.hypot(bounds.w, bounds.h) / 2 + pad;
+                result = { x: cx - radius, y: cy - radius, w: radius * 2, h: radius * 2 };
+            }
+            return result;
+        }
+
+        function createObjectSpatialIndex(objects) {
+            const chunks = new Map();
+            const entries = [];
+            const oversized = [];
+            objects.forEach((obj, order) => {
+                const bounds = getRenderBounds(obj);
+                if (!bounds) return;
+                const entry = { obj, order, bounds };
+                entries.push(entry);
+                const minCX = Math.floor(bounds.x / OBJECT_CHUNK_SIZE);
+                const minCY = Math.floor(bounds.y / OBJECT_CHUNK_SIZE);
+                const maxCX = Math.floor((bounds.x + bounds.w) / OBJECT_CHUNK_SIZE);
+                const maxCY = Math.floor((bounds.y + bounds.h) / OBJECT_CHUNK_SIZE);
+                const cells = (maxCX - minCX + 1) * (maxCY - minCY + 1);
+                if (cells > 64) {
+                    oversized.push(entry);
+                    return;
+                }
+                for (let cy = minCY; cy <= maxCY; cy++) {
+                    for (let cx = minCX; cx <= maxCX; cx++) {
+                        const key = `${cx},${cy}`;
+                        if (!chunks.has(key)) chunks.set(key, []);
+                        chunks.get(key).push(entry);
+                    }
+                }
+            });
+            return { chunks, entries, oversized };
+        }
+
+        function rebuildObjectIndex() {
+            let index = state._activeAnimFrame && frameObjectIndexes.get(state._activeAnimFrame);
+            if (!index || state._activeAnimFrame.objects !== state.objects) {
+                index = createObjectSpatialIndex(state.objects);
+                if (state._activeAnimFrame) frameObjectIndexes.set(state._activeAnimFrame, index);
+            }
+            state.objectChunks = index.chunks;
+            state.objectIndexEntries = index.entries;
+            state.objectIndexOversized = index.oversized;
+            state.objectIndexDirty = false;
+        }
+
+        function querySpatialIndex(index, bounds) {
+            if (!index) return [];
+            const minCX = Math.floor(bounds.x / OBJECT_CHUNK_SIZE);
+            const minCY = Math.floor(bounds.y / OBJECT_CHUNK_SIZE);
+            const maxCX = Math.floor((bounds.x + bounds.w) / OBJECT_CHUNK_SIZE);
+            const maxCY = Math.floor((bounds.y + bounds.h) / OBJECT_CHUNK_SIZE);
+            const cells = (maxCX - minCX + 1) * (maxCY - minCY + 1);
+            const candidates = new Set(index.oversized);
+            if (cells > 4096) {
+                index.entries.forEach(entry => candidates.add(entry));
+            } else {
+                for (let cy = minCY; cy <= maxCY; cy++) {
+                    for (let cx = minCX; cx <= maxCX; cx++) {
+                        const bucket = index.chunks.get(`${cx},${cy}`);
+                        if (bucket) bucket.forEach(entry => candidates.add(entry));
+                    }
+                }
+            }
+            return Array.from(candidates)
+                .filter(entry => boundsIntersect(entry.bounds, bounds))
+                .sort((a, b) => a.order - b.order);
+        }
+
+        function queryObjectsInBounds(bounds) {
+            if (state.objectIndexDirty) rebuildObjectIndex();
+            return querySpatialIndex({
+                chunks: state.objectChunks,
+                entries: state.objectIndexEntries,
+                oversized: state.objectIndexOversized || []
+            }, bounds);
+        }
+
+        function queryFrameObjectsInBounds(frame, bounds) {
+            if (!frame || !Array.isArray(frame.objects)) return [];
+            let index = frameObjectIndexes.get(frame);
+            if (!index) {
+                index = createObjectSpatialIndex(frame.objects);
+                frameObjectIndexes.set(frame, index);
+            }
+            return querySpatialIndex(index, bounds);
+        }
+
+        function activateObjectIndex(frame) {
+            state._activeAnimFrame = frame || null;
+            state.animFrameLoading = false;
+            const index = frame && frame.objects === state.objects
+                ? frameObjectIndexes.get(frame)
+                : null;
+            if (index) {
+                state.objectChunks = index.chunks;
+                state.objectIndexEntries = index.entries;
+                state.objectIndexOversized = index.oversized;
+                state.objectIndexDirty = false;
+            } else {
+                state.objectIndexDirty = true;
+            }
+        }
+
         function render() {
             drawGrid();
             ctx.save();
@@ -1768,11 +2246,9 @@ return null;
             ctx.translate(state.panX, state.panY);
             ctx.scale(state.zoom, state.zoom);
             // raster paint layer under vectors
-            if (state.paintCanvas) {
-                ctx.drawImage(state.paintCanvas, state.paintOrigin.x, state.paintOrigin.y);
-            }
+            drawPaintLayer(ctx, worldViewport());
             state._vp = worldViewport();
-            state.objects.forEach(drawObject);
+            queryObjectsInBounds(state._vp).forEach(entry => drawObject(entry.obj));
             if (state.pixelGrid && state.zoom >= 8) {
                 ctx.save();
                 ctx.strokeStyle = 'rgba(128,128,128,0.35)';
@@ -1910,7 +2386,10 @@ return null;
             let changed = false;
             const next = [];
 
-            state.objects.forEach(obj => {
+            const objects = objectIds
+                ? state.objects.filter(obj => objectIds.has(obj.id))
+                : queryObjectsInBounds({ x, y, w, h }).map(entry => entry.obj);
+            objects.forEach(obj => {
                 const layer = state.layers.find(l => l.id === obj.layerId);
                 if (layer && !layer.visible) {
                     next.push(obj);
@@ -1981,128 +2460,79 @@ return null;
 
 
 
-        function ensurePaintLayer() {
-            if (state.paintCanvas) return;
-            let s = state.paintSize || 4096;
-            // Cap for device memory
-            try {
-                const c = document.createElement('canvas');
-                c.width = s;
-                c.height = s;
-                state.paintCanvas = c;
-                state.paintCtx = c.getContext('2d', { willReadFrequently: false });
-                state.paintOrigin = { x: -s / 2, y: -s / 2 };
-                state.paintCtx.clearRect(0, 0, s, s);
-            } catch (err) {
-                s = 2048;
-                state.paintSize = s;
-                const c = document.createElement('canvas');
-                c.width = s; c.height = s;
-                state.paintCanvas = c;
-                state.paintCtx = c.getContext('2d');
-                state.paintOrigin = { x: -s / 2, y: -s / 2 };
-            }
-        }
-
-        function expandPaintLayer(wx, wy) {
-            if (!state.paintCanvas) { ensurePaintLayer(); return; }
-            const old = state.paintCanvas;
-            const oldCtx = state.paintCtx;
-            const grow = 4000;
-            const needL = wx < state.paintOrigin.x + 256;
-            const needT = wy < state.paintOrigin.y + 256;
-            const needR = wx > state.paintOrigin.x + old.width - 256;
-            const needB = wy > state.paintOrigin.y + old.height - 256;
-            if (!needL && !needT && !needR && !needB) return;
-            const addL = needL ? grow : 0, addT = needT ? grow : 0;
-            const addR = needR ? grow : 0, addB = needB ? grow : 0;
-            const nw = old.width + addL + addR;
-            const nh = old.height + addT + addB;
-            const c = document.createElement('canvas');
-            c.width = nw; c.height = nh;
-            const nctx = c.getContext('2d');
-            nctx.drawImage(old, addL, addT);
-            state.paintCanvas = c;
-            state.paintCtx = nctx;
-            state.paintOrigin.x -= addL;
-            state.paintOrigin.y -= addT;
-            state.paintSize = Math.max(nw, nh);
-        }
-
-        function worldToPaint(wx, wy) {
-            ensurePaintLayer();
-            return {
-                x: wx - state.paintOrigin.x,
-                y: wy - state.paintOrigin.y
-            };
-        }
-
         function stampPaintBrush(wx, wy, last) {
             ensurePaintLayer();
-            // Auto-expand raster buffer if near edge (no chunk boundary lock)
-            const margin = 256;
-            let p = worldToPaint(wx, wy);
-            if (p.x < margin || p.y < margin || p.x > state.paintCanvas.width - margin || p.y > state.paintCanvas.height - margin) {
-                expandPaintLayer(wx, wy);
-                p = worldToPaint(wx, wy);
-            }
             if (state.pixelSnap) {
                 wx = Math.round(wx);
                 wy = Math.round(wy);
-                p = worldToPaint(wx, wy);
             }
-            const pctx = state.paintCtx;
-            if (!pctx) return;
-            pctx.globalCompositeOperation = 'source-over';
             const r = Math.max(0.5, (state.strokeWidth || 8) / 2);
             const preset = state.paintPreset || 'pen';
-            pctx.save();
-            pctx.lineCap = 'round';
-            pctx.lineJoin = 'round';
-            pctx.strokeStyle = state.color;
-            pctx.fillStyle = state.color;
-            pctx.globalAlpha = state.opacity * (preset === 'marker' ? 0.4 : preset === 'watercolor' ? 0.15 : preset === 'airbrush' ? 0.2 : 1);
+            const padding = r + 2;
+            const minX = Math.min(wx, last ? last.x : wx) - padding;
+            const minY = Math.min(wy, last ? last.y : wy) - padding;
+            const maxX = Math.max(wx, last ? last.x : wx) + padding;
+            const maxY = Math.max(wy, last ? last.y : wy) + padding;
+            const minCX = Math.floor(minX / PAINT_CHUNK_SIZE);
+            const minCY = Math.floor(minY / PAINT_CHUNK_SIZE);
+            const maxCX = Math.floor(maxX / PAINT_CHUNK_SIZE);
+            const maxCY = Math.floor(maxY / PAINT_CHUNK_SIZE);
 
-            if (last) {
-                const q = worldToPaint(last.x, last.y);
-                pctx.lineWidth = state.strokeWidth;
-                if (preset === 'airbrush' || preset === 'watercolor') {
-                    const dist = Math.hypot(p.x - q.x, p.y - q.y);
-                    const steps = Math.max(1, Math.floor(dist / (r * 0.35)));
-                    for (let i = 0; i <= steps; i++) {
-                        const t = i / steps;
-                        const x = q.x + (p.x - q.x) * t;
-                        const y = q.y + (p.y - q.y) * t;
-                        const g = pctx.createRadialGradient(x, y, 0, x, y, r);
-                        g.addColorStop(0, state.color);
-                        g.addColorStop(1, 'rgba(0,0,0,0)');
-                        pctx.fillStyle = g;
+            for (let cy = minCY; cy <= maxCY; cy++) {
+                for (let cx = minCX; cx <= maxCX; cx++) {
+                    const pctx = writablePaintChunk(cx, cy).ctx;
+                    pctx.save();
+                    pctx.translate(-cx * PAINT_CHUNK_SIZE, -cy * PAINT_CHUNK_SIZE);
+                    pctx.globalCompositeOperation = 'source-over';
+                    pctx.lineCap = 'round';
+                    pctx.lineJoin = 'round';
+                    pctx.strokeStyle = state.color;
+                    pctx.fillStyle = state.color;
+                    pctx.globalAlpha = state.opacity * (preset === 'marker' ? 0.4 : preset === 'watercolor' ? 0.15 : preset === 'airbrush' ? 0.2 : 1);
+
+                    if (last) {
+                        pctx.lineWidth = state.strokeWidth;
+                        if (preset === 'airbrush' || preset === 'watercolor') {
+                            const dist = Math.hypot(wx - last.x, wy - last.y);
+                            const steps = Math.max(1, Math.ceil(dist / Math.max(r * 0.7, 1)));
+                            for (let i = 0; i <= steps; i++) {
+                                const t = i / steps;
+                                const x = last.x + (wx - last.x) * t;
+                                const y = last.y + (wy - last.y) * t;
+                                const g = pctx.createRadialGradient(x, y, 0, x, y, r);
+                                g.addColorStop(0, state.color);
+                                g.addColorStop(1, 'rgba(0,0,0,0)');
+                                pctx.fillStyle = g;
+                                pctx.beginPath();
+                                pctx.arc(x, y, r, 0, Math.PI * 2);
+                                pctx.fill();
+                            }
+                        } else if (preset === 'pixel') {
+                            const step = Math.max(1, Math.round(state.strokeWidth));
+                            pctx.fillRect(Math.round(wx / step) * step - step / 2, Math.round(wy / step) * step - step / 2, step, step);
+                        } else {
+                            pctx.beginPath();
+                            pctx.moveTo(last.x, last.y);
+                            pctx.lineTo(wx, wy);
+                            pctx.stroke();
+                        }
+                    } else {
                         pctx.beginPath();
-                        pctx.arc(x, y, r, 0, Math.PI * 2);
+                        pctx.arc(wx, wy, r, 0, Math.PI * 2);
                         pctx.fill();
                     }
-                } else if (preset === 'pixel') {
-                    const step = Math.max(1, Math.round(state.strokeWidth));
-                    pctx.fillRect(Math.round(p.x / step) * step - step/2, Math.round(p.y / step) * step - step/2, step, step);
-                } else {
-                    pctx.beginPath();
-                    pctx.moveTo(q.x, q.y);
-                    pctx.lineTo(p.x, p.y);
-                    pctx.stroke();
+                    pctx.restore();
                 }
-            } else {
-                pctx.beginPath();
-                pctx.arc(p.x, p.y, r, 0, Math.PI * 2);
-                pctx.fill();
             }
-            pctx.restore();
+            state.paintRevision++;
         }
 
         function clearPaintLayer() {
-            if (!state.paintCanvas) return;
-            pushHistory();
-            // snapshot paint into image object then clear? For history we store paint dataURL in snapshot
-            state.paintCtx.clearRect(0, 0, state.paintCanvas.width, state.paintCanvas.height);
+            if (!ensurePaintLayer().size) return;
+            pushRasterHistory();
+            state.paintChunks = new Map();
+            state.paintCowSet = new Set();
+            state.paintRevision++;
             render();
         }
 
@@ -2236,6 +2666,104 @@ return null;
             if (preset === 'marker') ctx.globalAlpha = obj.opacity != null ? obj.opacity : 1;
         }
 
+
+        function beginActiveStroke(obj) {
+            const preview = document.createElement('canvas');
+            preview.width = canvas.width;
+            preview.height = canvas.height;
+            state.activeStrokeCanvas = preview;
+            const pctx = preview.getContext('2d');
+            pctx.setTransform(state.dpr, 0, 0, state.dpr, 0, 0);
+            pctx.translate(state.panX, state.panY);
+            pctx.scale(state.zoom, state.zoom);
+            pctx.strokeStyle = obj.color;
+            pctx.fillStyle = obj.color;
+            pctx.globalAlpha = obj.opacity ?? 1;
+            pctx.lineWidth = obj.strokeWidth || 8;
+            pctx.lineCap = 'round';
+            const radius = Math.max(0.5, pctx.lineWidth / 2);
+            if (obj.brush === 'airbrush' || obj.brush === 'watercolor' || (obj.hardness < 0.95 && obj.brush !== 'pen')) {
+                const gradient = pctx.createRadialGradient(obj.points[0].x, obj.points[0].y, 0, obj.points[0].x, obj.points[0].y, radius);
+                gradient.addColorStop(0, obj.color);
+                gradient.addColorStop(1, 'rgba(0,0,0,0)');
+                pctx.fillStyle = gradient;
+            }
+            pctx.beginPath();
+            pctx.arc(obj.points[0].x, obj.points[0].y, radius, 0, Math.PI * 2);
+            pctx.fill();
+        }
+
+        function appendActiveStroke(obj, point) {
+            const preview = state.activeStrokeCanvas;
+            if (!preview || preview.width !== canvas.width || preview.height !== canvas.height) {
+                beginActiveStroke(obj);
+                return;
+            }
+            const points = obj.points;
+            if (points.length < 2) return;
+            const from = points[points.length - 2];
+            const to = point;
+            const pctx = preview.getContext('2d');
+            pctx.setTransform(state.dpr, 0, 0, state.dpr, 0, 0);
+            pctx.translate(state.panX, state.panY);
+            pctx.scale(state.zoom, state.zoom);
+            pctx.save();
+            pctx.strokeStyle = obj.color;
+            pctx.fillStyle = obj.color;
+            pctx.globalAlpha = obj.opacity ?? 1;
+            pctx.lineWidth = Math.max(obj.strokeWidth || 8, 0.5 / Math.max(state.zoom, 0.01));
+            pctx.lineCap = obj.brush === 'pixel' ? 'square' : 'round';
+            pctx.lineJoin = 'round';
+            const preset = obj.brush || 'pen';
+            if (preset === 'airbrush' || preset === 'watercolor' || (obj.hardness < 0.95 && preset !== 'pen')) {
+                const radius = Math.max(0.5, pctx.lineWidth / 2);
+                const spacing = Math.max(radius * 0.7, 1);
+                const distance = Math.hypot(to.x - from.x, to.y - from.y);
+                const steps = Math.max(1, Math.ceil(distance / spacing));
+                pctx.globalAlpha *= preset === 'watercolor' ? 0.12 : preset === 'airbrush' ? 0.18 : 0.35;
+                for (let i = 1; i <= steps; i++) {
+                    const t = i / steps;
+                    const x = from.x + (to.x - from.x) * t;
+                    const y = from.y + (to.y - from.y) * t;
+                    const gradient = pctx.createRadialGradient(x, y, 0, x, y, radius);
+                    gradient.addColorStop(0, obj.color);
+                    gradient.addColorStop(1, 'rgba(0,0,0,0)');
+                    pctx.fillStyle = gradient;
+                    pctx.beginPath();
+                    pctx.arc(x, y, radius, 0, Math.PI * 2);
+                    pctx.fill();
+                }
+                pctx.restore();
+                return;
+            }
+            if (obj.brush === 'neon') {
+                pctx.shadowColor = obj.color;
+                pctx.shadowBlur = pctx.lineWidth * 1.8;
+            } else if (obj.brush === 'marker') {
+                pctx.globalAlpha *= 0.55;
+            } else if (obj.brush === 'calligraphy') {
+                const angle = Math.atan2(to.y - from.y, to.x - from.x);
+                pctx.lineWidth *= 0.35 + 0.65 * Math.abs(Math.sin(angle + 0.6));
+            } else if (obj.brush === 'charcoal') {
+                pctx.globalAlpha *= 0.55;
+            }
+            if (obj.brush === 'pixel') {
+                const step = Math.max(1, Math.round(pctx.lineWidth));
+                pctx.fillRect(Math.round(to.x / step) * step - step / 2, Math.round(to.y / step) * step - step / 2, step, step);
+            } else {
+                pctx.beginPath();
+                pctx.moveTo(from.x, from.y);
+                pctx.lineTo(to.x, to.y);
+                pctx.stroke();
+                if (obj.brush === 'neon') {
+                    pctx.shadowBlur = 0;
+                    pctx.strokeStyle = '#fff';
+                    pctx.lineWidth = Math.max(0.5, pctx.lineWidth * 0.2);
+                    pctx.stroke();
+                }
+            }
+            pctx.restore();
+        }
 
         // ===== BEZIER / PATH EDIT =====
         function drawBezier(ctx, obj) {
@@ -2592,6 +3120,7 @@ return null;
 
         function setMode(m) {
             state.mode = m;
+            invalidateScene();
             document.getElementById('mode-vector-btn')?.classList.toggle('active', m === 'vector');
             document.getElementById('mode-paint-btn')?.classList.toggle('active', m === 'paint');
             document.getElementById('mode-anim-btn')?.classList.toggle('active', m === 'anim');
@@ -2683,14 +3212,29 @@ return null;
                     input.value = layer.name;
                     span.replaceWith(input);
                     input.focus(); input.select();
-                    const commit = () => { const v = input.value.trim(); if (v) layer.name = v; renderLayerList(); };
+                    const commit = () => {
+                        const v = input.value.trim();
+                        if (v) {
+                            layer.name = v;
+                            if (state.mode === 'anim') {
+                                state.animFrames.forEach(frame => {
+                                    const frameLayer = frame.layers?.find(item => item.id === layer.id);
+                                    if (frameLayer) frameLayer.name = v;
+                                });
+                            }
+                        }
+                        renderLayerList();
+                        if (state.mode === 'anim') updateAnimUI({ rebuild: true });
+                    };
                     input.onblur = commit;
                     input.onkeydown = (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); commit(); } if (ev.key === 'Escape') renderLayerList(); };
                 };
                 row.querySelector('.layer-vis').onclick = (e) => {
                     e.stopPropagation();
                     layer.visible = layer.visible === false ? true : false;
+                    invalidateScene();
                     renderLayerList(); render();
+                    if (state.mode === 'anim') updateAnimUI({ rebuild: true });
                 };
                 row.querySelector('.layer-lock').onclick = (e) => {
                     e.stopPropagation();
@@ -2705,6 +3249,7 @@ return null;
                         state.layers[idx + 1] = state.layers[idx];
                         state.layers[idx] = t;
                         renderLayerList();
+                        if (state.mode === 'anim') updateAnimUI({ rebuild: true });
                     }
                 };
                 row.querySelector('.layer-dn').onclick = (e) => {
@@ -2715,6 +3260,7 @@ return null;
                         state.layers[idx - 1] = state.layers[idx];
                         state.layers[idx] = t;
                         renderLayerList();
+                        if (state.mode === 'anim') updateAnimUI({ rebuild: true });
                     }
                 };
                 list.appendChild(row);
@@ -2757,6 +3303,10 @@ return null;
 
         container.addEventListener('pointerdown', (e) => {
             if (e.button === 2) return;
+            if (state.mode === 'anim' && state.animFrameLoading) {
+                e.preventDefault();
+                return;
+            }
             // don't start draw if text editor open
             if (textEditor.style.display === 'block') return;
 
@@ -2835,8 +3385,9 @@ return null;
                     }
                 }
                 let hit = null;
-                for (let i = state.objects.length - 1; i >= 0; i--) {
-                    const cand = state.objects[i];
+                const candidates = queryObjectsInBounds({ x: world.x, y: world.y, w: 0, h: 0 });
+                for (let i = candidates.length - 1; i >= 0; i--) {
+                    const cand = candidates[i].obj;
                     if (isLayerLocked(cand.layerId)) continue;
                     if (hitTest(cand, world.x, world.y)) { hit = cand; break; }
                 }
@@ -2902,6 +3453,8 @@ return null;
                         state._activeAnchor = null;
                         state.isDrawing = false;
                         state._penDragging = false;
+                        invalidateScene();
+                        invalidateObjectIndex();
                         render();
                         return;
                     }
@@ -2929,7 +3482,8 @@ return null;
             }
 
             // Drawing tools — snapshot before adding stroke/shape
-            pushHistory();
+            if (state.tool === 'brush' && state.mode === 'paint') pushRasterHistory();
+            else pushHistory();
             state.isDrawing = true;
             const base = {
                 id: uid(),
@@ -2950,11 +3504,13 @@ return null;
                     state._lastPaint = { x: world.x, y: world.y };
                     stampPaintBrush(world.x, world.y, null);
                     state.isDrawing = true;
+                    render();
                     return;
                 }
                 state.currentObj = { ...base, type: 'path', points: [{ x: world.x, y: world.y }] };
                 state._stabBuf = [];
                 state.objects.push(state.currentObj);
+                beginActiveStroke(state.currentObj);
             } else if (['rect','roundrect','circle','triangle','star','hexagon'].includes(state.tool)) {
                 state.currentObj = {
                     ...base, type: state.tool, x: world.x, y: world.y, w: 0, h: 0,
@@ -3128,7 +3684,7 @@ return null;
                 }
                 stampPaintBrush(nx, ny, state._lastPaint);
                 state._lastPaint = { x: nx, y: ny };
-                // render throttled inside stampPaintBrush
+                render();
                 return;
             }
 
@@ -3156,7 +3712,9 @@ return null;
                     const last = pts[pts.length - 1];
                     const minDist = (state.paintPreset === 'pixel' ? Math.max(1, state.strokeWidth) : 0.6) / state.zoom;
                     if (Math.hypot(nx - last.x, ny - last.y) > minDist) {
-                        pts.push({ x: nx, y: ny });
+                        const point = { x: nx, y: ny };
+                        pts.push(point);
+                        appendActiveStroke(state.currentObj, point);
                     }
                 } else if (['rect','roundrect','circle','triangle','star','hexagon'].includes(state.currentObj.type)) {
                     let w = world.x - state.startWorld.x;
@@ -3193,9 +3751,7 @@ return null;
                 const minX = Math.min(w1.x, w2.x), maxX = Math.max(w1.x, w2.x);
                 const minY = Math.min(w1.y, w2.y), maxY = Math.max(w1.y, w2.y);
                 if (maxX - minX > 4 || maxY - minY > 4) {
-                    state.objects.forEach(o => {
-                        const b = getBounds(o);
-                        if (!b) return;
+                    queryObjectsInBounds({ x: minX, y: minY, w: maxX - minX, h: maxY - minY }).forEach(({ obj: o, bounds: b }) => {
                         const cx = b.x + b.w / 2, cy = b.y + b.h / 2;
                         if (cx >= minX && cx <= maxX && cy >= minY && cy <= maxY) {
                             state.selectedIds.add(o.id);
@@ -3223,7 +3779,9 @@ return null;
             }
 
             state.isDrawing = false;
+            const committedVector = !!state.currentObj;
             state.currentObj = null;
+            state.activeStrokeCanvas = null;
             state._dragMove = false;
             state._origPositions = null;
             state._erased = false;
@@ -3234,9 +3792,13 @@ return null;
             state._resizeStartBounds = null;
             state._rotateObjId = null;
             state._rotateCenter = null;
-            if (state._paintStroke) invalidateScene();
+            if (committedVector) {
+                invalidateScene();
+                invalidateObjectIndex();
+            }
             state._paintStroke = false;
             state._lastPaint = null;
+            render();
             if ((state.pickingExportRegion || state.exportPickMode) && state.exportRegion) {
                 state.pickingExportRegion = false;
                 state.exportPickMode = false;
@@ -3524,6 +4086,7 @@ return null;
         }
 
         function saveProject() {
+            if (state.animFrames.length) saveCurrentAnimFrame();
             const data = {
                 version: 2,
                 app: 'VersePaint',
@@ -3534,12 +4097,12 @@ return null;
                 activeLayerId: state.activeLayerId,
                 regions: state.regions || [],
                 activeRegionId: state.activeRegionId,
-                animFrames: state.animFrames || [],
+                animFrames: state.animFrames.map(serializeAnimFrame),
                 animFps: state.animFps || 12,
                 infiniteCanvas: state.infiniteCanvas,
                 canvasWidth: state.canvasWidth,
                 canvasHeight: state.canvasHeight,
-                paintData: state.paintCanvas ? state.paintCanvas.toDataURL('image/png') : null
+                paintData: serializePaintLayer()
             };
             const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
             const link = document.createElement('a');
@@ -3557,27 +4120,27 @@ return null;
                     if (file.name.endsWith('.json') || text.trim().startsWith('{')) {
                         const data = JSON.parse(text);
                         state.objects = data.objects || [];
+                        activateObjectIndex(null);
+                        invalidateScene();
+                        invalidateObjectIndex();
                         state.layers = data.layers || [{ id: 'layer-1', name: 'Layer 1', visible: true }];
                         state.activeLayerId = data.activeLayerId || state.layers[0].id;
                         if (data.canvasBg) state.canvasBg = data.canvasBg;
                         if (data.gridMode) state.gridMode = data.gridMode;
                         if (data.regions) state.regions = data.regions;
                         if (data.activeRegionId) state.activeRegionId = data.activeRegionId;
-                        if (data.animFrames) state.animFrames = data.animFrames;
-                        if (data.animFps) state.animFps = data.animFps;
+                        if (data.animFps) {
+                            state.animFps = Math.max(1, Math.min(60, Number(data.animFps) || 12));
+                            const fpsInput = document.getElementById('anim-fps');
+                            if (fpsInput) fpsInput.value = String(state.animFps);
+                        }
+                        state.animFrames = Array.isArray(data.animFrames) ? data.animFrames : [];
+                        animIndex = 0;
+                        updateAnimUI({ rebuild: true });
                         if (data.infiniteCanvas != null) state.infiniteCanvas = data.infiniteCanvas;
                         if (data.canvasWidth) state.canvasWidth = data.canvasWidth;
                         if (data.canvasHeight) state.canvasHeight = data.canvasHeight;
-                        if (data.paintData) {
-                            ensurePaintLayer();
-                            const img = new Image();
-                            img.onload = () => {
-                                state.paintCtx.clearRect(0,0,state.paintCanvas.width,state.paintCanvas.height);
-                                state.paintCtx.drawImage(img,0,0);
-                                render();
-                            };
-                            img.src = data.paintData;
-                        }
+                        restorePaintLayer(data.paintData, data.paintOrigin);
                         if (typeof renderRegionList === 'function') renderRegionList();
                         state.selectedIds.clear();
                         state.undoStack = [];
@@ -3940,6 +4503,8 @@ return null;
             }
             pushHistory();
             state.objects = state.objects.concat(newObjs);
+            invalidateScene();
+            invalidateObjectIndex();
             let minx = Infinity, miny = Infinity, maxx = -Infinity, maxy = -Infinity;
             newObjs.forEach(o => {
                 const b = getBounds(o);
@@ -4363,6 +4928,8 @@ return null;
             if (confirm('キャンバスの内容をすべて消去しますか？')) {
                 pushHistory();
                 state.objects = [];
+                invalidateScene();
+                invalidateObjectIndex();
                 state.selectedIds.clear();
                 updateSelectionUI();
                 render();
@@ -4373,6 +4940,8 @@ return null;
             if (!state.selectedIds.size) return;
             pushHistory();
             state.objects = state.objects.filter(o => !state.selectedIds.has(o.id));
+            invalidateScene();
+            invalidateObjectIndex();
             state.selectedIds.clear();
             updateSelectionUI();
             render();
@@ -4382,8 +4951,19 @@ return null;
             const n = state.layers.filter(l => l.type !== 'folder').length + 1;
             const layer = { id: uid(), name: 'Layer ' + n, visible: true };
             state.layers.push(layer);
+            if (state.mode === 'anim') {
+                state.animFrames.forEach(frame => {
+                    const frameLayers = Array.isArray(frame.layers) ? frame.layers.slice() : [];
+                    if (!frameLayers.some(item => item.id === layer.id)) frameLayers.push({ ...layer });
+                    frame.layers = frameLayers;
+                });
+            }
             state.activeLayerId = layer.id;
             renderLayerList();
+            if (state.mode === 'anim') {
+                state.animTrackId = layer.id;
+                updateAnimUI({ rebuild: true });
+            }
         };
         const btnFolder = document.getElementById('btn-add-folder');
         if (btnFolder) btnFolder.onclick = () => {
@@ -4850,6 +5430,8 @@ return null;
             else if (mode === 'forward' && idx < state.objects.length) state.objects.splice(idx + 1, 0, obj);
             else if (mode === 'backward' && idx > 0) state.objects.splice(idx - 1, 0, obj);
             else state.objects.splice(idx, 0, obj);
+            invalidateScene();
+            invalidateObjectIndex();
             render();
             renderLayerList();
         }
@@ -4925,7 +5507,10 @@ return null;
             // Draw using main renderer approach
             const bak = { objects: state.objects };
             // Simple: use exportRegionRaster
-            const dataUrl = exportRegionToDataURL(union.x, union.y, union.w, union.h, scale, true, 'png');
+            const dataUrl = exportRegionToDataURL(
+                union.x, union.y, union.w, union.h, scale, true, 'png',
+                new Set(targets.map(target => target.id))
+            );
             if (!dataUrl) return;
             // Replace selected with image
             targets.forEach(t => {
@@ -4937,11 +5522,13 @@ return null;
                 x: union.x, y: union.y, w: union.w, h: union.h,
                 opacity: 1, layerId: state.activeLayerId
             });
+            invalidateScene();
+            invalidateObjectIndex();
             state.selectedIds.clear();
             render();
         }
 
-        function exportRegionToDataURL(x, y, w, h, scale, transparent, fmt) {
+        function exportRegionToDataURL(x, y, w, h, scale, transparent, fmt, objectIds) {
             scale = scale || 1;
             const c = document.createElement('canvas');
             c.width = Math.max(1, Math.round(w * scale));
@@ -4954,9 +5541,7 @@ return null;
             cx.scale(scale, scale);
             cx.translate(-x, -y);
             // paint layer
-            if (state.paintCanvas) {
-                cx.drawImage(state.paintCanvas, state.paintOrigin.x, state.paintOrigin.y);
-            }
+            drawPaintLayer(cx, { x, y, w, h });
             // objects — reuse drawObject with ctx swap is hard; duplicate minimal
             const old = ctx;
             // bind drawObject to cx by temporarily replacing global ctx reference
@@ -4971,17 +5556,11 @@ return null;
         }
 
         function drawObjectOn(targetCtx, obj) {
-            // Save global ctx, swap, draw, restore
-            const stack = [];
-            // drawObject uses module-level ctx — we temporarily overwrite
-            // Since ctx is const-bound, we need a wrapper. Patch: call internal with target.
-            // Fallback: use Image from SVG for vectors is too heavy.
-            // Override: assign properties on a proxy — simplest path is to copy drawObject body is huge.
-            // Use the main canvas snapshot approach instead in export.
+            __drawObjectTo(targetCtx, obj);
         }
 
         // Better export: render main canvas region by computing screen and using temp full render
-        function exportRegionHiRes(x, y, w, h, scale, transparent, fmt) {
+        function exportRegionHiRes(x, y, w, h, scale, transparent, fmt, objectIds) {
             scale = Math.max(0.5, Math.min(8, scale || 1));
             const c = document.createElement('canvas');
             c.width = Math.max(1, Math.round(w * scale));
@@ -4995,7 +5574,7 @@ return null;
                 cx.fillRect(0, 0, c.width, c.height);
             }
             cx.setTransform(scale, 0, 0, scale, -x * scale, -y * scale);
-            if (state.paintCanvas) cx.drawImage(state.paintCanvas, state.paintOrigin.x, state.paintOrigin.y);
+            if (!objectIds) drawPaintLayer(cx, { x, y, w, h });
             // Monkey-patch: drawObject reads global `ctx`
             const backup = canvas.getContext; // not useful
             // Use SVG export for vector-only path when fmt svg
@@ -5004,7 +5583,10 @@ return null;
             }
             // Draw each object by hijacking: set global variable
             const prevFilter = null;
-            state.objects.forEach(obj => {
+            const objects = objectIds
+                ? state.objects.filter(obj => objectIds.has(obj.id))
+                : queryObjectsInBounds({ x, y, w, h }).map(entry => entry.obj);
+            objects.forEach(obj => {
                 __drawObjectTo(cx, obj);
             });
             const mime = fmt === 'jpeg' ? 'image/jpeg' : fmt === 'webp' ? 'image/webp' : 'image/png';
@@ -5016,7 +5598,62 @@ return null;
             if (!obj) return;
             const layer = state.layers.find(l => l.id === obj.layerId);
             if (layer && layer.visible === false) return;
+            if (obj.type === 'group' && Array.isArray(obj.children)) {
+                target.save();
+                if (obj.rotation) {
+                    const bounds = getBounds(obj);
+                    if (bounds) {
+                        const cx = obj.pivotX != null ? obj.pivotX : bounds.x + bounds.w / 2;
+                        const cy = obj.pivotY != null ? obj.pivotY : bounds.y + bounds.h / 2;
+                        target.translate(cx, cy);
+                        target.rotate(obj.rotation * Math.PI / 180);
+                        target.translate(-cx, -cy);
+                    }
+                }
+                obj.children.forEach(child => __drawObjectTo(target, child));
+                target.restore();
+                return;
+            }
             target.save();
+            if (obj.maskId) {
+                const mask = state.objects.find(candidate => candidate.id === obj.maskId);
+                if (mask) {
+                    const matrix = target.getTransform();
+                    applyObjectRotation(target, mask);
+                    target.beginPath();
+                    if (mask.type === 'circle') {
+                        target.ellipse(
+                            mask.x + (mask.w || 0) / 2,
+                            mask.y + (mask.h || 0) / 2,
+                            Math.max(0.5, Math.abs(mask.w || 0) / 2),
+                            Math.max(0.5, Math.abs(mask.h || mask.w || 0) / 2),
+                            0, 0, Math.PI * 2
+                        );
+                    } else if (mask.type === 'path' && mask.points && mask.points.length) {
+                        mask.points.forEach((point, index) => index
+                            ? target.lineTo(point.x, point.y)
+                            : target.moveTo(point.x, point.y));
+                        if (mask.closed !== false) target.closePath();
+                    } else if (mask.type === 'bezier' && mask.anchors && mask.anchors.length) {
+                        const anchors = mask.anchors;
+                        target.moveTo(anchors[0].x, anchors[0].y);
+                        for (let i = 1; i < anchors.length; i++) {
+                            const a = anchors[i - 1], b = anchors[i];
+                            target.bezierCurveTo(
+                                a.x + (a.outX || 0), a.y + (a.outY || 0),
+                                b.x + (b.inX || 0), b.y + (b.inY || 0),
+                                b.x, b.y
+                            );
+                        }
+                        if (mask.closed && anchors.length > 2) target.closePath();
+                    } else {
+                        const bounds = getBounds(mask);
+                        if (bounds) roundRectPath(target, bounds.x, bounds.y, bounds.w, bounds.h, mask.cornerRadius || 0);
+                    }
+                    target.clip();
+                    target.setTransform(matrix);
+                }
+            }
             if (obj.rotation) {
                 const b = getBounds(obj);
                 if (b) {
@@ -5034,20 +5671,35 @@ return null;
             target.lineCap = 'round';
             target.lineJoin = 'round';
             target.globalAlpha = obj.opacity != null ? obj.opacity : 1;
+            if (obj.soft) {
+                target.shadowBlur = (obj.strokeWidth || 1) * 0.5;
+                target.shadowColor = obj.color || '#000';
+            }
             if (obj.type === 'image' && obj.src) {
-                if (!obj._img) { obj._img = new Image(); obj._img.src = obj.src; }
+                if (!obj._img) {
+                    obj._img = new Image();
+                    obj._img.onload = () => {
+                        invalidateScene();
+                        render();
+                    };
+                    obj._img.src = obj.src;
+                }
                 if (obj._img.complete) target.drawImage(obj._img, obj.x, obj.y, obj.w, obj.h);
             } else if (obj.type === 'text') {
                 target.font = `${obj.fontWeight || 400} ${obj.fontSize || 24}px ${obj.fontFamily || 'Inter'}`;
                 target.fillStyle = obj.color || '#000';
                 target.fillText(obj.text || '', obj.x, obj.y);
             } else if (obj.type === 'path' && obj.points && obj.points.length) {
-                target.beginPath();
-                target.moveTo(obj.points[0].x, obj.points[0].y);
-                for (let i = 1; i < obj.points.length; i++) target.lineTo(obj.points[i].x, obj.points[i].y);
-                if (obj.closed) target.closePath();
-                if (obj.fill) target.fill();
-                if (obj.strokeWidth !== 0) target.stroke();
+                if (!obj.closed && !obj.fill) {
+                    drawBrushStroke(target, obj);
+                } else {
+                    target.beginPath();
+                    target.moveTo(obj.points[0].x, obj.points[0].y);
+                    for (let i = 1; i < obj.points.length; i++) target.lineTo(obj.points[i].x, obj.points[i].y);
+                    if (obj.closed) target.closePath();
+                    if (obj.fill) target.fill();
+                    if (obj.strokeWidth !== 0) target.stroke();
+                }
             } else if (obj.type === 'bezier' && obj.anchors) {
                 const a = obj.anchors;
                 if (!a.length) { target.restore(); return; }
@@ -5065,17 +5717,46 @@ return null;
                 if (obj.fill) target.fill();
                 if (obj.strokeWidth !== 0) target.stroke();
             } else if (['rect','roundrect','triangle','star','hexagon'].includes(obj.type)) {
-                if (typeof roundRectPath === 'function' && (obj.type === 'rect' || obj.type === 'roundrect')) {
+                if (obj.type === 'rect' || obj.type === 'roundrect') {
                     target.beginPath();
                     roundRectPath(target, obj.x, obj.y, obj.w, obj.h, obj.cornerRadius || 0);
                     if (obj.fill) target.fill();
                     if (obj.strokeWidth !== 0) target.stroke();
                 } else {
-                    target.strokeRect(obj.x, obj.y, obj.w, obj.h);
+                    const cx = obj.x + (obj.w || 0) / 2;
+                    const cy = obj.y + (obj.h || 0) / 2;
+                    const rx = Math.abs(obj.w || 0) / 2;
+                    const ry = Math.abs(obj.h || 0) / 2;
+                    let points;
+                    if (obj.type === 'triangle') {
+                        points = [
+                            { x: cx, y: obj.y },
+                            { x: obj.x + obj.w, y: obj.y + obj.h },
+                            { x: obj.x, y: obj.y + obj.h }
+                        ];
+                    } else if (obj.type === 'star') {
+                        points = starPoints(cx, cy, Math.max(rx, ry), Math.max(rx, ry) * 0.4, 5);
+                    } else {
+                        points = Array.from({ length: 6 }, (_, i) => {
+                            const angle = (i / 6) * Math.PI * 2 - Math.PI / 2;
+                            return { x: cx + Math.cos(angle) * rx, y: cy + Math.sin(angle) * ry };
+                        });
+                    }
+                    target.beginPath();
+                    points.forEach((point, i) => i ? target.lineTo(point.x, point.y) : target.moveTo(point.x, point.y));
+                    target.closePath();
+                    if (obj.fill) target.fill();
+                    if (obj.strokeWidth !== 0) target.stroke();
                 }
             } else if (obj.type === 'circle') {
                 target.beginPath();
-                target.ellipse(obj.x, obj.y, Math.abs(obj.w||0), Math.abs(obj.h||obj.w||0), 0, 0, Math.PI*2);
+                target.ellipse(
+                    obj.x + (obj.w || 0) / 2,
+                    obj.y + (obj.h || 0) / 2,
+                    Math.max(0.5, Math.abs(obj.w || 0) / 2),
+                    Math.max(0.5, Math.abs(obj.h || obj.w || 0) / 2),
+                    0, 0, Math.PI * 2
+                );
                 if (obj.fill) target.fill();
                 if (obj.strokeWidth !== 0) target.stroke();
             } else if (obj.type === 'line' || obj.type === 'arrow') {
@@ -5083,6 +5764,16 @@ return null;
                 target.moveTo(obj.x1, obj.y1);
                 target.lineTo(obj.x2, obj.y2);
                 target.stroke();
+                if (obj.type === 'arrow') {
+                    const angle = Math.atan2(obj.y2 - obj.y1, obj.x2 - obj.x1);
+                    const head = Math.max(10, (obj.strokeWidth || 1) * 2.2);
+                    target.beginPath();
+                    target.moveTo(obj.x2, obj.y2);
+                    target.lineTo(obj.x2 - head * Math.cos(angle - 0.4), obj.y2 - head * Math.sin(angle - 0.4));
+                    target.moveTo(obj.x2, obj.y2);
+                    target.lineTo(obj.x2 - head * Math.cos(angle + 0.4), obj.y2 - head * Math.sin(angle + 0.4));
+                    target.stroke();
+                }
             }
             target.restore();
         }
@@ -5171,9 +5862,7 @@ return null;
                 ctx.strokeRect(0, 0, state.canvasWidth, state.canvasHeight);
                 ctx.restore();
             }
-            if (state.paintCanvas) {
-                ctx.drawImage(state.paintCanvas, state.paintOrigin.x, state.paintOrigin.y);
-            }
+            drawPaintLayer(ctx, worldViewport());
             state._vp = worldViewport();
             state.objects.forEach(drawObject);
             // Pen rubber-band preview (Illustrator-like)
@@ -5234,6 +5923,7 @@ return null;
                 ctx.restore();
             }
             ctx.restore();
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
             const hz = document.getElementById('hud-zoom');
             if (hz) hz.textContent = Math.round(state.zoom * 100) + '%';
         };
@@ -5363,8 +6053,8 @@ return null;
             }, null);
             if (!union || union.w < 1) return;
             pushHistory();
-            const url = exportRegionHiRes(union.x, union.y, union.w, union.h, 2, true, 'png');
             const ids = new Set(targets.map(t => t.id));
+            const url = exportRegionHiRes(union.x, union.y, union.w, union.h, 2, true, 'png', ids);
             state.objects = state.objects.filter(o => !ids.has(o.id));
             state.objects.push({
                 id: uid(), type: 'image', src: url,
@@ -5372,6 +6062,8 @@ return null;
                 opacity: 1, layerId: state.activeLayerId
             });
             state.selectedIds.clear();
+            invalidateScene();
+            invalidateObjectIndex();
             render();
         }
 
@@ -5510,6 +6202,8 @@ return null;
                 opacity: 1, layerId: state.activeLayerId, rotation: 0
             };
             state.objects.push(g);
+            invalidateScene();
+            invalidateObjectIndex();
             state.selectedIds = new Set([g.id]);
             render(); updateSelectionUI(); renderLayerList();
         }
@@ -5527,6 +6221,8 @@ return null;
                 });
             });
             state.selectedIds.clear();
+            invalidateScene();
+            invalidateObjectIndex();
             render(); updateSelectionUI(); renderLayerList();
         }
         document.getElementById('btn-group') && (document.getElementById('btn-group').onclick = groupSelection);
@@ -5705,7 +6401,7 @@ return null;
                 objects: JSON.parse(JSON.stringify(state.objects)),
                 layers: JSON.parse(JSON.stringify(state.layers)),
                 activeLayerId: state.activeLayerId,
-                paintData: state.paintCanvas ? state.paintCanvas.toDataURL('image/png') : null,
+                paintData: serializePaintLayer(),
                 canvasBg: state.canvasBg,
                 infiniteCanvas: state.infiniteCanvas,
                 canvasWidth: state.canvasWidth,
@@ -5718,18 +6414,9 @@ return null;
             state.layers = snap.layers || state.layers;
             state.activeLayerId = snap.activeLayerId || state.activeLayerId;
             state.canvasBg = snap.canvasBg != null ? snap.canvasBg : state.canvasBg;
-            if (snap.paintData) {
-                ensurePaintLayer();
-                const img = new Image();
-                img.onload = () => {
-                    state.paintCtx.clearRect(0,0,state.paintCanvas.width,state.paintCanvas.height);
-                    state.paintCtx.drawImage(img,0,0);
-                    render();
-                };
-                img.src = snap.paintData;
-            } else if (state.paintCtx) {
-                state.paintCtx.clearRect(0,0,state.paintCanvas.width,state.paintCanvas.height);
-            }
+            restorePaintLayer(snap.paintData, snap.paintOrigin);
+            invalidateScene();
+            invalidateObjectIndex();
             state.selectedIds.clear();
             render(); renderLayerList(); updateSelectionUI();
         }
@@ -5784,141 +6471,518 @@ return null;
             alert('リージョン「' + name + '」を保存しました');
         });
 
-        // ========== ANIMATION + ONION ==========
-        let animPlaying = false, animTimer = null, animIndex = 0;
+        // ========== ANIMATION TIMELINE ==========
+        let animPlaying = false;
+        let animRaf = null;
+        let animIndex = 0;
+        let animLastTime = 0;
+        let animAccumulator = 0;
+
         function showAnimBar(show) {
             const bar = document.getElementById('anim-bar');
             if (!bar) return;
-            if (show) { bar.classList.remove('hidden'); bar.classList.add('flex'); }
-            else { bar.classList.add('hidden'); bar.classList.remove('flex'); }
+            bar.classList.toggle('hidden', !show);
+            bar.classList.toggle('flex', show);
         }
-        function captureAnimFrame() {
-            // ベクター（ペン/図形/グループ）+ ラスター両方をフレームに保存
-            let objectsCopy = [];
-            try {
-                objectsCopy = JSON.parse(JSON.stringify(state.objects, (k, v) => {
-                    if (k === '_img' || k === '_effectBase') return undefined;
-                    return v;
-                }));
-            } catch (e) {
-                objectsCopy = state.objects.map(o => ({ ...o }));
-            }
+
+        function cloneFrameObjects(objects) {
+            return JSON.parse(JSON.stringify(objects || [], (key, value) =>
+                key === '_img' || key === '_effectBase' ? undefined : value
+            ));
+        }
+
+        function captureAnimFrame({ blank = false } = {}) {
             return {
                 id: uid(),
-                objects: objectsCopy,
-                paintData: state.paintCanvas ? state.paintCanvas.toDataURL('image/png') : null,
+                objects: blank ? [] : cloneFrameObjects(state.objects),
+                layers: JSON.parse(JSON.stringify(state.layers)),
+                activeLayerId: state.activeLayerId,
+                paintChunks: blank ? new Map() : new Map(ensurePaintLayer()),
                 note: 'vector+raster'
             };
         }
-        function loadAnimFrame(fr) {
-            if (!fr) return;
-            try {
-                state.objects = JSON.parse(JSON.stringify(fr.objects || []));
-            } catch (_) {
-                state.objects = fr.objects || [];
+
+        function serializeAnimFrame(frame) {
+            const clean = {
+                ...frame,
+                objects: cloneFrameObjects(frame.objects),
+                paintData: frame.paintChunks instanceof Map
+                    ? serializePaintLayer(frame.paintChunks)
+                    : frame.paintData || null
+            };
+            delete clean.paintChunks;
+            delete clean.thumbnail;
+            return clean;
+        }
+
+        const animPaintCache = new WeakMap();
+
+        function decodeAnimPaintFrame(frame) {
+            if (frame.paintChunks instanceof Map) return Promise.resolve(frame.paintChunks);
+            let pending = animPaintCache.get(frame);
+            if (pending) return pending;
+
+            pending = (async () => {
+                const chunks = new Map();
+                const loadImage = src => new Promise((resolve, reject) => {
+                    const image = new Image();
+                    image.onload = () => resolve(image);
+                    image.onerror = () => reject(new Error('Failed to restore animation frame paint data'));
+                    image.src = src;
+                });
+                const createTile = (cx, cy) => {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = PAINT_CHUNK_SIZE;
+                    canvas.height = PAINT_CHUNK_SIZE;
+                    const tile = { canvas, ctx: canvas.getContext('2d') };
+                    chunks.set(`${cx},${cy}`, tile);
+                    return tile;
+                };
+                const data = frame.paintData;
+                if (data && data.format === 'chunks-v1' && Array.isArray(data.tiles)) {
+                    for (const tileData of data.tiles) {
+                        const image = await loadImage(tileData.data);
+                        createTile(tileData.x, tileData.y).ctx.drawImage(image, 0, 0, PAINT_CHUNK_SIZE, PAINT_CHUNK_SIZE);
+                    }
+                } else if (typeof data === 'string') {
+                    const image = await loadImage(data);
+                    const origin = frame.paintOrigin || { x: -image.width / 2, y: -image.height / 2 };
+                    const minCX = Math.floor(origin.x / PAINT_CHUNK_SIZE);
+                    const minCY = Math.floor(origin.y / PAINT_CHUNK_SIZE);
+                    const maxCX = Math.ceil((origin.x + image.width) / PAINT_CHUNK_SIZE);
+                    const maxCY = Math.ceil((origin.y + image.height) / PAINT_CHUNK_SIZE);
+                    for (let cy = minCY; cy < maxCY; cy++) {
+                        for (let cx = minCX; cx < maxCX; cx++) {
+                            const left = Math.max(origin.x, cx * PAINT_CHUNK_SIZE);
+                            const top = Math.max(origin.y, cy * PAINT_CHUNK_SIZE);
+                            const right = Math.min(origin.x + image.width, (cx + 1) * PAINT_CHUNK_SIZE);
+                            const bottom = Math.min(origin.y + image.height, (cy + 1) * PAINT_CHUNK_SIZE);
+                            if (right <= left || bottom <= top) continue;
+                            createTile(cx, cy).ctx.drawImage(
+                                image,
+                                left - origin.x, top - origin.y, right - left, bottom - top,
+                                left - cx * PAINT_CHUNK_SIZE, top - cy * PAINT_CHUNK_SIZE, right - left, bottom - top
+                            );
+                        }
+                    }
+                }
+                return chunks;
+            })();
+            animPaintCache.set(frame, pending);
+            pending.catch(() => animPaintCache.delete(frame));
+            return pending;
+        }
+
+        function saveCurrentAnimFrame() {
+            const frame = state.animFrames[animIndex];
+            if (!frame) return;
+            frame.objects = state.objects;
+            frame.layers = state.layers;
+            frame.activeLayerId = state.activeLayerId;
+            if (frame.paintChunks instanceof Map || !frame.paintData) {
+                frame.paintChunks = new Map(ensurePaintLayer());
+                delete frame.paintData;
+                delete frame.paintOrigin;
+            }
+            updateAnimFrameCells(animIndex, frame);
+        }
+
+        function loadAnimFrame(frame, { updateUI = true } = {}) {
+            if (!frame) return;
+            state.objects = frame.objects || [];
+            activateObjectIndex(frame);
+            if (frame.layers) state.layers = frame.layers;
+            state.activeLayerId = frame.activeLayerId || state.activeLayerId;
+            if (state.animTrackId && state.animTrackId !== 'raster') {
+                const trackLayer = state.layers.find(layer => layer.id === state.animTrackId);
+                if (trackLayer) state.activeLayerId = trackLayer.id;
+            }
+            if (frame.paintChunks instanceof Map) {
+                state.paintRestoreId++;
+                state.animFrameLoading = false;
+                state.paintChunks = new Map(frame.paintChunks);
+                state.paintCowSet = new Set();
+                state.paintRevision++;
+            } else {
+                const restoreId = ++state.paintRestoreId;
+                state.animFrameLoading = true;
+                state.paintChunks = new Map();
+                state.paintCowSet = new Set();
+                state.paintRevision++;
+                decodeAnimPaintFrame(frame).then(chunks => {
+                    if (!(frame.paintChunks instanceof Map)) {
+                        frame.paintChunks = chunks;
+                        delete frame.paintData;
+                        delete frame.paintOrigin;
+                    }
+                    if (restoreId !== state.paintRestoreId || state._activeAnimFrame !== frame) return;
+                    if (frame.paintChunks !== chunks) return;
+                    state.animFrameLoading = false;
+                    state.paintChunks = new Map(chunks);
+                    state.paintCowSet = new Set();
+                    state.paintRevision++;
+                    updateAnimFrameCells(animIndex, frame);
+                    invalidateScene();
+                    render();
+                }).catch(error => {
+                    if (state._activeAnimFrame === frame) state.animFrameLoading = false;
+                    console.error('Animation frame paint restore failed', error);
+                });
             }
             state.selectedIds.clear();
-            if (fr.paintData) {
-                ensurePaintLayer();
-                const img = new Image();
-                img.onload = () => {
-                    state.paintCtx.clearRect(0,0,state.paintCanvas.width,state.paintCanvas.height);
-                    state.paintCtx.drawImage(img,0,0);
-                    if (typeof invalidateScene === 'function') invalidateScene();
-                    render();
-                };
-                img.src = fr.paintData;
-            } else if (state.paintCtx && state.paintCanvas) {
-                state.paintCtx.clearRect(0,0,state.paintCanvas.width,state.paintCanvas.height);
-            }
-            if (typeof invalidateScene === 'function') invalidateScene();
+            invalidateScene();
             render();
-            if (typeof updateAnimUI === 'function') updateAnimUI();
-            if (typeof updateSelectionUI === 'function') updateSelectionUI();
+            if (updateUI) {
+                updateAnimUI({ rebuild: false });
+                updateSelectionUI();
+                renderLayerList();
+            }
         }
-        function updateAnimUI() {
-            const lab = document.getElementById('anim-frame-label');
-            const n = state.animFrames.length;
-            if (lab) lab.textContent = (n ? animIndex + 1 : 0) + ' / ' + n;
+
+        function updateAnimIndicator() {
+            const count = state.animFrames.length;
+            animIndex = count ? Math.max(0, Math.min(animIndex, count - 1)) : 0;
+            const label = document.getElementById('anim-frame-label');
+            const duration = document.getElementById('anim-duration');
+            const fps = Math.max(1, Math.min(60, Number(state.animFps) || 12));
+            if (label) label.textContent = `${count ? animIndex + 1 : 0} / ${count}`;
+            if (duration) duration.textContent = `${(count / fps).toFixed(1)}s`;
+            const strip = document.getElementById('anim-strip');
+            if (strip) {
+                strip.querySelectorAll('.active').forEach(element => element.classList.remove('active'));
+                strip.querySelectorAll('[aria-current="true"]').forEach(element => element.setAttribute('aria-current', 'false'));
+                strip.querySelectorAll(`[data-frame-index="${animIndex}"]`).forEach(element => {
+                    if (element.classList.contains('anim-frame-head') || element.classList.contains('anim-cel')) {
+                        element.classList.add('active');
+                        element.setAttribute('aria-current', 'true');
+                    }
+                });
+                strip.querySelectorAll('.anim-layer-head').forEach(element => {
+                    const selected = element.dataset.trackId === String(state.animTrackId || state.activeLayerId);
+                    element.classList.toggle('selected', selected);
+                });
+            }
+        }
+
+        function frameLayerObjectCounts(frame) {
+            const counts = new Map();
+            (frame.objects || []).forEach(object => {
+                if (!object.layerId) return;
+                counts.set(object.layerId, (counts.get(object.layerId) || 0) + 1);
+            });
+            return counts;
+        }
+
+        function frameRasterCount(frame) {
+            if (frame.paintChunks instanceof Map) return Number(frame.paintChunks.size > 0);
+            if (frame.paintData?.format === 'chunks-v1') return Number((frame.paintData.tiles?.length || 0) > 0);
+            return typeof frame.paintData === 'string' ? 1 : 0;
+        }
+
+        function updateAnimFrameCells(index, frame) {
             const strip = document.getElementById('anim-strip');
             if (!strip) return;
-            strip.innerHTML = '';
-            state.animFrames.forEach((fr, i) => {
-                const b = document.createElement('button');
-                b.className = 'geist-btn !min-w-8 !min-h-8 text-[10px] ' + (i === animIndex ? 'active' : '');
-                b.textContent = i + 1;
-                b.onclick = () => { animIndex = i; loadAnimFrame(fr); };
-                strip.appendChild(b);
+            const counts = frameLayerObjectCounts(frame);
+            strip.querySelectorAll(`[data-frame-index="${index}"][data-track-id]`).forEach(cell => {
+                const count = cell.dataset.trackId === 'raster'
+                    ? frameRasterCount(frame)
+                    : counts.get(cell.dataset.trackId) || 0;
+                const countLabel = cell.querySelector('.anim-cel-count');
+                if (countLabel) countLabel.textContent = count ? String(count) : '+';
+                cell.classList.toggle('has-content', count > 0);
+                const trackName = cell.dataset.trackName || 'Layer';
+                cell.setAttribute('aria-label', `${trackName}、フレーム ${index + 1}、${count ? `${count} 個` : '空'}`);
             });
         }
-        document.getElementById('anim-add') && (document.getElementById('anim-add').onclick = () => {
+
+        function selectAnimTrack(trackId) {
             if (state.animFrames.length) saveCurrentAnimFrame();
-            state.animFrames.push(captureAnimFrame());
-            animIndex = state.animFrames.length - 1;
-            updateAnimUI();
-        });
-        document.getElementById('anim-del') && (document.getElementById('anim-del').onclick = () => {
-            if (!state.animFrames.length) return;
-            state.animFrames.splice(animIndex, 1);
-            animIndex = Math.max(0, animIndex - 1);
-            if (state.animFrames[animIndex]) loadAnimFrame(state.animFrames[animIndex]);
-            updateAnimUI();
-        });
-        function saveCurrentAnimFrame() {
-            if (!state.animFrames || !state.animFrames.length) return;
-            if (animIndex < 0 || animIndex >= state.animFrames.length) return;
-            state.animFrames[animIndex] = captureAnimFrame();
+            state.animTrackId = trackId;
+            if (trackId !== 'raster') {
+                const layer = state.layers.find(item => item.id === trackId);
+                if (layer) {
+                    state.activeLayerId = layer.id;
+                    const frame = state.animFrames[animIndex];
+                    if (frame) frame.activeLayerId = layer.id;
+                }
+            }
+            updateAnimIndicator();
+            renderLayerList();
+            invalidateScene();
+            render();
         }
-        document.getElementById('anim-prev') && (document.getElementById('anim-prev').onclick = () => {
+
+        function selectAnimTrackFrame(index, trackId) {
+            selectAnimFrame(index);
+            selectAnimTrack(trackId);
+        }
+
+        function setAnimLayerVisibility(layerId) {
+            const layer = state.layers.find(item => item.id === layerId);
+            if (!layer) return;
+            layer.visible = layer.visible === false;
+            const frame = state.animFrames[animIndex];
+            if (frame) frame.layers = state.layers;
+            invalidateScene();
+            renderLayerList();
+            render();
+            updateAnimUI({ rebuild: true });
+        }
+
+        function createAnimCell(index, trackId, trackName, objectCounts, rasterCount) {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'anim-cel';
+            button.dataset.frameIndex = String(index);
+            button.dataset.trackId = trackId;
+            button.dataset.trackName = trackName;
+            const count = trackId === 'raster'
+                ? rasterCount
+                : objectCounts.get(trackId) || 0;
+            button.classList.toggle('has-content', count > 0);
+            button.setAttribute('aria-label', `${trackName}、フレーム ${index + 1}、${count ? `${count} 個` : '空'}`);
+            const countLabel = document.createElement('span');
+            countLabel.className = 'anim-cel-count';
+            countLabel.textContent = count ? String(count) : '+';
+            button.appendChild(countLabel);
+            button.onclick = () => selectAnimTrackFrame(index, trackId);
+            return button;
+        }
+
+        function appendAnimTrack(strip, trackId, trackName, frames, countsByFrame, { layer = null, raster = false } = {}) {
+            const header = document.createElement('div');
+            header.className = `anim-layer-head${raster ? ' raster' : ''}`;
+            header.dataset.trackId = trackId;
+            if (layer) {
+                const visibility = document.createElement('button');
+                visibility.type = 'button';
+                visibility.className = 'anim-layer-vis';
+                visibility.setAttribute('aria-label', `${trackName}を${layer.visible === false ? '表示' : '非表示'}`);
+                visibility.title = layer.visible === false ? 'レイヤーを表示' : 'レイヤーを非表示';
+                visibility.innerHTML = `<i class="fa-solid ${layer.visible === false ? 'fa-eye-slash' : 'fa-eye'}" aria-hidden="true"></i>`;
+                visibility.onclick = () => setAnimLayerVisibility(layer.id);
+                header.appendChild(visibility);
+            }
+            const select = document.createElement('button');
+            select.type = 'button';
+            select.className = 'anim-layer-select';
+            select.textContent = trackName;
+            select.title = trackName;
+            select.onclick = () => selectAnimTrack(trackId);
+            header.appendChild(select);
+            strip.appendChild(header);
+            frames.forEach((frame, index) => strip.appendChild(createAnimCell(
+                index, trackId, trackName, countsByFrame[index].objects, countsByFrame[index].raster
+            )));
+        }
+
+        function updateAnimUI({ rebuild = false } = {}) {
+            const count = state.animFrames.length;
+            animIndex = count ? Math.max(0, Math.min(animIndex, count - 1)) : 0;
+            const strip = document.getElementById('anim-strip');
+            if (strip && rebuild) {
+                strip.replaceChildren();
+                strip.style.setProperty('--anim-frame-count', String(Math.max(1, count)));
+                const corner = document.createElement('div');
+                corner.className = 'anim-corner';
+                corner.textContent = 'レイヤー';
+                strip.appendChild(corner);
+                const countsByFrame = state.animFrames.map(frame => ({
+                    objects: frameLayerObjectCounts(frame),
+                    raster: frameRasterCount(frame)
+                }));
+                state.animFrames.forEach((frame, index) => {
+                    const button = document.createElement('button');
+                    button.type = 'button';
+                    button.className = 'anim-frame-head';
+                    button.dataset.frameIndex = String(index);
+                    button.textContent = String(index + 1).padStart(2, '0');
+                    button.setAttribute('aria-label', `フレーム ${index + 1} を選択`);
+                    button.onclick = () => selectAnimFrame(index);
+                    strip.appendChild(button);
+                });
+                const layers = (state.layers || []).filter(layer => layer.type !== 'folder');
+                layers.forEach(layer => appendAnimTrack(strip, layer.id, layer.name || 'Layer', state.animFrames, countsByFrame, { layer }));
+                appendAnimTrack(strip, 'raster', 'ラスター', state.animFrames, countsByFrame, { raster: true });
+            }
+            updateAnimIndicator();
+            const play = document.getElementById('anim-play');
+            if (play) {
+                play.innerHTML = `<i class="fa-solid fa-${animPlaying ? 'pause' : 'play'}"></i>`;
+                play.title = animPlaying ? '一時停止 (Space)' : '再生 (Space)';
+                play.setAttribute('aria-label', animPlaying ? 'アニメーションを一時停止' : 'アニメーションを再生');
+            }
+            ['anim-prev', 'anim-next', 'anim-del', 'anim-duplicate', 'anim-play'].forEach(id => {
+                const button = document.getElementById(id);
+                if (button) button.disabled = !count || (id === 'anim-play' && count < 2);
+            });
+        }
+
+        function selectAnimFrame(index, { fromPlayback = false } = {}) {
             if (!state.animFrames.length) return;
+            if (!fromPlayback) stopAnimPlayback();
+            const nextIndex = Math.max(0, Math.min(index, state.animFrames.length - 1));
+            if (nextIndex === animIndex) return;
             saveCurrentAnimFrame();
-            animIndex = (animIndex - 1 + state.animFrames.length) % state.animFrames.length;
-            loadAnimFrame(state.animFrames[animIndex]);
-        });
-        document.getElementById('anim-next') && (document.getElementById('anim-next').onclick = () => {
+            animIndex = nextIndex;
+            loadAnimFrame(state.animFrames[animIndex], { updateUI: !fromPlayback });
+            if (fromPlayback) updateAnimIndicator();
+        }
+
+        function addAnimFrame({ duplicate = false } = {}) {
+            stopAnimPlayback();
+            if (state.animFrames.length) saveCurrentAnimFrame();
+            const frame = captureAnimFrame();
+            if (!duplicate) {
+                if (state.animTrackId === 'raster') {
+                    frame.paintChunks = new Map();
+                } else {
+                    const layerId = state.animTrackId || state.activeLayerId;
+                    frame.objects = frame.objects.filter(object => object.layerId !== layerId);
+                }
+            }
+            state.animFrames.splice(state.animFrames.length ? animIndex + 1 : 0, 0, frame);
+            animIndex = state.animFrames.indexOf(frame);
+            loadAnimFrame(frame, { updateUI: false });
+            updateAnimUI({ rebuild: true });
+        }
+
+        function deleteAnimFrame() {
             if (!state.animFrames.length) return;
-            saveCurrentAnimFrame();
-            animIndex = (animIndex + 1) % state.animFrames.length;
-            loadAnimFrame(state.animFrames[animIndex]);
-        });
-        document.getElementById('anim-play') && (document.getElementById('anim-play').onclick = () => {
-            if (animPlaying) {
-                animPlaying = false;
-                clearInterval(animTimer);
-                document.getElementById('anim-play').innerHTML = '<i class="fa-solid fa-play"></i>';
+            stopAnimPlayback();
+            state.animFrames.splice(animIndex, 1);
+            if (!state.animFrames.length) {
+                state.objects = [];
+                state.paintChunks = new Map();
+                state.paintCowSet = new Set();
+                activateObjectIndex(null);
+                invalidateScene();
+                invalidateObjectIndex();
+                render();
+                updateSelectionUI();
+                renderLayerList();
+            } else {
+                animIndex = Math.min(animIndex, state.animFrames.length - 1);
+                loadAnimFrame(state.animFrames[animIndex]);
+            }
+            updateAnimUI({ rebuild: true });
+        }
+
+        function stopAnimPlayback() {
+            const wasPlaying = animPlaying;
+            if (animRaf != null) cancelAnimationFrame(animRaf);
+            animRaf = null;
+            animPlaying = false;
+            animLastTime = 0;
+            animAccumulator = 0;
+            updateAnimUI({ rebuild: false });
+            if (wasPlaying && state.mode === 'anim') {
+                updateSelectionUI();
+                renderLayerList();
+            }
+        }
+
+        function tickAnimPlayback(timestamp) {
+            if (!animPlaying) return;
+            if (state.animFrameLoading) {
+                animLastTime = timestamp;
+                animRaf = requestAnimationFrame(tickAnimPlayback);
                 return;
             }
-            if (!state.animFrames.length) return;
+            if (!animLastTime) animLastTime = timestamp;
+            animAccumulator += Math.min(timestamp - animLastTime, 250);
+            animLastTime = timestamp;
+            const fpsInput = document.getElementById('anim-fps');
+            const fps = Math.max(1, Math.min(60, Number(fpsInput?.value) || 12));
+            const frameDuration = 1000 / fps;
+            if (animAccumulator >= frameDuration) {
+                const steps = Math.floor(animAccumulator / frameDuration);
+                animAccumulator %= frameDuration;
+                const next = animIndex + steps;
+                if (next >= state.animFrames.length && !document.getElementById('anim-loop')?.checked) {
+                    selectAnimFrame(state.animFrames.length - 1, { fromPlayback: true });
+                    stopAnimPlayback();
+                    return;
+                }
+                selectAnimFrame(next % state.animFrames.length, { fromPlayback: true });
+            }
+            animRaf = requestAnimationFrame(tickAnimPlayback);
+        }
+
+        function startAnimPlayback() {
+            if (state.animFrames.length < 2 || animPlaying) return;
+            saveCurrentAnimFrame();
             animPlaying = true;
-            document.getElementById('anim-play').innerHTML = '<i class="fa-solid fa-pause"></i>';
-            const fps = +document.getElementById('anim-fps').value || 12;
-            animTimer = setInterval(() => {
-                animIndex = (animIndex + 1) % state.animFrames.length;
-                loadAnimFrame(state.animFrames[animIndex]);
-            }, 1000 / fps);
-        });
-        document.getElementById('onion-toggle') && (document.getElementById('onion-toggle').onchange = (e) => {
-            state.onionSkin = e.target.checked;
+            animLastTime = 0;
+            animAccumulator = 0;
+            updateAnimUI({ rebuild: false });
+            animRaf = requestAnimationFrame(tickAnimPlayback);
+        }
+
+        document.getElementById('anim-add').onclick = () => addAnimFrame();
+        document.getElementById('anim-duplicate').onclick = () => addAnimFrame({ duplicate: true });
+        document.getElementById('anim-del').onclick = deleteAnimFrame;
+        document.getElementById('anim-prev').onclick = () =>
+            selectAnimFrame((animIndex - 1 + state.animFrames.length) % state.animFrames.length);
+        document.getElementById('anim-next').onclick = () =>
+            selectAnimFrame((animIndex + 1) % state.animFrames.length);
+        document.getElementById('anim-play').onclick = () => animPlaying ? stopAnimPlayback() : startAnimPlayback();
+        document.getElementById('anim-fps').onchange = event => {
+            event.target.value = String(Math.max(1, Math.min(60, Number(event.target.value) || 12)));
+            state.animFps = Number(event.target.value);
+            updateAnimUI({ rebuild: false });
+        };
+        document.getElementById('anim-loop').onchange = () => updateAnimUI({ rebuild: false });
+        document.getElementById('onion-toggle').onchange = event => {
+            state.onionSkin = event.target.checked;
+            invalidateScene();
             render();
+        };
+        document.addEventListener('keydown', event => {
+            if (state.mode !== 'anim' || event.ctrlKey || event.metaKey || event.altKey) return;
+            const target = event.target;
+            if (target instanceof HTMLElement && (target.isContentEditable || /INPUT|TEXTAREA|SELECT/.test(target.tagName))) return;
+            if (event.code === 'Space') {
+                event.preventDefault();
+                animPlaying ? stopAnimPlayback() : startAnimPlayback();
+            } else if (event.key === 'ArrowLeft') {
+                event.preventDefault();
+                selectAnimFrame(Math.max(0, animIndex - 1));
+            } else if (event.key === 'ArrowRight') {
+                event.preventDefault();
+                selectAnimFrame(Math.min(state.animFrames.length - 1, animIndex + 1));
+            } else if (event.key === 'Home') {
+                selectAnimFrame(0);
+            } else if (event.key === 'End') {
+                selectAnimFrame(state.animFrames.length - 1);
+            }
         });
 
-        // setMode anim show bar
         const __setMode = setMode;
-        setMode = function(m) {
-            if (m === 'anim') {
+        setMode = function(mode) {
+            if (mode === 'anim') {
                 state.mode = 'anim';
-                document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.mode-btn').forEach(button => button.classList.remove('active'));
                 document.getElementById('mode-anim-btn')?.classList.add('active');
                 showAnimBar(true);
-                if (!state.animFrames.length) {
-                    state.animFrames.push(captureAnimFrame());
-                    animIndex = 0;
-                    updateAnimUI();
+                if (!state.layers.some(layer => layer.id === state.animTrackId)) {
+                    state.animTrackId = state.layers.find(layer => layer.id === state.activeLayerId)?.id
+                        || state.layers[0]?.id
+                        || 'raster';
                 }
+                if (!state.animFrames.length) {
+                    const initialFrame = captureAnimFrame();
+                    state.animFrames.push(initialFrame);
+                    animIndex = 0;
+                }
+                loadAnimFrame(state.animFrames[animIndex], { updateUI: false });
+                updateAnimUI({ rebuild: true });
                 return;
             }
+            stopAnimPlayback();
+            if (state.animFrames.length) saveCurrentAnimFrame();
             showAnimBar(false);
-            __setMode(m);
+            __setMode(mode);
         };
 
         // Onion skin in render
@@ -5975,31 +7039,6 @@ return null;
             mctx.strokeRect(tl.x, tl.y, br.x - tl.x, br.y - tl.y);
             mctx.restore();
         }
-        document.getElementById('minimap') && document.getElementById('minimap').addEventListener('pointerdown', (e) => {
-            const mc = document.getElementById('minimap');
-            const rect = mc.getBoundingClientRect();
-            const mx = (e.clientX - rect.left) / rect.width * mc.width;
-            const my = (e.clientY - rect.top) / rect.height * mc.height;
-            // approximate inverse of drawMinimap mapping — center view
-            let minx=-500, miny=-500, maxx=500, maxy=500;
-            if (!state.infiniteCanvas) { minx=0;miny=0;maxx=state.canvasWidth;maxy=state.canvasHeight; }
-            state.objects.forEach(o => {
-                const b = getBounds(o);
-                if (!b) return;
-                minx = Math.min(minx, b.x); miny = Math.min(miny, b.y);
-                maxx = Math.max(maxx, b.x+b.w); maxy = Math.max(maxy, b.y+b.h);
-            });
-            const bw = Math.max(1, maxx - minx), bh = Math.max(1, maxy - miny);
-            const scale = Math.min(mc.width / bw, mc.height / bh) * 0.9;
-            const ox = (mc.width - bw * scale) / 2 - minx * scale;
-            const oy = (mc.height - bh * scale) / 2 - miny * scale;
-            const wx = (mx - ox) / scale;
-            const wy = (my - oy) / scale;
-            state.panX = window.innerWidth / 2 - wx * state.zoom;
-            state.panY = window.innerHeight / 2 - wy * state.zoom;
-            render();
-        });
-
         // ========== PROJECT SAVE with regions ==========
         const _saveProject = typeof saveProject === 'function' ? saveProject : null;
         // find export project button handler and extend
@@ -6377,7 +7416,7 @@ return null;
             let dragging = false, ox=0, oy=0;
             const title = wrap.querySelector('.mm-title');
             title?.addEventListener('pointerdown', (e) => {
-                if (e.target.id === 'mm-close') return;
+                if (e.target.closest('button')) return;
                 dragging = true;
                 ox = e.clientX - wrap.offsetLeft;
                 oy = e.clientY - wrap.offsetTop;
@@ -6474,6 +7513,7 @@ return null;
             state.objects.push(g);
             state.selectedIds = new Set([g.id]);
             invalidateScene();
+            invalidateObjectIndex();
             render();
             if (typeof updateSelectionUI === 'function') updateSelectionUI();
             if (typeof renderLayerList === 'function') renderLayerList();
@@ -6496,6 +7536,7 @@ return null;
             });
             state.selectedIds.clear();
             invalidateScene();
+            invalidateObjectIndex();
             render();
             if (typeof updateSelectionUI === 'function') updateSelectionUI();
             if (typeof renderLayerList === 'function') renderLayerList();
@@ -6616,6 +7657,56 @@ return null;
         }
 
         // ========== MINIMAP DRAW FIX ==========
+        let minimapCamera = null;
+        function minimapWorldBounds() {
+            let minX = state.infiniteCanvas ? Infinity : 0;
+            let minY = state.infiniteCanvas ? Infinity : 0;
+            let maxX = state.infiniteCanvas ? -Infinity : state.canvasWidth || 1920;
+            let maxY = state.infiniteCanvas ? -Infinity : state.canvasHeight || 1080;
+            state.objects.forEach(object => {
+                const bounds = getBounds(object);
+                if (!bounds) return;
+                minX = Math.min(minX, bounds.x);
+                minY = Math.min(minY, bounds.y);
+                maxX = Math.max(maxX, bounds.x + bounds.w);
+                maxY = Math.max(maxY, bounds.y + bounds.h);
+            });
+            const paintBounds = paintLayerBounds();
+            if (paintBounds) {
+                minX = Math.min(minX, paintBounds.x);
+                minY = Math.min(minY, paintBounds.y);
+                maxX = Math.max(maxX, paintBounds.x + paintBounds.w);
+                maxY = Math.max(maxY, paintBounds.y + paintBounds.h);
+            }
+            if (!Number.isFinite(minX)) {
+                minX = -600; minY = -400; maxX = 600; maxY = 400;
+            }
+            const padding = Math.max(40, Math.max(maxX - minX, maxY - minY) * 0.08);
+            return {
+                minX: minX - padding,
+                minY: minY - padding,
+                maxX: maxX + padding,
+                maxY: maxY + padding
+            };
+        }
+
+        function fitMinimapToContent() {
+            const wrap = document.getElementById('minimap-wrap');
+            if (!wrap) return;
+            const bounds = minimapWorldBounds();
+            const width = Math.max(1, wrap.clientWidth);
+            const height = Math.max(1, wrap.clientHeight - 22);
+            minimapCamera = {
+                centerX: (bounds.minX + bounds.maxX) / 2,
+                centerY: (bounds.minY + bounds.maxY) / 2,
+                scale: Math.max(Number.MIN_VALUE, Math.min(
+                    width / (bounds.maxX - bounds.minX),
+                    height / (bounds.maxY - bounds.minY)
+                ) * 0.9)
+            };
+            drawMinimap();
+        }
+
         drawMinimap = function() {
             if (state.showMinimap === false) return;
             const mc = document.getElementById('minimap');
@@ -6623,81 +7714,173 @@ return null;
             if (!mc || !wrap || wrap.style.display === 'none') return;
             const cssW = Math.max(80, wrap.clientWidth || 180);
             const cssH = Math.max(60, (wrap.clientHeight || 130) - 22);
-            // low-res internal buffer for speed
-            const scaleRes = 0.5;
-            const mw = Math.max(40, Math.floor(cssW * scaleRes));
-            const mh = Math.max(30, Math.floor(cssH * scaleRes));
+            const scaleRes = Math.min(Math.max(window.devicePixelRatio || 1, 1), 2);
+            const mw = Math.max(1, Math.round(cssW * scaleRes));
+            const mh = Math.max(1, Math.round(cssH * scaleRes));
             if (mc.width !== mw || mc.height !== mh) {
-                mc.width = mw; mc.height = mh;
+                mc.width = mw;
+                mc.height = mh;
             }
             mc.style.width = '100%';
             mc.style.height = 'calc(100% - 22px)';
             const mctx = mc.getContext('2d');
-            mctx.setTransform(1,0,0,1,0,0);
+            mctx.setTransform(1, 0, 0, 1, 0, 0);
+            mctx.imageSmoothingEnabled = true;
+            mctx.imageSmoothingQuality = 'high';
             mctx.fillStyle = '#111';
-            mctx.fillRect(0,0,mw,mh);
+            mctx.fillRect(0, 0, mw, mh);
 
-            let minx, miny, maxx, maxy;
-            if (!state.infiniteCanvas) {
-                minx=0; miny=0; maxx=state.canvasWidth||1920; maxy=state.canvasHeight||1080;
-            } else {
-                minx=Infinity; miny=Infinity; maxx=-Infinity; maxy=-Infinity;
-                state.objects.forEach(o => {
-                    const b = getBounds(o);
-                    if (!b) return;
-                    minx=Math.min(minx,b.x); miny=Math.min(miny,b.y);
-                    maxx=Math.max(maxx,b.x+b.w); maxy=Math.max(maxy,b.y+b.h);
-                });
-                if (state.paintCanvas) {
-                    minx=Math.min(minx, state.paintOrigin.x);
-                    miny=Math.min(miny, state.paintOrigin.y);
-                    maxx=Math.max(maxx, state.paintOrigin.x + state.paintCanvas.width);
-                    maxy=Math.max(maxy, state.paintOrigin.y + state.paintCanvas.height);
-                }
-                if (!isFinite(minx)) { minx=-300;miny=-200;maxx=300;maxy=200; }
-                const tl=screenToWorld(0,40), br=screenToWorld(window.innerWidth,window.innerHeight);
-                minx=Math.min(minx,tl.x,br.x); miny=Math.min(miny,tl.y,br.y);
-                maxx=Math.max(maxx,tl.x,br.x); maxy=Math.max(maxy,tl.y,br.y);
-                const margin = Math.max(80, Math.max(maxx-minx, maxy-miny)*0.12);
-                minx-=margin; miny-=margin; maxx+=margin; maxy+=margin;
+            if (!minimapCamera) {
+                const bounds = minimapWorldBounds();
+                minimapCamera = {
+                    centerX: (bounds.minX + bounds.maxX) / 2,
+                    centerY: (bounds.minY + bounds.maxY) / 2,
+                    scale: Math.max(Number.MIN_VALUE, Math.min(
+                        cssW / (bounds.maxX - bounds.minX),
+                        cssH / (bounds.maxY - bounds.minY)
+                    ) * 0.9)
+                };
             }
-            const bw=Math.max(1,maxx-minx), bh=Math.max(1,maxy-miny);
-            const sc = Math.min(mw/bw, mh/bh) * 0.9;
-            const ox = (mw - bw*sc)/2 - minx*sc;
-            const oy = (mh - bh*sc)/2 - miny*sc;
+            const scale = minimapCamera.scale * scaleRes;
             mctx.save();
-            mctx.translate(ox, oy);
-            mctx.scale(sc, sc);
+            mctx.translate(mw / 2, mh / 2);
+            mctx.scale(scale, scale);
+            mctx.translate(-minimapCamera.centerX, -minimapCamera.centerY);
             if (!state.infiniteCanvas) {
                 mctx.fillStyle = '#1c1c1c';
-                mctx.fillRect(0,0,state.canvasWidth,state.canvasHeight);
+                mctx.fillRect(0, 0, state.canvasWidth, state.canvasHeight);
             }
-            // paint
-            if (state.paintCanvas) {
+            if (ensurePaintLayer().size) {
                 mctx.globalAlpha = 0.9;
-                mctx.drawImage(state.paintCanvas, state.paintOrigin.x, state.paintOrigin.y);
+                drawPaintLayer(mctx);
                 mctx.globalAlpha = 1;
             }
-            // real-ish object draw (simplified)
-            state.objects.forEach(o => {
-                try { __drawObjectTo(mctx, o); } catch(_) {
-                    const b = getBounds(o);
-                    if (b) {
-                        mctx.fillStyle = o.color || '#888';
+            state.objects.forEach(object => {
+                try {
+                    __drawObjectTo(mctx, object);
+                } catch (error) {
+                    console.error('Minimap object render failed', error);
+                    const bounds = getBounds(object);
+                    if (bounds) {
+                        mctx.fillStyle = object.color || '#888';
                         mctx.globalAlpha = 0.7;
-                        mctx.fillRect(b.x, b.y, Math.max(1,b.w), Math.max(1,b.h));
+                        mctx.fillRect(bounds.x, bounds.y, Math.max(1, bounds.w), Math.max(1, bounds.h));
                         mctx.globalAlpha = 1;
                     }
                 }
             });
-            // viewport
-            const tl=screenToWorld(0,40), br=screenToWorld(window.innerWidth,window.innerHeight);
+            const topLeft = screenToWorld(0, 40);
+            const bottomRight = screenToWorld(window.innerWidth, window.innerHeight);
             mctx.strokeStyle = '#3b82f6';
-            mctx.lineWidth = 2/sc;
-            mctx.strokeRect(tl.x, tl.y, br.x-tl.x, br.y-tl.y);
+            mctx.lineWidth = 2 / scale;
+            mctx.strokeRect(topLeft.x, topLeft.y, bottomRight.x - topLeft.x, bottomRight.y - topLeft.y);
             mctx.restore();
-            state._mm = { minx, miny, scale: sc, ox, oy, mw, mh };
+            state._mm = { ...minimapCamera, scale: minimapCamera.scale, mw, mh };
         };
+
+        (function() {
+            const mc = document.getElementById('minimap');
+            const wrap = document.getElementById('minimap-wrap');
+            if (!mc || !wrap) return;
+            let drag = null;
+            let drawRaf = null;
+            const scheduleMinimapDraw = () => {
+                if (drawRaf) return;
+                drawRaf = requestAnimationFrame(() => {
+                    drawRaf = null;
+                    drawMinimap();
+                });
+            };
+            const fitButton = document.getElementById('mm-fit');
+            if (fitButton) fitButton.addEventListener('click', fitMinimapToContent);
+            mc.style.cursor = 'grab';
+            mc.addEventListener('pointerdown', event => {
+                if (event.button !== 0 || !minimapCamera) return;
+                event.preventDefault();
+                mc.setPointerCapture(event.pointerId);
+                drag = {
+                    pointerId: event.pointerId,
+                    x: event.clientX,
+                    y: event.clientY,
+                    centerX: minimapCamera.centerX,
+                    centerY: minimapCamera.centerY
+                };
+                mc.style.cursor = 'grabbing';
+            });
+            mc.addEventListener('pointermove', event => {
+                if (!drag || drag.pointerId !== event.pointerId) return;
+                minimapCamera.centerX = drag.centerX - (event.clientX - drag.x) / minimapCamera.scale;
+                minimapCamera.centerY = drag.centerY - (event.clientY - drag.y) / minimapCamera.scale;
+                scheduleMinimapDraw();
+            });
+            const endDrag = event => {
+                if (!drag || drag.pointerId !== event.pointerId) return;
+                drag = null;
+                mc.style.cursor = 'grab';
+            };
+            mc.addEventListener('pointerup', endDrag);
+            mc.addEventListener('pointercancel', endDrag);
+            mc.addEventListener('wheel', event => {
+                event.preventDefault();
+                if (!minimapCamera) return;
+                const rect = mc.getBoundingClientRect();
+                const x = event.clientX - rect.left - rect.width / 2;
+                const y = event.clientY - rect.top - rect.height / 2;
+                const worldX = minimapCamera.centerX + x / minimapCamera.scale;
+                const worldY = minimapCamera.centerY + y / minimapCamera.scale;
+                const nextLogScale = Math.log(minimapCamera.scale) - event.deltaY * 0.001;
+                const nextScale = Math.exp(Math.max(
+                    Math.log(Number.MIN_VALUE),
+                    Math.min(Math.log(Number.MAX_VALUE), nextLogScale)
+                ));
+                minimapCamera.centerX = worldX - x / nextScale;
+                minimapCamera.centerY = worldY - y / nextScale;
+                minimapCamera.scale = nextScale;
+                scheduleMinimapDraw();
+            }, { passive: false });
+            mc.addEventListener('dblclick', event => {
+                event.preventDefault();
+                fitMinimapToContent();
+            });
+            mc.addEventListener('keydown', event => {
+                if (!minimapCamera) return;
+                const panStep = 40 / minimapCamera.scale;
+                if (event.key === 'Home') {
+                    event.preventDefault();
+                    fitMinimapToContent();
+                    return;
+                }
+                const pan = {
+                    ArrowLeft: [-panStep, 0],
+                    ArrowRight: [panStep, 0],
+                    ArrowUp: [0, -panStep],
+                    ArrowDown: [0, panStep]
+                }[event.key];
+                if (pan) {
+                    event.preventDefault();
+                    minimapCamera.centerX += pan[0];
+                    minimapCamera.centerY += pan[1];
+                    drawMinimap();
+                    return;
+                }
+                if (event.key === '+' || event.key === '=') {
+                    event.preventDefault();
+                    minimapCamera.scale = Math.exp(Math.min(
+                        Math.log(Number.MAX_VALUE),
+                        Math.log(minimapCamera.scale) + Math.log(1.25)
+                    ));
+                    drawMinimap();
+                } else if (event.key === '-' || event.key === '_') {
+                    event.preventDefault();
+                    minimapCamera.scale = Math.exp(Math.max(
+                        Math.log(Number.MIN_VALUE),
+                        Math.log(minimapCamera.scale) - Math.log(1.25)
+                    ));
+                    drawMinimap();
+                }
+            });
+            new ResizeObserver(() => drawMinimap()).observe(wrap);
+        })();
 
 
 
@@ -6721,6 +7904,9 @@ return null;
         // ========== SCENE CACHE (raster paint performance) ==========
         state.sceneCache = null;
         state.sceneCacheDirty = true;
+        state.gridCache = null;
+        state.gridCacheKey = '';
+        state.sceneViewKey = '';
         state._paintOnlyFrames = 0;
 
         function invalidateScene() {
@@ -6749,12 +7935,10 @@ return null;
             if (state.mode === 'anim' && state.onionSkin && state.animFrames && state.animFrames.length) {
                 drawOnionFrames(sctx);
             }
-            const prevCtx = ctx;
-            // temporarily draw objects using main drawObject but need ctx = sctx
-            // Monkey: assign is hard for const ctx. Use __drawObjectTo for each.
-            state.objects.forEach(obj => {
+            queryObjectsInBounds(state._vp).forEach(({ obj }) => {
+                if (obj === state.currentObj || obj === state._penObj) return;
                 try { __drawObjectTo(sctx, obj); } catch (e) {
-                    // fallback: skip
+                    console.error('Object render failed', e);
                 }
             });
             state.sceneCacheDirty = false;
@@ -6765,16 +7949,37 @@ return null;
             const prev = frames[idx - 1];
             const prev2 = frames[idx - 2];
             const next = frames[idx + 1];
-            const drawFrame = (fr, alpha, color) => {
-                if (!fr || !fr.objects) return;
+            const drawFrame = (fr, alpha) => {
+                if (!fr) return;
                 targetCtx.save();
                 targetCtx.globalAlpha = alpha;
-                (fr.objects || []).forEach(o => {
+                if (state.animTrackId === 'raster') {
+                    if (fr.paintChunks instanceof Map) {
+                        fr.paintChunks.forEach((tile, key) => {
+                            const [cx, cy] = key.split(',').map(Number);
+                            targetCtx.drawImage(tile.canvas, cx * PAINT_CHUNK_SIZE, cy * PAINT_CHUNK_SIZE);
+                        });
+                    }
+                } else {
+                    const activeObjects = state.objects;
+                    const activeLayers = state.layers;
+                    state.objects = fr.objects || [];
+                    state.layers = fr.layers || activeLayers;
                     try {
-                        const copy = o;
-                        __drawObjectTo(targetCtx, copy);
-                    } catch (_) {}
-                });
+                        queryFrameObjectsInBounds(fr, state._vp || worldViewport())
+                            .filter(({ obj }) => obj.layerId === (state.animTrackId || state.activeLayerId))
+                            .forEach(({ obj }) => {
+                                try {
+                                    __drawObjectTo(targetCtx, obj);
+                                } catch (error) {
+                                    console.error('Onion-skin render failed', error);
+                                }
+                            });
+                    } finally {
+                        state.objects = activeObjects;
+                        state.layers = activeLayers;
+                    }
+                }
                 targetCtx.restore();
             };
             if (prev2) drawFrame(prev2, 0.12);
@@ -6785,20 +7990,39 @@ return null;
         // Wrap pushHistory / object mutations to dirty cache
         const _pushHistory = pushHistory;
         pushHistory = function() {
-            invalidateScene();
+            if (!state._rasterHistoryOnly) {
+                invalidateScene();
+                invalidateObjectIndex();
+            }
             return _pushHistory.apply(this, arguments);
         };
 
         // Fast render path
         const __renderCore = typeof render === 'function' ? render : null;
         function renderFast(opts) {
-            opts = opts || {};
-            const paintOnly = opts.paintOnly || state._paintStroke;
-            drawGrid();
+            const viewKey = `${canvas.width}:${canvas.height}:${state.dpr}:${state.zoom}:${state.panX}:${state.panY}`;
+            if (state.sceneViewKey !== viewKey) {
+                state.sceneViewKey = viewKey;
+                state.sceneCacheDirty = true;
+            }
+            const nextGridKey = `${viewKey}:${state.canvasBg}:${state.gridMode}`;
+            if (state.gridCacheKey !== nextGridKey || !state.gridCache) {
+                drawGrid();
+                if (!state.gridCache || state.gridCache.width !== canvas.width || state.gridCache.height !== canvas.height) {
+                    state.gridCache = document.createElement('canvas');
+                    state.gridCache.width = canvas.width;
+                    state.gridCache.height = canvas.height;
+                }
+                state.gridCache.getContext('2d').drawImage(canvas, 0, 0);
+                state.gridCacheKey = nextGridKey;
+            } else {
+                ctx.setTransform(1, 0, 0, 1, 0, 0);
+                ctx.drawImage(state.gridCache, 0, 0);
+            }
             ctx.save();
             ctx.setTransform(state.dpr, 0, 0, state.dpr, 0, 0);
             ctx.imageSmoothingEnabled = true;
-            if (!paintOnly || state.sceneCacheDirty || !state.sceneCache) {
+            if (state.sceneCacheDirty || !state.sceneCache) {
                 rebuildSceneCache();
             }
             // blit scene
@@ -6810,12 +8034,20 @@ return null;
             ctx.setTransform(state.dpr, 0, 0, state.dpr, 0, 0);
             ctx.translate(state.panX, state.panY);
             ctx.scale(state.zoom, state.zoom);
-            if (state.paintCanvas) {
-                ctx.drawImage(state.paintCanvas, state.paintOrigin.x, state.paintOrigin.y);
+            drawPaintLayer(ctx, worldViewport());
+            if (state.activeStrokeCanvas) {
+                ctx.setTransform(1, 0, 0, 1, 0, 0);
+                ctx.drawImage(state.activeStrokeCanvas, 0, 0);
+                ctx.setTransform(state.dpr, 0, 0, state.dpr, 0, 0);
+                ctx.translate(state.panX, state.panY);
+                ctx.scale(state.zoom, state.zoom);
+            } else if (state.currentObj) {
+                __drawObjectTo(ctx, state.currentObj);
             }
+            if (state._penObj) __drawObjectTo(ctx, state._penObj);
             // selection handles only (on top)
             state._vp = worldViewport();
-            state.objects.forEach(obj => {
+            queryObjectsInBounds(state._vp).forEach(({ obj }) => {
                 if (state.selectedIds.has(obj.id)) {
                     ctx.save();
                     applyObjectRotation(ctx, obj);
@@ -6847,9 +8079,10 @@ return null;
                 ctx.restore();
             }
             ctx.restore();
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
             const hz = document.getElementById('hud-zoom');
             if (hz) hz.textContent = Math.round(state.zoom * 100) + '%';
-            if (!paintOnly && state.showMinimap) {
+            if (!animPlaying && !state.isDrawing && !state.isPanning && state.showMinimap) {
                 if (!state._mmRaf) {
                     state._mmRaf = requestAnimationFrame(() => {
                         state._mmRaf = null;
@@ -6859,13 +8092,37 @@ return null;
             }
         }
         // Replace render
-        render = function() {
+        function renderNow() {
             try {
-                renderFast({ paintOnly: !!state._paintStroke });
+                if (typeof effectRaf !== 'undefined' && effectRaf) {
+                    invalidateScene();
+                    invalidateObjectIndex();
+                }
+                if (state.isDrawing && !state.currentObj && !state._paintStroke) {
+                    invalidateScene();
+                    invalidateObjectIndex();
+                }
+                renderFast();
             } catch (e) {
                 console.error('render', e);
                 if (__renderCore) try { __renderCore(); } catch(_) {}
             }
+        }
+        render = function() {
+            if (state.isDrawing || state.isPanning) {
+                if (!state._renderRaf) {
+                    state._renderRaf = requestAnimationFrame(() => {
+                        state._renderRaf = null;
+                        renderNow();
+                    });
+                }
+                return;
+            }
+            if (state._renderRaf) {
+                cancelAnimationFrame(state._renderRaf);
+                state._renderRaf = null;
+            }
+            renderNow();
         };
 
         // After paint stroke ends, full rebuild
