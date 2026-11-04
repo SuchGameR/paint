@@ -214,6 +214,7 @@
                 <button data-menu-act="send-back">最背面へ</button>
                 <div class="menu-sep"></div>
                 <button data-menu-act="to-raster">ラスターに変換</button>
+                <button data-menu-act="to-vector">ベクターに変換</button>
             </div>
         </div>
         <div class="menu-root relative" data-menu="effect"><button type="button" class="menu-btn">効果</button>
@@ -340,6 +341,10 @@
                 <button class="paint-preset geist-btn py-1 text-[9px]" data-preset="marker">マーカー</button>
                 <button class="paint-preset geist-btn py-1 text-[9px]" data-preset="airbrush">エア</button>
                 <button class="paint-preset geist-btn py-1 text-[9px]" data-preset="pixel">ピクセル</button>
+                <button class="paint-preset geist-btn py-1 text-[9px]" data-preset="pencil">鉛筆</button>
+                <button class="paint-preset geist-btn py-1 text-[9px]" data-preset="ink">インク</button>
+                <button class="paint-preset geist-btn py-1 text-[9px]" data-preset="crayon">クレヨン</button>
+                <button class="paint-preset geist-btn py-1 text-[9px]" data-preset="oil">油彩</button>
             </div>
             <div class="text-[10px] mb-0.5">サイズ</div>
             <input type="range" min="1" max="200" value="8" class="slider w-full fly-size" data-bind="strokeWidth">
@@ -381,6 +386,14 @@
         <button id="tool-fill" type="button" class="geist-btn" title="バケツ塗り (F)" aria-label="バケツ塗り" aria-pressed="false"><i class="fa-solid fa-fill-drip text-[14px]" aria-hidden="true"></i></button>
         <button id="btn-grid-toggle" type="button" class="geist-btn" title="グリッド (G)" aria-label="グリッド表示を切り替え"><i id="grid-icon" class="fa-solid fa-border-all text-[14px]" aria-hidden="true"></i></button>
     </aside>
+
+    <div id="compact-tools" class="hidden fixed z-40" style="left:10px;top:96px;">
+        <button id="compact-tools-btn" type="button" class="geist-btn compact-tools-fab" title="ツール一覧" aria-label="ツール一覧を開く" aria-expanded="false">
+            <i class="fa-solid fa-toolbox" aria-hidden="true"></i>
+        </button>
+        <div id="compact-tools-menu" class="hidden geist-surface compact-tools-menu" role="menu" aria-label="ツール一覧"></div>
+    </div>
+
     <!-- Brush and color settings open on demand so the canvas stays clear -->
     <aside id="left-paint-panel" class="absolute left-[62px] top-1/2 -translate-y-1/2 w-56 geist-surface p-3 rounded-xl z-25 pointer-events-auto overflow-y-auto props-scroll hidden flex-col gap-3" style="max-height:72vh;" aria-label="ブラシと色の設定" aria-hidden="true">
         <div class="flex items-center justify-between border-b border-white/10 pb-2">
@@ -399,7 +412,18 @@
             <button class="paint-preset geist-btn py-1 rounded-md text-[9px]" data-preset="charcoal">木炭</button>
             <button class="paint-preset geist-btn py-1 rounded-md text-[9px]" data-preset="calligraphy">カリ</button>
             <button class="paint-preset geist-btn py-1 rounded-md text-[9px]" data-preset="neon">ネオン</button>
+            <button class="paint-preset geist-btn py-1 rounded-md text-[9px]" data-preset="pencil">鉛筆</button>
+            <button class="paint-preset geist-btn py-1 rounded-md text-[9px]" data-preset="ink">インク</button>
+            <button class="paint-preset geist-btn py-1 rounded-md text-[9px]" data-preset="crayon">クレヨン</button>
+            <button class="paint-preset geist-btn py-1 rounded-md text-[9px]" data-preset="oil">油彩</button>
+            <button class="paint-preset geist-btn py-1 rounded-md text-[9px]" data-preset="spray">スプレー</button>
+            <button class="paint-preset geist-btn py-1 rounded-md text-[9px]" data-preset="highlighter">蛍光</button>
         </div>
+        <div class="engine-toggle" role="group" aria-label="ペン描画エンジン">
+            <button type="button" class="engine-btn active" data-brush-engine="raster"><i class="fa-solid fa-paintbrush" aria-hidden="true"></i> ラスター</button>
+            <button type="button" class="engine-btn" data-brush-engine="vector"><i class="fa-solid fa-bezier-curve" aria-hidden="true"></i> ベクター</button>
+        </div>
+        <div id="brush-library-left"></div>
         <div class="flex flex-col gap-1">
             <div class="flex justify-between text-[10px] text-geist-400"><span>サイズ</span><span id="size-val-left" class="font-mono text-white">8</span></div>
             <input id="size-slider-left" type="range" min="1" max="500" value="8" class="slider w-full">
@@ -416,9 +440,18 @@
             <input id="hex-input-left" type="text" value="171717" maxlength="6" class="flex-1 bg-black/40 border border-white/8 rounded-md text-[11px] text-white font-mono px-2 py-1 outline-none uppercase">
         </div>
         <div id="palette-swatches-left" class="flex flex-wrap gap-1"></div>
+        <div id="color-system-left"></div>
         <div class="flex flex-col gap-1">
             <div class="flex justify-between text-[10px] text-geist-400"><span>手ブレ補正</span><span id="stabilize-val-left" class="font-mono">0</span></div>
             <input id="stabilize-slider-left" type="range" min="0" max="20" value="0" class="slider w-full">
+        </div>
+        <div class="flex flex-col gap-1">
+            <label class="flex items-center justify-between text-[10px] text-geist-400">
+                <span>筆圧でサイズを変える</span>
+                <input type="checkbox" id="pressure-toggle-left" checked class="accent-white">
+            </label>
+            <div class="flex justify-between text-[10px] text-geist-400"><span>最小サイズ</span><span id="pressure-min-val-left" class="font-mono">25%</span></div>
+            <input id="pressure-min-left" type="range" min="2" max="100" value="25" class="slider w-full">
         </div>
     </aside>
 
@@ -444,6 +477,12 @@
                 <span id="tool-badge" class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-geist-300 font-mono">BRUSH</span>
                 <button id="btn-props-close" class="geist-btn !min-w-7 !min-h-7 text-geist-400" title="閉じる">&times;</button>
             </div>
+        </div>
+
+        <div class="side-tabs-top flex gap-1 mb-1">
+            <button id="tab-props" class="side-tab active geist-btn flex-1 py-1.5 text-[10px] rounded-md">プロパティ</button>
+            <button id="tab-layers" class="side-tab geist-btn flex-1 py-1.5 text-[10px] rounded-md">レイヤー</button>
+            <button id="tab-regions" class="side-tab geist-btn flex-1 py-1.5 text-[10px] rounded-md">リージョン</button>
         </div>
 
         <!-- Appearance for selected object -->
@@ -473,16 +512,11 @@
 
         <div id="paint-presets" class="prop-section hidden">
             <label class="prop-label">ブラシ</label>
-            <div class="grid grid-cols-4 gap-1" id="brush-grid">
-                <button class="paint-preset active geist-btn py-1.5 rounded-md text-[10px]" data-preset="pen">ペン</button>
-                <button class="paint-preset geist-btn py-1.5 rounded-md text-[10px]" data-preset="marker">マーカー</button>
-                <button class="paint-preset geist-btn py-1.5 rounded-md text-[10px]" data-preset="airbrush">エア</button>
-                <button class="paint-preset geist-btn py-1.5 rounded-md text-[10px]" data-preset="calligraphy">カリグラ</button>
-                <button class="paint-preset geist-btn py-1.5 rounded-md text-[10px]" data-preset="watercolor">水彩</button>
-                <button class="paint-preset geist-btn py-1.5 rounded-md text-[10px]" data-preset="charcoal">木炭</button>
-                <button class="paint-preset geist-btn py-1.5 rounded-md text-[10px]" data-preset="pixel">ピクセル</button>
-                <button class="paint-preset geist-btn py-1.5 rounded-md text-[10px]" data-preset="neon">ネオン</button>
+            <div class="engine-toggle" role="group" aria-label="ペン描画エンジン">
+                <button type="button" class="engine-btn active" data-brush-engine="raster"><i class="fa-solid fa-paintbrush" aria-hidden="true"></i> ラスター</button>
+                <button type="button" class="engine-btn" data-brush-engine="vector"><i class="fa-solid fa-bezier-curve" aria-hidden="true"></i> ベクター</button>
             </div>
+            <div id="brush-library"></div>
             <div class="prop-row"><label class="prop-label">手ブレ補正</label><span id="stabilize-val" class="text-[11px] font-mono text-white">0</span></div>
             <input id="stabilize-slider" type="range" min="0" max="20" value="0" class="slider w-full">
             <div class="prop-row"><label class="prop-label">硬さ</label><span id="hardness-val" class="text-[11px] font-mono text-white">100%</span></div>
@@ -546,13 +580,7 @@
                 </div>
             </div>
             <div id="palette-swatches" class="flex flex-wrap gap-1.5 mt-1"></div>
-        </div>
-
-        <!-- Tabs -->
-        <div class="flex gap-1 mb-1">
-            <button id="tab-props" class="side-tab active geist-btn flex-1 py-1.5 text-[10px] rounded-md">プロパティ</button>
-            <button id="tab-layers" class="side-tab geist-btn flex-1 py-1.5 text-[10px] rounded-md">レイヤー</button>
-            <button id="tab-regions" class="side-tab geist-btn flex-1 py-1.5 text-[10px] rounded-md">リージョン</button>
+            <div id="color-system"></div>
         </div>
 
         <div id="tab-panel-props" class="flex flex-col gap-2">
@@ -620,6 +648,13 @@
         <canvas id="minimap" tabindex="0" role="img" aria-label="ミニマップ。ドラッグで移動、ホイールで拡大縮小、Homeキーで全体表示" style="width:100%;height:calc(100% - 22px);cursor:grab;display:block;"></canvas>
     </div>
 
+    <div id="status-bar" class="fixed z-40 status-bar" aria-label="座標とズーム">
+        <div class="status-field"><span class="status-key">X</span><input id="status-x" type="number" step="1" inputmode="numeric" aria-label="X座標"></div>
+        <div class="status-field"><span class="status-key">Y</span><input id="status-y" type="number" step="1" inputmode="numeric" aria-label="Y座標"></div>
+        <div class="status-sep"></div>
+        <div class="status-field zoom-field"><input id="status-zoom" type="number" step="1" min="2" max="3200" inputmode="numeric" aria-label="ズーム倍率"><span class="status-unit">%</span></div>
+    </div>
+
     <!-- ANIMATION TIMELINE -->
     <section id="anim-bar" class="anim-timeline absolute bottom-14 left-1/2 -translate-x-1/2 z-30 pointer-events-auto hidden flex-col" aria-labelledby="anim-heading">
         <header class="anim-timeline-head">
@@ -627,6 +662,7 @@
             <label class="anim-onion"><input type="checkbox" id="onion-toggle" name="onionSkin" autocomplete="off" checked><span>オニオン</span></label>
             <label class="anim-onion"><input type="checkbox" id="anim-loop" name="loopPlayback" autocomplete="off" checked><span>ループ</span></label>
             <span id="anim-duration" class="anim-duration">0.0s</span>
+            <button id="anim-settings" class="anim-control" type="button" title="タイムライン設定" aria-label="タイムライン設定"><i class="fa-solid fa-gear" aria-hidden="true"></i></button>
         </header>
         <div class="anim-transport">
             <button id="anim-prev" class="anim-control" type="button" title="前のフレーム (←)" aria-label="前のフレーム"><i class="fa-solid fa-caret-left" aria-hidden="true"></i></button>
@@ -640,6 +676,25 @@
         </div>
         <div id="anim-strip" class="anim-strip" role="group" aria-label="レイヤー別アニメーションコマ"></div>
     </section>
+
+    <div id="timeline-settings-modal" class="hidden fixed inset-0 z-[110] items-center justify-center" style="background:rgba(0,0,0,0.68)">
+        <div class="geist-surface rounded-xl w-[min(360px,94vw)] p-4 flex flex-col gap-3">
+            <div class="flex items-center justify-between">
+                <h3 class="text-[13px] font-semibold text-white"><i class="fa-solid fa-gear mr-2 text-geist-400"></i>タイムライン設定</h3>
+                <button id="timeline-settings-close" class="geist-btn !min-w-8 !min-h-8" type="button">&times;</button>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+                <label class="text-[11px] text-geist-400">前フレーム<br><input id="onion-before" type="number" min="0" max="6" value="2" class="prop-input mt-1"></label>
+                <label class="text-[11px] text-geist-400">後フレーム<br><input id="onion-after" type="number" min="0" max="6" value="1" class="prop-input mt-1"></label>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+                <label class="text-[11px] text-geist-400">FPS<br><input id="timeline-fps" type="number" min="1" max="60" value="12" class="prop-input mt-1"></label>
+                <label class="flex items-end gap-2 text-[11px] text-geist-300 pb-1"><input id="timeline-loop" type="checkbox" checked class="accent-white"> ループ再生</label>
+            </div>
+            <p class="text-[10px] text-geist-500">オニオン: 前=薄赤 / 後=薄緑。コマはドラッグ&ドロップで並べ替えできます。</p>
+            <button id="timeline-settings-apply" type="button" class="w-full py-2.5 rounded-lg bg-white text-black text-[12px] font-medium">適用</button>
+        </div>
+    </div>
 
     <!-- Shortcuts Modal -->
     <div id="help-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -655,6 +710,7 @@
                 <div class="flex justify-between bg-white/5 px-2.5 py-1.5 rounded-md"><span class="text-geist-400">ズーム</span><span>Wheel / ⌘±</span></div>
                 <div class="flex justify-between bg-white/5 px-2.5 py-1.5 rounded-md"><span class="text-geist-400">ブラシサイズ</span><span>Ctrl + Wheel</span></div>
                 <div class="flex justify-between bg-white/5 px-2.5 py-1.5 rounded-md"><span class="text-geist-400">ブラシ / 消しゴム</span><span>B / E</span></div>
+                <div class="flex justify-between bg-white/5 px-2.5 py-1.5 rounded-md"><span class="text-geist-400">右クリック</span><span>一時ツール切替</span></div>
                 <div class="flex justify-between bg-white/5 px-2.5 py-1.5 rounded-md"><span class="text-geist-400">バケツ / スポイト</span><span>F / I</span></div>
                 <div class="flex justify-between bg-white/5 px-2.5 py-1.5 rounded-md"><span class="text-geist-400">選択 / テキスト</span><span>V / T</span></div>
                 <div class="flex justify-between bg-white/5 px-2.5 py-1.5 rounded-md"><span class="text-geist-400">グリッド</span><span>G</span></div>
@@ -683,6 +739,46 @@
             <div id="profile-list" class="flex flex-col gap-1 max-h-32 overflow-y-auto text-[11px]"></div>
             <div class="h-px bg-white/10"></div>
             <div class="flex flex-col gap-1.5">
+                <label class="text-[11px] text-geist-400">アクセントカラー</label>
+                <div class="grid grid-cols-2 gap-2">
+                    <button type="button" class="accent-theme-btn geist-btn py-2 text-[11px]" data-accent-theme="emerald"><span class="accent-swatch" style="background:#10B981"></span>エメラルド</button>
+                    <button type="button" class="accent-theme-btn geist-btn py-2 text-[11px]" data-accent-theme="white"><span class="accent-swatch" style="background:#ffffff"></span>ホワイト</button>
+                </div>
+            </div>
+            <div class="h-px bg-white/10"></div>
+            <div class="flex flex-col gap-1.5">
+                <label class="text-[11px] text-geist-400">操作</label>
+                <label class="flex items-center justify-between text-[11px] text-geist-300">
+                    <span>右クリックで一時ツール切替</span>
+                    <input type="checkbox" id="quickswap-toggle" checked class="accent-white">
+                </label>
+                <div class="flex items-center justify-between gap-2">
+                    <span class="text-[11px] text-geist-400">切替先ツール</span>
+                    <select id="quickswap-tool" class="bg-black/50 border border-white/10 rounded-md text-[11px] text-white px-2 py-1 outline-none">
+                        <option value="eraser">消しゴム</option>
+                        <option value="brush">ブラシ</option>
+                        <option value="eyedropper">スポイト</option>
+                        <option value="fill">バケツ</option>
+                        <option value="hand">移動</option>
+                    </select>
+                </div>
+                <label class="flex items-center justify-between text-[11px] text-geist-300">
+                    <span>筆圧でサイズを変える</span>
+                    <input type="checkbox" id="pressure-toggle" checked class="accent-white">
+                </label>
+                <div class="flex justify-between text-[11px] text-geist-400"><span>筆圧の最小サイズ</span><span id="pressure-min-val" class="font-mono">25%</span></div>
+                <input id="pressure-min-slider" type="range" min="2" max="100" value="25" class="slider w-full">
+            </div>
+            <div class="h-px bg-white/10"></div>
+            <div class="flex flex-col gap-1.5">
+                <div class="flex items-center justify-between">
+                    <label class="text-[11px] text-geist-400">ツールショートカット</label>
+                    <span class="text-[9px] text-geist-600">キーを押して割当</span>
+                </div>
+                <div id="shortcut-list" class="flex flex-col gap-1"></div>
+            </div>
+            <div class="h-px bg-white/10"></div>
+            <div class="flex flex-col gap-1.5">
                 <label class="text-[11px] text-geist-400">キャンバス背景</label>
                 <div class="flex gap-2">
                     <button class="bg-btn geist-btn py-1.5 px-2 text-[10px]" data-bg="#ffffff">白</button>
@@ -691,6 +787,24 @@
                     <button class="bg-btn geist-btn py-1.5 px-2 text-[10px]" data-bg="transparent">透明</button>
                 </div>
             </div>
+            <div class="flex flex-col gap-1.5">
+                <label class="text-[11px] text-geist-400">表示モード</label>
+                <div class="grid grid-cols-3 gap-1">
+                    <button class="layout-btn geist-btn py-1.5 text-[10px]" data-layout="compact">コンパクト</button>
+                    <button class="layout-btn geist-btn py-1.5 text-[10px] active" data-layout="styler">スタイラー</button>
+                    <button class="layout-btn geist-btn py-1.5 text-[10px]" data-layout="pro">プロ</button>
+                </div>
+            </div>
+            <div class="h-px bg-white/10"></div>
+            <div class="flex flex-col gap-1">
+                <label class="flex items-center justify-between text-[11px] text-geist-300">
+                    <span>グリッドにスナップ</span>
+                    <input type="checkbox" id="grid-snap-toggle" class="accent-white">
+                </label>
+                <div class="flex justify-between text-[11px] text-geist-400"><span>グリッド間隔</span><span id="grid-size-val" class="font-mono">40px</span></div>
+                <input id="grid-size-slider" type="range" min="4" max="200" step="1" value="40" class="slider w-full">
+            </div>
+            <div class="h-px bg-white/10"></div>
             <div class="flex flex-col gap-1">
                 <div class="flex justify-between"><label class="text-[11px] text-geist-400">ピクセルグリッド</label>
                     <input type="checkbox" id="pixel-grid-toggle" class="accent-white">
@@ -719,7 +833,12 @@
 
     <script src="./js/modules/app-state.js"></script>
     <script src="./js/modules/color-palettes.js"></script>
+    <script src="./js/modules/palette-store.js"></script>
+    <script src="./js/modules/brush-store.js"></script>
     <script src="./js/modules/brush-panel.js"></script>
+    <script src="./js/modules/ui-layout.js"></script>
+    <script src="./js/modules/statusbar.js"></script>
+    <script src="./js/modules/timeline-enhance.js"></script>
     <script src="./js/modules/menu-bar.js"></script>
     <script src="./js/modules/minimap.js"></script>
     <script src="./js/main.js"></script>

@@ -1,7 +1,64 @@
-document.addEventListener('DOMContentLoaded', () => {
+﻿document.addEventListener('DOMContentLoaded', () => {
         // ===== STATE =====
         const state = window.VersePaintState.createInitialState(window.devicePixelRatio);
         const palettes = window.VersePaintPalettes;
+
+        // ===== THEME / SHORTCUTS / PRESSURE =====
+        const TOOL_SHORTCUT_LABELS = {
+            brush: 'ブラシ',
+            eraser: '消しゴム',
+            select: '選択',
+            pen: 'ベジェペン',
+            text: 'テキスト',
+            fill: 'バケツ',
+            eyedropper: 'スポイト',
+            hand: '移動'
+        };
+
+        function applyAccentTheme(name) {
+            state.accentTheme = name === 'white' ? 'white' : 'emerald';
+            if (state.accentTheme === 'white') document.body.setAttribute('data-accent', 'white');
+            else document.body.removeAttribute('data-accent');
+            document.querySelectorAll('[data-accent-theme]').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.accentTheme === state.accentTheme);
+            });
+        }
+
+        function shortcutMap() {
+            return Object.assign({}, state.shortcuts || {});
+        }
+
+        function normalizeShortcutKey(e) {
+            if (!e || !e.key) return '';
+            if (e.key === ' ') return 'space';
+            return e.key.length === 1 ? e.key.toLowerCase() : e.key.toLowerCase();
+        }
+
+        function pressureFromEvent(e) {
+            if (!state.pressureEnabled) return 1;
+            if (!e || e.pointerType === 'mouse') return 1;
+            let p = typeof e.pressure === 'number' && e.pressure > 0 ? e.pressure : 1;
+            if (e.pointerType === 'pen' && e.pressure === 0) p = 0.02;
+            const min = Math.min(1, Math.max(0.02, (state.pressureMin != null ? state.pressureMin : 0.25)));
+            const curve = state.pressureCurve || 1;
+            return Math.max(0.02, min + (1 - min) * Math.pow(p, curve));
+        }
+
+        function pressureWidth(base, p) {
+            return Math.max(0.5, (base || 8) * (p != null ? p : 1));
+        }
+
+        const PRESET_ALPHA = {
+            marker: 0.4,
+            watercolor: 0.15,
+            airbrush: 0.2,
+            highlighter: 0.22,
+            charcoal: 0.55,
+            crayon: 0.7,
+            oil: 0.85,
+            spray: 0.5
+        };
+
 
         const container = document.getElementById('canvas-container');
         const canvas = document.getElementById('main-canvas');
@@ -923,9 +980,12 @@ return null;
             let changed = false;
             const next = [];
 
-            const objects = objectIds
-                ? state.objects.filter(obj => objectIds.has(obj.id))
-                : queryObjectsInBounds({ x, y, w, h }).map(entry => entry.obj);
+            const objects = queryObjectsInBounds({
+                x: wx - radius - 1,
+                y: wy - radius - 1,
+                w: radius * 2 + 2,
+                h: radius * 2 + 2
+            }).map(entry => entry.obj);
             objects.forEach(obj => {
                 const layer = state.layers.find(l => l.id === obj.layerId);
                 if (layer && !layer.visible) {
@@ -995,17 +1055,63 @@ return null;
             return erasePartialAt(wx, wy);
         }
 
+        function eraseRasterAt(wx, wy, last, pressure) {
+            ensurePaintLayer();
+            if (!ensurePaintLayer().size) return false;
+            const width = pressureWidth(state.strokeWidth || 20, pressure != null ? pressure : 1);
+            const r = Math.max(0.5, width / 2);
+            const padding = r + 2;
+            const minX = Math.min(wx, last ? last.x : wx) - padding;
+            const minY = Math.min(wy, last ? last.y : wy) - padding;
+            const maxX = Math.max(wx, last ? last.x : wx) + padding;
+            const maxY = Math.max(wy, last ? last.y : wy) + padding;
+            const minCX = Math.floor(minX / PAINT_CHUNK_SIZE);
+            const minCY = Math.floor(minY / PAINT_CHUNK_SIZE);
+            const maxCX = Math.floor(maxX / PAINT_CHUNK_SIZE);
+            const maxCY = Math.floor(maxY / PAINT_CHUNK_SIZE);
+            for (let cy = minCY; cy <= maxCY; cy++) {
+                for (let cx = minCX; cx <= maxCX; cx++) {
+                    if (!state.paintChunks.has(`${cx},${cy}`)) continue;
+                    const pctx = writablePaintChunk(cx, cy).ctx;
+                    pctx.save();
+                    pctx.translate(-cx * PAINT_CHUNK_SIZE, -cy * PAINT_CHUNK_SIZE);
+                    pctx.globalCompositeOperation = 'destination-out';
+                    pctx.lineCap = 'round';
+                    pctx.lineJoin = 'round';
+                    pctx.lineWidth = width;
+                    pctx.fillStyle = '#000';
+                    pctx.strokeStyle = '#000';
+                    if (last) {
+                        pctx.beginPath();
+                        pctx.moveTo(last.x, last.y);
+                        pctx.lineTo(wx, wy);
+                        pctx.stroke();
+                    } else {
+                        pctx.beginPath();
+                        pctx.arc(wx, wy, r, 0, Math.PI * 2);
+                        pctx.fill();
+                    }
+                    pctx.restore();
+                }
+            }
+            state.paintRevision++;
+            return true;
+        }
 
 
-        function stampPaintBrush(wx, wy, last) {
+
+        function stampPaintBrush(wx, wy, last, pressure) {
             ensurePaintLayer();
             if (state.pixelSnap) {
                 wx = Math.round(wx);
                 wy = Math.round(wy);
             }
-            const r = Math.max(0.5, (state.strokeWidth || 8) / 2);
+            const press = pressure != null ? pressure : 1;
+            const width = pressureWidth(state.strokeWidth || 8, press);
+            const lastWidth = last && last.w ? last.w : width;
+            const r = Math.max(0.5, width / 2);
             const preset = state.paintPreset || 'pen';
-            const padding = r + 2;
+            const padding = Math.max(r, lastWidth / 2) + 2;
             const minX = Math.min(wx, last ? last.x : wx) - padding;
             const minY = Math.min(wy, last ? last.y : wy) - padding;
             const maxX = Math.max(wx, last ? last.x : wx) + padding;
@@ -1025,17 +1131,27 @@ return null;
                     pctx.lineJoin = 'round';
                     pctx.strokeStyle = state.color;
                     pctx.fillStyle = state.color;
-                    pctx.globalAlpha = state.opacity * (preset === 'marker' ? 0.4 : preset === 'watercolor' ? 0.15 : preset === 'airbrush' ? 0.2 : 1);
+                    pctx.globalAlpha = state.opacity * (PRESET_ALPHA[preset] != null ? PRESET_ALPHA[preset] : 1);
 
                     if (last) {
-                        pctx.lineWidth = state.strokeWidth;
-                        if (preset === 'airbrush' || preset === 'watercolor') {
+                        pctx.lineWidth = Math.max(0.5, (width + lastWidth) / 2);
+                        if (preset === 'airbrush' || preset === 'watercolor' || preset === 'spray') {
                             const dist = Math.hypot(wx - last.x, wy - last.y);
                             const steps = Math.max(1, Math.ceil(dist / Math.max(r * 0.7, 1)));
                             for (let i = 0; i <= steps; i++) {
                                 const t = i / steps;
                                 const x = last.x + (wx - last.x) * t;
                                 const y = last.y + (wy - last.y) * t;
+                                if (preset === 'spray') {
+                                    const dots = Math.max(3, Math.round(r * 0.9));
+                                    for (let d = 0; d < dots; d++) {
+                                        const ang = Math.random() * Math.PI * 2;
+                                        const rad = Math.sqrt(Math.random()) * r;
+                                        pctx.globalAlpha = state.opacity * 0.35;
+                                        pctx.fillRect(x + Math.cos(ang) * rad, y + Math.sin(ang) * rad, 1.2, 1.2);
+                                    }
+                                    continue;
+                                }
                                 const g = pctx.createRadialGradient(x, y, 0, x, y, r);
                                 g.addColorStop(0, state.color);
                                 g.addColorStop(1, 'rgba(0,0,0,0)');
@@ -1045,7 +1161,7 @@ return null;
                                 pctx.fill();
                             }
                         } else if (preset === 'pixel') {
-                            const step = Math.max(1, Math.round(state.strokeWidth));
+                            const step = Math.max(1, Math.round(width));
                             pctx.fillRect(Math.round(wx / step) * step - step / 2, Math.round(wy / step) * step - step / 2, step, step);
                         } else {
                             pctx.beginPath();
@@ -1099,7 +1215,25 @@ return null;
                 return;
             }
 
-            if (preset === 'airbrush' || preset === 'watercolor' || (hard < 0.95 && preset !== 'pen')) {
+            const hasPressure = pts.some(p => p.p != null && Math.abs(p.p - 1) > 0.01);
+            const widthPresets = ['pen', 'pencil', 'ink', 'marker', 'highlighter', 'crayon', 'oil'];
+            if (hasPressure && widthPresets.includes(preset)) {
+                const baseAlpha = (obj.opacity != null ? obj.opacity : 1) * (PRESET_ALPHA[preset] != null ? PRESET_ALPHA[preset] : 1);
+                ctx.globalAlpha = baseAlpha;
+                for (let i = 1; i < pts.length; i++) {
+                    const a = pts[i - 1], b = pts[i];
+                    const p = b.p != null ? b.p : (a.p != null ? a.p : 1);
+                    ctx.lineWidth = pressureWidth(w, p);
+                    ctx.beginPath();
+                    ctx.moveTo(a.x, a.y);
+                    ctx.lineTo(b.x, b.y);
+                    ctx.stroke();
+                }
+                ctx.globalAlpha = obj.opacity != null ? obj.opacity : 1;
+                return;
+            }
+
+            if (preset === 'airbrush' || preset === 'watercolor' || preset === 'spray' || (hard < 0.95 && preset !== 'pen')) {
                 // soft stamp along path
                 const spacing = Math.max(w * 0.25, 1.5);
                 let dist = 0;
@@ -1111,9 +1245,10 @@ return null;
                     while (dist >= spacing) {
                         const t = 1 - (dist - spacing) / len;
                         const x = prev.x + dx * t, y = prev.y + dy * t;
-                        const r = w / 2;
+                        const stepPressure = pts[i].p != null ? pts[i].p : 1;
+                        const r = pressureWidth(w, stepPressure) / 2;
                         const g = ctx.createRadialGradient(x, y, r * hard * 0.3, x, y, r);
-                        const a = preset === 'watercolor' ? 0.12 : (preset === 'airbrush' ? 0.18 : 0.35);
+                        const a = preset === 'watercolor' ? 0.12 : (preset === 'airbrush' ? 0.18 : preset === 'spray' ? 0.12 : 0.35);
                         g.addColorStop(0, ctx.strokeStyle);
                         // approximate alpha via globalAlpha
                         const prevA = ctx.globalAlpha;
@@ -1185,7 +1320,7 @@ return null;
 
             // pen / marker — smooth quadratic (less jagged when zoomed)
             ctx.lineWidth = Math.max(w, 0.5 / Math.max(state.zoom, 0.01));
-            if (preset === 'marker') ctx.globalAlpha = (obj.opacity != null ? obj.opacity : 1) * 0.55;
+            if (preset === 'marker' || preset === 'highlighter') ctx.globalAlpha = (obj.opacity != null ? obj.opacity : 1) * (preset === 'highlighter' ? 0.22 : 0.55);
             ctx.beginPath();
             ctx.moveTo(pts[0].x, pts[0].y);
             if (pts.length === 2) {
@@ -1200,7 +1335,7 @@ return null;
                 ctx.lineTo(last.x, last.y);
             }
             ctx.stroke();
-            if (preset === 'marker') ctx.globalAlpha = obj.opacity != null ? obj.opacity : 1;
+            if (preset === 'marker' || preset === 'highlighter') ctx.globalAlpha = obj.opacity != null ? obj.opacity : 1;
         }
 
 
@@ -1216,10 +1351,11 @@ return null;
             pctx.strokeStyle = obj.color;
             pctx.fillStyle = obj.color;
             pctx.globalAlpha = obj.opacity ?? 1;
-            pctx.lineWidth = obj.strokeWidth || 8;
+            const firstP = obj.points[0] && obj.points[0].p != null ? obj.points[0].p : 1;
+            pctx.lineWidth = pressureWidth(obj.strokeWidth || 8, firstP);
             pctx.lineCap = 'round';
             const radius = Math.max(0.5, pctx.lineWidth / 2);
-            if (obj.brush === 'airbrush' || obj.brush === 'watercolor' || (obj.hardness < 0.95 && obj.brush !== 'pen')) {
+            if (obj.brush === 'airbrush' || obj.brush === 'watercolor' || obj.brush === 'spray' || (obj.hardness < 0.95 && obj.brush !== 'pen')) {
                 const gradient = pctx.createRadialGradient(obj.points[0].x, obj.points[0].y, 0, obj.points[0].x, obj.points[0].y, radius);
                 gradient.addColorStop(0, obj.color);
                 gradient.addColorStop(1, 'rgba(0,0,0,0)');
@@ -1248,11 +1384,12 @@ return null;
             pctx.strokeStyle = obj.color;
             pctx.fillStyle = obj.color;
             pctx.globalAlpha = obj.opacity ?? 1;
-            pctx.lineWidth = Math.max(obj.strokeWidth || 8, 0.5 / Math.max(state.zoom, 0.01));
+            const segP = to && to.p != null ? to.p : (from && from.p != null ? from.p : 1);
+            pctx.lineWidth = Math.max(pressureWidth(obj.strokeWidth || 8, segP), 0.5 / Math.max(state.zoom, 0.01));
             pctx.lineCap = obj.brush === 'pixel' ? 'square' : 'round';
             pctx.lineJoin = 'round';
             const preset = obj.brush || 'pen';
-            if (preset === 'airbrush' || preset === 'watercolor' || (obj.hardness < 0.95 && preset !== 'pen')) {
+            if (preset === 'airbrush' || preset === 'watercolor' || preset === 'spray' || (obj.hardness < 0.95 && preset !== 'pen')) {
                 const radius = Math.max(0.5, pctx.lineWidth / 2);
                 const spacing = Math.max(radius * 0.7, 1);
                 const distance = Math.hypot(to.x - from.x, to.y - from.y);
@@ -1845,8 +1982,23 @@ return null;
             return { x: e.clientX - r.left, y: e.clientY - r.top };
         }
 
+        function beginQuickSwap() {
+            if (!state.quickSwapEnabled) return false;
+            if (state.tool !== 'brush' && state.tool !== 'eraser') return false;
+            const target = state.quickSwapTool !== state.tool
+                ? state.quickSwapTool
+                : (state.tool === 'eraser' ? 'brush' : 'eraser');
+            if (!target || target === state.tool) return false;
+            state._quickSwap = { original: state.tool };
+            state._quickSwapSuppressCtx = true;
+            setTool(target);
+            return true;
+        }
+
         container.addEventListener('pointerdown', (e) => {
-            if (e.button === 2) return;
+            if (e.button === 2) {
+                if (!beginQuickSwap()) return;
+            }
             if (state.mode === 'anim' && state.animFrameLoading) {
                 e.preventDefault();
                 return;
@@ -1860,6 +2012,7 @@ return null;
             state.lastMouse = pos;
             state.lastWorld = world;
             state.startWorld = world;
+            const downPressure = pressureFromEvent(e);
 
             // Export region pick mode (red) — highest priority
             if (state.pickingExportRegion || state.exportPickMode) {
@@ -2018,6 +2171,15 @@ return null;
             }
 
             if (state.tool === 'eraser') {
+                if (state.mode === 'paint') {
+                    pushRasterHistory();
+                    state.isDrawing = true;
+                    state._rasterErase = true;
+                    state._lastErase = { x: world.x, y: world.y, p: downPressure };
+                    eraseRasterAt(world.x, world.y, null, downPressure);
+                    render();
+                    return;
+                }
                 pushHistory(); // before erasing
                 state.isDrawing = true;
                 state._erased = eraseAt(world.x, world.y);
@@ -2045,13 +2207,13 @@ return null;
                     try { ensurePaintLayer(); } catch (e) { console.error(e); }
                     state._paintStroke = true;
                     state._stabBuf = [];
-                    state._lastPaint = { x: world.x, y: world.y };
-                    stampPaintBrush(world.x, world.y, null);
+                    state._lastPaint = { x: world.x, y: world.y, w: pressureWidth(state.strokeWidth, downPressure), p: downPressure };
+                    stampPaintBrush(world.x, world.y, null, downPressure);
                     state.isDrawing = true;
                     render();
                     return;
                 }
-                state.currentObj = { ...base, type: 'path', points: [{ x: world.x, y: world.y }] };
+                state.currentObj = { ...base, type: 'path', points: [{ x: world.x, y: world.y, p: downPressure }] };
                 state._stabBuf = [];
                 state.objects.push(state.currentObj);
                 beginActiveStroke(state.currentObj);
@@ -2216,6 +2378,7 @@ return null;
 
             if (state._paintStroke) {
                 let nx = world.x, ny = world.y;
+                const pointPressure = pressureFromEvent(e);
                 const stab = state.stabilize | 0;
                 if (stab > 0) {
                     if (!state._stabBuf) state._stabBuf = [];
@@ -2226,13 +2389,20 @@ return null;
                     nx = sx / state._stabBuf.length;
                     ny = sy / state._stabBuf.length;
                 }
-                stampPaintBrush(nx, ny, state._lastPaint);
-                state._lastPaint = { x: nx, y: ny };
+                stampPaintBrush(nx, ny, state._lastPaint, pointPressure);
+                state._lastPaint = { x: nx, y: ny, w: pressureWidth(state.strokeWidth, pointPressure), p: pointPressure };
                 render();
                 return;
             }
 
             if (state.tool === 'eraser') {
+                if (state.mode === 'paint' && state._rasterErase) {
+                    const pointPressure = pressureFromEvent(e);
+                    eraseRasterAt(world.x, world.y, state._lastErase, pointPressure);
+                    state._lastErase = { x: world.x, y: world.y, p: pointPressure };
+                    render();
+                    return;
+                }
                 if (eraseAt(world.x, world.y)) state._erased = true;
                 render();
                 return;
@@ -2256,7 +2426,7 @@ return null;
                     const last = pts[pts.length - 1];
                     const minDist = (state.paintPreset === 'pixel' ? Math.max(1, state.strokeWidth) : 0.6) / state.zoom;
                     if (Math.hypot(nx - last.x, ny - last.y) > minDist) {
-                        const point = { x: nx, y: ny };
+                        const point = { x: nx, y: ny, p: pressureFromEvent(e) };
                         pts.push(point);
                         appendActiveStroke(state.currentObj, point);
                     }
@@ -2280,6 +2450,13 @@ return null;
         });
 
         function endPointer() {
+            if (state._quickSwap) {
+                const original = state._quickSwap.original;
+                state._quickSwap = null;
+                setTool(original);
+                clearTimeout(state._quickSwapCtxTimer);
+                state._quickSwapCtxTimer = setTimeout(() => { state._quickSwapSuppressCtx = false; }, 450);
+            }
             if (state.isPanning) {
                 state.isPanning = false;
                 container.style.cursor = state.tool === 'hand' ? 'grab' : 'crosshair';
@@ -2342,6 +2519,8 @@ return null;
             }
             state._paintStroke = false;
             state._lastPaint = null;
+            state._rasterErase = false;
+            state._lastErase = null;
             render();
             if ((state.pickingExportRegion || state.exportPickMode) && state.exportRegion) {
                 state.pickingExportRegion = false;
@@ -3174,6 +3353,7 @@ return null;
                 document.querySelectorAll('.paint-preset').forEach(x => x.classList.remove('active'));
                 b.classList.add('active');
                 state.paintPreset = b.dataset.preset;
+                if (typeof scheduleSaveSettings === 'function') scheduleSaveSettings();
             };
         });
 
@@ -3586,12 +3766,15 @@ return null;
             if (typing) return;
             if (e.code === 'Space') { state.spacePressed = true; container.style.cursor = 'grab'; e.preventDefault(); }
             if (e.key === 'g' || e.key === 'G') document.getElementById('btn-grid-toggle').click();
-            if (e.key === 'b' || e.key === 'B') setTool('brush');
-            if (e.key === 'e' || e.key === 'E') setTool('eraser');
-            if (e.key === 't' || e.key === 'T') setTool('text');
-            if (e.key === 'v' || e.key === 'V') setTool('select');
-            if (e.key === 'f' || e.key === 'F') setTool('fill');
-            if (e.key === 'p' || e.key === 'P') setTool('pen');
+            const sc = shortcutMap();
+            const pressedKey = normalizeShortcutKey(e);
+            for (const toolName of Object.keys(sc)) {
+                if (sc[toolName] && pressedKey === sc[toolName]) {
+                    e.preventDefault();
+                    setTool(toolName);
+                    return;
+                }
+            }
             if ((e.key === 'Enter' || e.key === 'Escape') && state._penObj) {
                 state._penObj = null;
                 state._activeAnchor = null;
@@ -3599,9 +3782,6 @@ return null;
                 state.isDrawing = false;
                 render();
             }
-            if (e.key === 'i' || e.key === 'I') setTool('eyedropper');
-            if (e.key === 'h' || e.key === 'H') setTool('hand');
-            if (e.key === 'i' || e.key === 'I') setTool('eyedropper');
             if ((e.key === 'Delete' || e.key === 'Backspace') && state.selectedIds.size) {
                 document.getElementById('btn-delete-selected').click();
             }
@@ -3733,6 +3913,8 @@ return null;
             document.getElementById('pixel-snap-toggle').checked = !!state.pixelSnap;
             document.getElementById('maxhist-slider').value = state.maxHistory;
             document.getElementById('maxhist-val').textContent = state.maxHistory;
+            if (typeof syncQuickControls === 'function') syncQuickControls();
+            if (typeof renderShortcutList === 'function') renderShortcutList();
         };
         const closeSettings = () => {
             if (!settingsModal) return;
@@ -3841,6 +4023,98 @@ return null;
             document.getElementById('maxhist-val').textContent = state.maxHistory;
         });
 
+        // ---- Accent theme / quick swap / pressure / shortcut editor ----
+        document.querySelectorAll('[data-accent-theme]').forEach(btn => {
+            btn.onclick = () => {
+                applyAccentTheme(btn.dataset.accentTheme);
+                scheduleSaveSettings();
+            };
+        });
+
+        function syncQuickControls() {
+            const qsToggle = document.getElementById('quickswap-toggle');
+            if (qsToggle) qsToggle.checked = state.quickSwapEnabled !== false;
+            const qsTool = document.getElementById('quickswap-tool');
+            if (qsTool) qsTool.value = state.quickSwapTool || 'eraser';
+            const pToggle = document.getElementById('pressure-toggle');
+            if (pToggle) pToggle.checked = state.pressureEnabled !== false;
+            const pmin = document.getElementById('pressure-min-slider');
+            if (pmin) pmin.value = Math.round((state.pressureMin != null ? state.pressureMin : 0.25) * 100);
+            const pminv = document.getElementById('pressure-min-val');
+            if (pminv) pminv.textContent = Math.round((state.pressureMin != null ? state.pressureMin : 0.25) * 100) + '%';
+            const pToggleL = document.getElementById('pressure-toggle-left');
+            if (pToggleL) pToggleL.checked = state.pressureEnabled !== false;
+            const pminL = document.getElementById('pressure-min-left');
+            if (pminL) pminL.value = Math.round((state.pressureMin != null ? state.pressureMin : 0.25) * 100);
+            const pminvL = document.getElementById('pressure-min-val-left');
+            if (pminvL) pminvL.textContent = Math.round((state.pressureMin != null ? state.pressureMin : 0.25) * 100) + '%';
+            document.querySelectorAll('[data-accent-theme]').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.accentTheme === state.accentTheme);
+            });
+            document.querySelectorAll('.paint-preset').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.preset === state.paintPreset);
+            });
+        }
+
+        const qsToggleEl = document.getElementById('quickswap-toggle');
+        if (qsToggleEl) qsToggleEl.onchange = (e) => { state.quickSwapEnabled = e.target.checked; scheduleSaveSettings(); };
+        const qsToolEl = document.getElementById('quickswap-tool');
+        if (qsToolEl) qsToolEl.onchange = (e) => { state.quickSwapTool = e.target.value; scheduleSaveSettings(); };
+        const pToggleEl = document.getElementById('pressure-toggle');
+        if (pToggleEl) pToggleEl.onchange = (e) => { state.pressureEnabled = e.target.checked; syncQuickControls(); scheduleSaveSettings(); };
+        const pminEl = document.getElementById('pressure-min-slider');
+        if (pminEl) pminEl.oninput = (e) => { state.pressureMin = +e.target.value / 100; syncQuickControls(); scheduleSaveSettings(); };
+        const pToggleLeftEl = document.getElementById('pressure-toggle-left');
+        if (pToggleLeftEl) pToggleLeftEl.onchange = (e) => { state.pressureEnabled = e.target.checked; syncQuickControls(); scheduleSaveSettings(); };
+        const pminLeftEl = document.getElementById('pressure-min-left');
+        if (pminLeftEl) pminLeftEl.oninput = (e) => { state.pressureMin = +e.target.value / 100; syncQuickControls(); scheduleSaveSettings(); };
+
+        let _capturingTool = null;
+        function renderShortcutList() {
+            const box = document.getElementById('shortcut-list');
+            if (!box) return;
+            box.innerHTML = '';
+            Object.keys(TOOL_SHORTCUT_LABELS).forEach(tool => {
+                const row = document.createElement('div');
+                row.className = 'shortcut-row';
+                const label = document.createElement('span');
+                label.className = 'flex-1 text-[11px] text-geist-300';
+                label.textContent = TOOL_SHORTCUT_LABELS[tool];
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'shortcut-key-btn' + (_capturingTool === tool ? ' capturing' : '');
+                const key = (state.shortcuts && state.shortcuts[tool]) || '';
+                btn.textContent = _capturingTool === tool ? 'キー入力…' : (key ? key.toUpperCase() : '—');
+                btn.onclick = () => {
+                    _capturingTool = tool;
+                    renderShortcutList();
+                };
+                row.appendChild(label);
+                row.appendChild(btn);
+                box.appendChild(row);
+            });
+        }
+        document.addEventListener('keydown', (e) => {
+            if (!_capturingTool) return;
+            e.preventDefault();
+            e.stopPropagation();
+            if (e.key === 'Escape') {
+                _capturingTool = null;
+                renderShortcutList();
+                return;
+            }
+            if (['Shift', 'Control', 'Alt', 'Meta', 'CapsLock', 'Tab'].includes(e.key)) return;
+            const key = normalizeShortcutKey(e);
+            if (!key) return;
+            if (!state.shortcuts) state.shortcuts = {};
+            Object.keys(state.shortcuts).forEach(t => {
+                if (state.shortcuts[t] === key && t !== _capturingTool) state.shortcuts[t] = '';
+            });
+            state.shortcuts[_capturingTool] = key;
+            _capturingTool = null;
+            renderShortcutList();
+            scheduleSaveSettings();
+        }, true);
 
         bindFillStrokeEditors();
 
@@ -3851,7 +4125,10 @@ return null;
             stabilize: 0, hardness: 1, canvasBg: '#ffffff', gridMode: 'grid',
             maxHistory: 80, pixelGrid: false, pixelSnap: false,
             fontFamily: 'Inter', fontSize: 24, fontWeight: '500',
-            toolbarDock: 'left'
+            toolbarDock: 'left',
+            accentTheme: 'emerald', quickSwapEnabled: true, quickSwapTool: 'eraser',
+            pressureEnabled: true, pressureMin: 0.25, pressureCurve: 1,
+            shortcuts: { brush: 'b', eraser: 'e', select: 'v', pen: 'p', text: 't', fill: 'f', eyedropper: 'i', hand: 'h' }
         };
         function applyToolbarDock(pos) {
             state.toolbarDock = pos || 'left';
@@ -3869,6 +4146,8 @@ return null;
                 Object.keys(DEFAULTS).forEach(k => {
                     if (d[k] !== undefined) state[k] = d[k];
                 });
+                if (d.shortcuts) state.shortcuts = Object.assign({}, DEFAULTS.shortcuts, d.shortcuts);
+                applyAccentTheme(d.accentTheme || DEFAULTS.accentTheme);
                 if (d.strokeWidth) {
                     const sl = document.getElementById('size-slider');
                     if (sl) sl.value = Math.min(500, d.strokeWidth);
@@ -3885,8 +4164,11 @@ return null;
                     if (ov) ov.textContent = Math.round(d.opacity * 100) + '%';
                 }
                 applyToolbarDock(d.toolbarDock || 'left');
+                if (typeof syncQuickControls === 'function') syncQuickControls();
+                if (typeof renderShortcutList === 'function') renderShortcutList();
             } catch (e) {
                 applyToolbarDock('left');
+                applyAccentTheme('emerald');
             }
         }
         function saveSettings() {
@@ -3905,7 +4187,14 @@ return null;
                 fontFamily: state.fontFamily,
                 fontSize: state.fontSize,
                 fontWeight: state.fontWeight,
-                toolbarDock: state.toolbarDock || 'left'
+                toolbarDock: state.toolbarDock || 'left',
+                accentTheme: state.accentTheme || 'emerald',
+                quickSwapEnabled: state.quickSwapEnabled !== false,
+                quickSwapTool: state.quickSwapTool || 'eraser',
+                pressureEnabled: state.pressureEnabled !== false,
+                pressureMin: state.pressureMin != null ? state.pressureMin : 0.25,
+                pressureCurve: state.pressureCurve || 1,
+                shortcuts: shortcutMap()
             };
             try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(data)); } catch (_) {}
         }
@@ -3931,8 +4220,12 @@ return null;
         document.getElementById('btn-reset-defaults') && (document.getElementById('btn-reset-defaults').onclick = () => {
             if (!confirm('設定をすべてデフォルトに戻しますか？')) return;
             Object.keys(DEFAULTS).forEach(k => { state[k] = DEFAULTS[k]; });
+            state.shortcuts = Object.assign({}, DEFAULTS.shortcuts);
             localStorage.removeItem(SETTINGS_KEY);
             applyToolbarDock('left');
+            applyAccentTheme(DEFAULTS.accentTheme);
+            if (typeof syncQuickControls === 'function') syncQuickControls();
+            if (typeof renderShortcutList === 'function') renderShortcutList();
             setColor(DEFAULTS.color);
             document.getElementById('size-slider').value = DEFAULTS.strokeWidth;
             document.getElementById('size-val').textContent = DEFAULTS.strokeWidth;
@@ -3949,6 +4242,7 @@ return null;
         // Disable browser context menu — app menu only
         window.addEventListener('contextmenu', (e) => {
             e.preventDefault();
+            if (state._quickSwapSuppressCtx || state._quickSwap) return;
             const menu = document.getElementById('app-ctx-menu');
             if (!menu) return;
             menu.style.left = Math.min(e.clientX, window.innerWidth - 220) + 'px';
@@ -4563,7 +4857,7 @@ return null;
                     try { selectionToRasterFixed(); } catch (e) { console.error(e); alert('変換に失敗: ' + e.message); }
                 }
                 else if (act === 'to-vector') {
-                    alert('選択画像の簡易トレースはベジェペンで手動トレースするか、今後のアップデートで強化されます。');
+                    selectionToVector().catch(e => { console.error(e); alert('変換に失敗: ' + e.message); });
                 }
                 else if (act === 'effect-more') {
                     openEffectMore();
@@ -4585,6 +4879,300 @@ return null;
                 }
             };
         });
+
+        // ===== RASTER → VECTOR TRACER =====
+        function imageToCanvasElement(src, existingImage) {
+            return new Promise((resolve, reject) => {
+                const img = (existingImage && existingImage.complete && existingImage.naturalWidth)
+                    ? existingImage
+                    : new Image();
+                const finish = () => {
+                    const w = img.naturalWidth || img.width;
+                    const h = img.naturalHeight || img.height;
+                    if (!w || !h) { reject(new Error('画像サイズを取得できませんでした')); return; }
+                    const c = document.createElement('canvas');
+                    c.width = w;
+                    c.height = h;
+                    const cx = c.getContext('2d');
+                    cx.drawImage(img, 0, 0);
+                    resolve(c);
+                };
+                if (img.complete && (img.naturalWidth || img.width)) { finish(); return; }
+                img.onload = finish;
+                img.onerror = () => reject(new Error('画像の読み込みに失敗しました'));
+                if (img !== existingImage || !img.src) img.src = src;
+            });
+        }
+
+        function simplifyContourRDP(points, epsilon) {
+            if (!points || points.length < 3) return points || [];
+            const keep = new Uint8Array(points.length);
+            keep[0] = 1;
+            keep[points.length - 1] = 1;
+            const stack = [[0, points.length - 1]];
+            while (stack.length) {
+                const [start, end] = stack.pop();
+                const a = points[start], b = points[end];
+                const dx = b.x - a.x, dy = b.y - a.y;
+                const len = Math.hypot(dx, dy) || 1e-6;
+                let maxDist = -1, maxIdx = -1;
+                for (let i = start + 1; i < end; i++) {
+                    const p = points[i];
+                    const dist = Math.abs(dy * p.x - dx * p.y + b.x * a.y - b.y * a.x) / len;
+                    if (dist > maxDist) { maxDist = dist; maxIdx = i; }
+                }
+                if (maxDist > epsilon && maxIdx > start) {
+                    keep[maxIdx] = 1;
+                    stack.push([start, maxIdx], [maxIdx, end]);
+                }
+            }
+            const out = [];
+            for (let i = 0; i < points.length; i++) if (keep[i]) out.push(points[i]);
+            return out;
+        }
+
+        function traceMaskContours(mask, W, H) {
+            const PW = W + 2, PH = H + 2;
+            const padded = new Uint8Array(PW * PH);
+            for (let y = 0; y < H; y++) {
+                for (let x = 0; x < W; x++) {
+                    if (mask[y * W + x]) padded[(y + 1) * PW + (x + 1)] = 1;
+                }
+            }
+            const edgePoints = [
+                (x, y) => ({ x: x - 0.5, y: y - 1 }),
+                (x, y) => ({ x: x, y: y - 0.5 }),
+                (x, y) => ({ x: x - 0.5, y }),
+                (x, y) => ({ x: x - 1, y: y - 0.5 })
+            ];
+            const cases = {
+                0: [], 1: [[3, 0]], 2: [[0, 1]], 3: [[3, 1]], 4: [[1, 2]],
+                5: [[3, 0], [1, 2]], 6: [[0, 2]], 7: [[3, 2]], 8: [[2, 3]],
+                9: [[0, 2]], 10: [[0, 1], [2, 3]], 11: [[1, 2]], 12: [[1, 3]],
+                13: [[0, 1]], 14: [[3, 0]], 15: []
+            };
+            const segments = [];
+            for (let y = 0; y < PH - 1; y++) {
+                for (let x = 0; x < PW - 1; x++) {
+                    const tl = padded[y * PW + x] ? 1 : 0;
+                    const tr = padded[y * PW + x + 1] ? 2 : 0;
+                    const br = padded[(y + 1) * PW + x + 1] ? 4 : 0;
+                    const bl = padded[(y + 1) * PW + x] ? 8 : 0;
+                    const pairs = cases[tl | tr | br | bl];
+                    if (!pairs || !pairs.length) continue;
+                    for (const [edgeA, edgeB] of pairs) {
+                        segments.push({ a: edgePoints[edgeA](x, y), b: edgePoints[edgeB](x, y) });
+                    }
+                }
+            }
+            if (!segments.length) return [];
+            const keyOf = p => `${p.x.toFixed(3)},${p.y.toFixed(3)}`;
+            const byPoint = new Map();
+            segments.forEach((seg, idx) => {
+                seg.used = false;
+                const ka = keyOf(seg.a), kb = keyOf(seg.b);
+                if (!byPoint.has(ka)) byPoint.set(ka, []);
+                if (!byPoint.has(kb)) byPoint.set(kb, []);
+                byPoint.get(ka).push(idx);
+                byPoint.get(kb).push(idx);
+            });
+            const contours = [];
+            for (let i = 0; i < segments.length; i++) {
+                if (segments[i].used) continue;
+                const first = segments[i];
+                first.used = true;
+                const pts = [first.a, first.b];
+                let tail = first.b;
+                let guard = 0;
+                while (guard++ < segments.length + 4) {
+                    const candidates = byPoint.get(keyOf(tail)) || [];
+                    let next = null;
+                    for (const idx of candidates) {
+                        if (!segments[idx].used) { next = segments[idx]; break; }
+                    }
+                    if (!next) break;
+                    next.used = true;
+                    const nextPoint = keyOf(next.a) === keyOf(tail) ? next.b : next.a;
+                    pts.push(nextPoint);
+                    tail = nextPoint;
+                    if (keyOf(tail) === keyOf(first.a)) break;
+                }
+                if (pts.length >= 4) {
+                    if (keyOf(pts[pts.length - 1]) !== keyOf(pts[0])) pts.push({ ...pts[0] });
+                    contours.push(pts);
+                }
+            }
+            return contours;
+        }
+
+        function pointInPolygon(pt, polygon) {
+            let inside = false;
+            for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+                const xi = polygon[i].x, yi = polygon[i].y;
+                const xj = polygon[j].x, yj = polygon[j].y;
+                const intersect = ((yi > pt.y) !== (yj > pt.y)) &&
+                    (pt.x < (xj - xi) * (pt.y - yi) / ((yj - yi) || 1e-9) + xi);
+                if (intersect) inside = !inside;
+            }
+            return inside;
+        }
+
+        function traceCanvasToPaths(sourceCanvas, bounds, opacity) {
+            const MAX_TRACE = 480;
+            const ratio = Math.min(1, MAX_TRACE / Math.max(sourceCanvas.width, sourceCanvas.height));
+            const W = Math.max(2, Math.round(sourceCanvas.width * ratio));
+            const H = Math.max(2, Math.round(sourceCanvas.height * ratio));
+            const work = document.createElement('canvas');
+            work.width = W;
+            work.height = H;
+            const wctx = work.getContext('2d', { willReadFrequently: true });
+            wctx.drawImage(sourceCanvas, 0, 0, W, H);
+            const data = wctx.getImageData(0, 0, W, H).data;
+
+            const isBackground = (r, g, b) => r > 242 && g > 242 && b > 242;
+            const bins = new Map();
+            const pixelBin = new Int32Array(W * H);
+            let inkCount = 0;
+            for (let i = 0; i < W * H; i++) {
+                const p = i * 4;
+                const a = data[p + 3];
+                const r = data[p], g = data[p + 1], b = data[p + 2];
+                if (a < 24 || isBackground(r, g, b)) { pixelBin[i] = -1; continue; }
+                inkCount++;
+                const key = ((r >> 4) << 8) | ((g >> 4) << 4) | (b >> 4);
+                let bin = bins.get(key);
+                if (!bin) { bin = { key, r: 0, g: 0, b: 0, count: 0 }; bins.set(key, bin); }
+                bin.r += r; bin.g += g; bin.b += b; bin.count++;
+                pixelBin[i] = key;
+            }
+            const paletteMinCount = Math.max(12, inkCount * 0.0006);
+            const palette = Array.from(bins.values())
+                .sort((a, b) => b.count - a.count)
+                .slice(0, 7)
+                .filter(bin => bin.count >= paletteMinCount)
+                .map(bin => ({
+                    r: Math.round(bin.r / bin.count),
+                    g: Math.round(bin.g / bin.count),
+                    b: Math.round(bin.b / bin.count),
+                    count: bin.count
+                }));
+            if (!palette.length) return [];
+
+            const out = [];
+            const minArea = Math.max(8, W * H * 0.00012);
+            const scaleX = bounds.w / W;
+            const scaleY = bounds.h / H;
+            for (let c = 0; c < palette.length; c++) {
+                const target = palette[c];
+                const mask = new Uint8Array(W * H);
+                for (let i = 0; i < W * H; i++) {
+                    const binKey = pixelBin[i];
+                    if (binKey < 0) continue;
+                    const p = i * 4;
+                    const r = data[p], g = data[p + 1], b = data[p + 2];
+                    let best = 1e9, bestIdx = -1;
+                    for (let k = 0; k < palette.length; k++) {
+                        const pc = palette[k];
+                        const d = (r - pc.r) ** 2 + (g - pc.g) ** 2 + (b - pc.b) ** 2;
+                        if (d < best) { best = d; bestIdx = k; }
+                    }
+                    if (bestIdx === c) mask[i] = 1;
+                }
+                const contours = traceMaskContours(mask, W, H);
+                const infos = [];
+                for (const contour of contours) {
+                    let area = 0;
+                    for (let i = 1; i < contour.length; i++) {
+                        area += contour[i - 1].x * contour[i].y - contour[i].x * contour[i - 1].y;
+                    }
+                    const absArea = Math.abs(area) / 2;
+                    if (absArea < minArea) continue;
+                    infos.push({ contour, absArea, first: contour[0] });
+                }
+                for (let ci = 0; ci < infos.length; ci++) {
+                    const info = infos[ci];
+                    const isHole = infos.some((other, oi) =>
+                        oi !== ci && other.absArea > info.absArea + 1 &&
+                        pointInPolygon(info.first, other.contour)
+                    );
+                    if (isHole) continue;
+                    const rawContour = info.contour;
+                    const lastPoint = rawContour[rawContour.length - 1];
+                    const openContour = (rawContour.length > 3 &&
+                        Math.abs(lastPoint.x - rawContour[0].x) < 1e-6 &&
+                        Math.abs(lastPoint.y - rawContour[0].y) < 1e-6)
+                        ? rawContour.slice(0, -1)
+                        : rawContour;
+                    const simplified = simplifyContourRDP(openContour, 1.25);
+                    if (simplified.length < 3) continue;
+                    const points = simplified.map(p => ({
+                        x: bounds.x + p.x * scaleX,
+                        y: bounds.y + p.y * scaleY
+                    }));
+                    out.push({
+                        id: uid(),
+                        type: 'path',
+                        points,
+                        closed: true,
+                        fill: `rgb(${target.r}, ${target.g}, ${target.b})`,
+                        color: `rgb(${target.r}, ${target.g}, ${target.b})`,
+                        strokeWidth: 0,
+                        opacity: opacity != null ? opacity : 1,
+                        layerId: state.activeLayerId
+                    });
+                }
+            }
+            return out;
+        }
+
+        async function selectionToVector() {
+            const imageTargets = selectedObjects().filter(o => o.type === 'image' && o.src);
+            const paintBounds = paintLayerBounds();
+            if (!imageTargets.length && !paintBounds) {
+                alert('画像オブジェクトを選択するか、ラスター描画を用意してください');
+                return;
+            }
+            pushHistory();
+            let created = [];
+            if (imageTargets.length) {
+                for (const target of imageTargets) {
+                    try {
+                        const src = await imageToCanvasElement(target.src, target._img);
+                        created = created.concat(traceCanvasToPaths(src, {
+                            x: target.x, y: target.y,
+                            w: target.w || src.width, h: target.h || src.height
+                        }, target.opacity != null ? target.opacity : 1));
+                    } catch (e) {
+                        console.warn('Trace failed', e);
+                    }
+                }
+                const ids = new Set(imageTargets.map(t => t.id));
+                state.objects = state.objects.filter(o => !ids.has(o.id));
+            } else {
+                const source = document.createElement('canvas');
+                source.width = Math.max(1, Math.round(paintBounds.w));
+                source.height = Math.max(1, Math.round(paintBounds.h));
+                const sctx = source.getContext('2d');
+                sctx.translate(-paintBounds.x, -paintBounds.y);
+                drawPaintLayer(sctx, null);
+                created = traceCanvasToPaths(source, paintBounds, 1);
+                state.paintChunks = new Map();
+                state.paintCowSet = new Set();
+                state.paintRevision++;
+            }
+            if (!created.length) {
+                alert('ベクター化できる領域が見つかりませんでした');
+                render();
+                return;
+            }
+            state.objects.push(...created);
+            state.selectedIds = new Set(created.map(o => o.id));
+            invalidateScene();
+            invalidateObjectIndex();
+            updateSelectionUI();
+            render();
+            alert(created.length + ' 個のベクターパスに変換しました');
+        }
 
         function selectionToRasterFixed() {
             const targets = selectedObjects();
@@ -5884,6 +6472,7 @@ return null;
                 else if (act === 'bring-front') selectedObjects().forEach(o => reorderObject(o.id, 'front'));
                 else if (act === 'send-back') selectedObjects().forEach(o => reorderObject(o.id, 'back'));
                 else if (act === 'to-raster') { try { selectionToRasterFixed(); } catch(err){ alert(err.message);} }
+                else if (act === 'to-vector') { selectionToVector().catch(err => alert('変換に失敗: ' + err.message)); }
                 else if (act === 'effect-more') openEffectMore();
                 else if (act === 'clear-effects') {
                     pushHistory();
@@ -6483,6 +7072,9 @@ return null;
             setColor('#171717');
             if (typeof loadSettings === 'function') loadSettings();
             else if (typeof applyToolbarDock === 'function') applyToolbarDock('left');
+            applyAccentTheme(state.accentTheme || 'emerald');
+            if (typeof syncQuickControls === 'function') syncQuickControls();
+            if (typeof renderShortcutList === 'function') renderShortcutList();
             renderLayerList();
             resize();
             pushHistory();

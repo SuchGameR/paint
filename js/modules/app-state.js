@@ -66,7 +66,37 @@
             clipboard: null,
             groupCounter: 1,
             aspectLock: true,
-            exportPickMode: false
+            exportPickMode: false,
+            accentTheme: 'emerald',
+            quickSwapEnabled: true,
+            quickSwapTool: 'eraser',
+            pressureEnabled: true,
+            pressureMin: 0.25,
+            pressureCurve: 1,
+            uiLayout: 'styler',
+            brushEngine: 'raster',
+            gridSize: 40,
+            gridSnap: false,
+            paletteId: 'flat',
+            recentColors: [],
+            favoriteColors: ['#171717', '#ffffff', '#ef4444', '#f59e0b', '#10b981', '#3b82f6'],
+            customPalettes: [],
+            brushId: 'pen',
+            customBrushes: [],
+            minimapBg: 'auto',
+            minimapAutoSnap: true,
+            onionBefore: 2,
+            onionAfter: 1,
+            shortcuts: {
+                brush: 'b',
+                eraser: 'e',
+                select: 'v',
+                pen: 'p',
+                text: 't',
+                fill: 'f',
+                eyedropper: 'i',
+                hand: 'h'
+            }
         };
     }
 
