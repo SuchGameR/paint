@@ -104,7 +104,7 @@
             }
             state.objects.forEach(object => {
                 try {
-                    __drawObjectTo(mctx, object);
+                    drawObjectTo(mctx, object);
                 } catch (error) {
                     console.error('Minimap object render failed', error);
                     const bounds = getBounds(object);

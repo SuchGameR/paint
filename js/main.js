@@ -1,79 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
         // ===== STATE =====
-        const state = {
-            mode: 'vector',
-            tool: 'brush',
-            paintPreset: 'pen', // alias brush,
-            zoom: 1,
-            panX: 0,
-            panY: 0,
-            gridMode: 'grid',
-            canvasBg: '#ffffff',
-            color: '#171717',
-            strokeWidth: 8,
-            opacity: 1,
-            isPanning: false,
-            isDrawing: false,
-            isMarquee: false,
-            spacePressed: false,
-            lastMouse: { x: 0, y: 0 },
-            startWorld: { x: 0, y: 0 },
-            marqueeStart: null,
-            objects: [],
-            selectedIds: new Set(),
-            layers: [{ id: 'layer-1', name: 'Layer 1', visible: true }],
-            activeLayerId: 'layer-1',
-            undoStack: [],
-            redoStack: [],
-            maxHistory: 80,
-            currentObj: null,
-            dpr: Math.min(window.devicePixelRatio || 1, 2),
-            historyLocked: false,
-            eraserMode: 'partial', // 'partial' | 'object'
-            fontFamily: 'Inter',
-            fontSize: 24,
-            fontWeight: '500',
-            stabilize: 0,
-            hardness: 1,
-            fillTolerance: 32,
-            brushPreset: 'pen',
-            paintCanvas: null,
-            paintCtx: null,
-            paintOrigin: { x: -2000, y: -2000 },
-            paintSize: 1024,
-            paintChunks: new Map(),
-            paintRevision: 0,
-            paintCowSet: new Set(),
-            paintRestoreId: 0,
-            activeStrokeCanvas: null,
-            pixelGrid: false,
-            pixelSnap: false,
-            profiles: {},
-            infiniteCanvas: true,
-            canvasWidth: 1920,
-            canvasHeight: 1080,
-            exportRegion: null,
-            pickingExportRegion: false,
-            animFrames: [],
-            animFps: 12,
-            animTrackId: null,
-            animFrameLoading: false,
-            onionSkin: true,
-            regions: [],
-            activeRegionId: null,
-            clipboard: null,
-            groupCounter: 1,
-            aspectLock: true,
-            exportPickMode: false
-        };
-
-        const palettes = {
-            mono:   ['#171717','#404040','#737373','#a3a3a3','#d4d4d4','#ffffff'],
-            vercel: ['#171717','#0070f3','#7928ca','#ff0080','#f5a623','#50e3c2'],
-            pastel: ['#2b2d42','#ef476f','#ffd166','#06d6a0','#118ab2','#f8edeb'],
-            earth:  ['#1b4332','#2d6a4f','#40916c','#52b788','#74c69d','#d8f3dc'],
-            neon:   ['#0a0a0a','#00f0ff','#ff00aa','#aaff00','#ff5500','#ffffff']
-        };
+        const state = window.VersePaintState.createInitialState(window.devicePixelRatio);
+        const palettes = window.VersePaintPalettes;
 
         const container = document.getElementById('canvas-container');
         const canvas = document.getElementById('main-canvas');
@@ -5989,6 +5917,12 @@ return null;
                 else window.VersePaintBrushPanel?.setOpen(
                     document.getElementById(id)?.classList.contains('hidden')
                 );
+                return;
+            }
+            if (id === 'props-panel') {
+                if (forceShow) openProps();
+                else if (propsPanel.classList.contains('hidden')) openProps();
+                else closeProps();
                 return;
             }
             const el = document.getElementById(id);
