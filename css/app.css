@@ -788,3 +788,195 @@
                 transition-duration: 0.01ms !important;
             }
         }
+/* ========== MINIMAP STYLES ========== */
+.minimap-container {
+    position: fixed;
+    right: 16px;
+    bottom: 80px;
+    z-index: 99;
+    background: var(--app-bg);
+    border: 1px solid var(--panel-border);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.minimap-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+/* ========== DISPLAY MODES ========== */
+
+/* コンパクトモード - モバイル向け UI */
+body[data-display-mode="compact"] {
+    .toolbar-group, .palette-grid {
+        display: grid !important;
+        grid-template-columns: repeat(auto-fill, minmax(24px, 1fr));
+        gap: 2px;
+    }
+    
+    .tool-icon {
+        width: 28px !important;
+        height: 28px !important;
+        font-size: 16px !important;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .toolbar-group:hover .tool-icon {
+        background: var(--panel-border);
+    }
+
+    /* ツールバーをアイコン統合 */
+    .tool-bar-container {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 2px;
+    }
+}
+
+/* スタイラーモード - デフォルト UI */
+body[data-display-mode="stylist"] {
+    /* 現在のレイアウト維持 */
+}
+
+/* プロモード - Clip Studio Paint 風 */
+body[data-display-mode="pro"] {
+    .toolbar-container, .layer-panel, .properties-panel {
+        background: var(--panel-bg) !important;
+        border: 1px solid var(--panel-border);
+    }
+    
+    .toolbar-group {
+        border-bottom: 1px solid var(--panel-border);
+    }
+    
+    .canvas-container {
+        position: absolute;
+        inset: 36px auto auto 0;
+    }
+    
+    .properties-panel {
+        position: fixed;
+        right: 8px;
+        top: 20px;
+        width: 320px !important;
+        max-height: calc(100% - 20px) !important;
+        z-index: 90;
+    }
+    
+    .layer-panel {
+        position: fixed;
+        right: 320px;
+        top: 20px;
+        width: 280px !important;
+        max-height: calc(100% - 20px) !important;
+        z-index: 90;
+    }
+    
+    .timeline-panel {
+        position: fixed;
+        bottom: 0;
+        left: 328px;
+        right: 32px;
+        height: 240px;
+    }
+    
+    /* プロモードではツールを左サイドバーに固定 */
+    .toolbar-container {
+        position: fixed;
+        left: 8px;
+        top: 8px;
+        bottom: 16px;
+        width: 72px !important;
+    }
+    
+    .tool-icon {
+        height: 48px !important;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+    }
+}
+
+/* ========== ONION VIEW STYLES ========== */
+.onion-view-overlay {
+    pointer-events: none;
+    position: absolute;
+    inset: 0;
+}
+
+.onion-view-past {
+    background: 
+        repeating-linear-gradient(
+            45deg,
+            transparent,
+            transparent 10px,
+            rgba(255, 50, 50, 0.1) 10px,
+            rgba(255, 50, 50, 0.1) 20px
+        );
+}
+
+.onion-view-future {
+    background: 
+        repeating-linear-gradient(
+            45deg,
+            transparent,
+            transparent 10px,
+            rgba(50, 255, 50, 0.1) 10px,
+            rgba(50, 255, 50, 0.1) 20px
+        );
+}
+
+/* ========== PREVIEW AREA ========== */
+.preview-area {
+    background: 
+        linear-gradient(135deg, 
+            var(--accent-rgb) 0%,
+            rgba(16, 185, 129, 0.1) 100%
+        );
+    border-radius: 8px;
+    padding: 12px;
+}
+
+.preview-item {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--panel-border);
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+/* ========== TOOLTIP ENHANCEMENTS ========== */
+.tooltip {
+    background: rgba(30, 31, 34, 0.95);
+    border: 1px solid var(--panel-border);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+/* ========== D&D ENHANCEMENTS ========== */
+.dnd-item {
+    cursor: grab;
+}
+
+.dnd-item:active {
+    cursor: grabbing;
+    background: rgba(255,255,255,0.08);
+}
+
+.dnd-ghost {
+    opacity: 0.8;
+    transform: scale(1.02);
+}

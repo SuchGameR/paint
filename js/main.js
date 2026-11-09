@@ -7104,3 +7104,63 @@ return null;
             try { resize(); render(); } catch (_) {}
         }
     });
+        // ===== カラーパレット強化機能 =====
+        const paletteEnhance = new (window.PaletteStore || class {
+            constructor() {
+                this.presets = window.VersePaintPalettes;
+                this.history = [];
+                this.favorites = JSON.parse(localStorage.getItem('favoritePalettes') || '[]');
+            }
+
+            getAllPresetNames() {
+                return Object.keys(this.presets);
+            }
+
+            getPreset(name) {
+                return this.presets[name] || null;
+            }
+
+            addRecent(palette, name = '') {
+                this.history.unshift({ palette, name, timestamp: Date.now() });
+                if (this.history.length > 10) this.history.pop();
+            }
+
+            getHistory() {
+                return this.history.slice(0, 6);
+            }
+
+            saveFavorite(palette, name) {
+                this.favorites.push({ palette, name, timestamp: Date.now() });
+                if (this.favorites.length > 10) this.favorites.pop();
+                localStorage.setItem('paletteHistory', JSON.stringify(this.history));
+            }
+
+            getFavorites() {
+                return this.favorites.slice(0, 6);
+            }
+        })();
+
+        // ===== ベクターツール機能 =====
+        const vectorTools = window.VectorPath || new class {
+            constructor() {
+                this.paths = [];
+            }
+
+            create(pathType, points) {
+                const path = new VectorPath(pathType, points);
+                this.paths.push(path);
+                return path;
+            }
+
+            getActive() {
+                return this.paths[this.paths.length - 1];
+            }
+        };
+
+        // ===== グリッド管理機能 =====
+        const gridManager = new window.GridManager({
+            gridSize: 20,
+            enabled: true,
+            snapToGrid: false
+        });
+
