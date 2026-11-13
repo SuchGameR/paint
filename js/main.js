@@ -1,31 +1,25 @@
-// VersePaint main loader — restores app from gzipped split parts
+// Temporary restore: load the last known-working main.js from commit b75c9d3
+// (local main.js was corrupted by a failed large-file upload)
 (function () {
-  var parts = window.__VP_B64 || [];
-  if (!parts.length) {
-    console.error('VersePaint: missing bundle parts');
-    return;
+  var urls = [
+    'https://cdn.jsdelivr.net/gh/SuchGameR/paint@b75c9d3f0edba50ede086bf80eb23ef35a83199e/js/main.js',
+    'https://fastly.jsdelivr.net/gh/SuchGameR/paint@b75c9d3f0edba50ede086bf80eb23ef35a83199e/js/main.js'
+  ];
+  var i = 0;
+  function load() {
+    if (i >= urls.length) {
+      document.body.insertAdjacentHTML(
+        'afterbegin',
+        '<div style="position:fixed;inset:0;z-index:99999;background:#111;color:#f88;padding:24px;font:14px system-ui">' +
+          '<h1>VersePaint の読み込みに失敗しました</h1>' +
+          '<p>ネットワークを確認して再読み込みしてください。</p></div>'
+      );
+      return;
+    }
+    var s = document.createElement('script');
+    s.src = urls[i++];
+    s.onerror = load;
+    document.head.appendChild(s);
   }
-  var b64 = parts.join('');
-  window.__VP_B64 = null;
-  try {
-    var bin = atob(b64);
-    var bytes = new Uint8Array(bin.length);
-    for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-    new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip')))
-      .arrayBuffer()
-      .then(function (buf) {
-        var code = new TextDecoder('utf-8').decode(buf);
-        var s = document.createElement('script');
-        s.textContent = code;
-        document.head.appendChild(s);
-      })
-      .catch(function (err) {
-        console.error('VersePaint load failed', err);
-        document.body.insertAdjacentHTML('afterbegin',
-          '<div style="position:fixed;inset:0;z-index:99999;background:#111;color:#f88;padding:24px;font:14px system-ui">' +
-          '<h1>読み込みエラー</h1><pre>' + String(err) + '</pre></div>');
-      });
-  } catch (err) {
-    console.error(err);
-  }
+  load();
 })();
