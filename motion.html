@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ja" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0a0a0a">
+  <title>VerseMotion</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            geist: {
+              50:'#fafafa',100:'#f5f5f5',200:'#e5e5e5',300:'#d4d4d4',
+              400:'#a3a3a3',500:'#737373',600:'#525252',700:'#404040',
+              800:'#262626',900:'#171717',950:'#0a0a0a'
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="./css/app.css">
+  <link rel="stylesheet" href="./css/motion.css">
+</head>
+<body class="bg-black text-gray-100 h-screen w-screen overflow-hidden flex flex-col">
+  <header class="h-10 shrink-0 border-b border-white/10 flex items-center gap-2 px-3 bg-[#0c0c0c]">
+    <a href="./index.html" class="text-[12px] text-geist-400 hover:text-white flex items-center gap-1.5 mr-2">
+      <i class="fa-solid fa-arrow-left text-[10px]"></i> イラスト
+    </a>
+    <span class="text-[13px] font-semibold tracking-tight">VerseMotion</span>
+    <div class="h-4 w-px bg-white/10 mx-1"></div>
+    <button id="btn-import-draw" class="motion-btn text-[11px]"><i class="fa-solid fa-file-import mr-1"></i>絵を読み込む</button>
+    <button id="btn-export-anim" class="motion-btn text-[11px]"><i class="fa-solid fa-download mr-1"></i>書き出し</button>
+    <div class="flex-1"></div>
+    <span id="motion-status" class="text-[11px] text-geist-500 font-mono">1 / 48 · 24fps</span>
+  </header>
+  <div class="flex-1 flex min-h-0">
+    <aside class="w-12 shrink-0 border-r border-white/10 flex flex-col items-center py-2 gap-1 bg-[#0a0a0a]">
+      <button class="tool-btn active" data-tool="select" title="選択 (V)"><i class="fa-solid fa-arrow-pointer"></i></button>
+      <button class="tool-btn" data-tool="brush" title="手描きコマ (B)"><i class="fa-solid fa-paintbrush"></i></button>
+      <button class="tool-btn" data-tool="move" title="移動キー (M)"><i class="fa-solid fa-up-down-left-right"></i></button>
+      <button class="tool-btn" data-tool="hand" title="パン (H)"><i class="fa-regular fa-hand"></i></button>
+      <div class="flex-1"></div>
+      <button id="btn-onion" class="tool-btn active" title="オニオンスキン"><i class="fa-solid fa-layer-group"></i></button>
+    </aside>
+    <main class="flex-1 relative min-w-0 bg-[#141414]">
+      <div id="stage-wrap" class="absolute inset-0 flex items-center justify-center overflow-hidden">
+        <canvas id="stage" width="1920" height="1080"></canvas>
+      </div>
+      <div id="onion-badge" class="absolute top-3 left-3 text-[10px] px-2 py-1 rounded bg-black/60 text-geist-300 border border-white/10">Onion ON · 前2 / 後1</div>
+    </main>
+    <aside class="w-56 shrink-0 border-l border-white/10 bg-[#0c0c0c] flex flex-col text-[12px]">
+      <div class="px-3 py-2 border-b border-white/10 font-medium text-white">プロパティ</div>
+      <div class="p-3 flex flex-col gap-3 overflow-y-auto">
+        <div><div class="text-[10px] text-geist-500 mb-1">対象</div><div id="prop-target" class="text-geist-200">未選択</div></div>
+        <label class="prop-row"><span>X</span><input id="prop-x" type="number" class="prop-num" value="0"></label>
+        <label class="prop-row"><span>Y</span><input id="prop-y" type="number" class="prop-num" value="0"></label>
+        <label class="prop-row"><span>回転</span><input id="prop-rot" type="number" class="prop-num" value="0"></label>
+        <label class="prop-row"><span>スケール</span><input id="prop-scale" type="number" step="0.01" class="prop-num" value="1"></label>
+        <label class="prop-row"><span>不透明度</span><input id="prop-opacity" type="number" step="0.01" min="0" max="1" class="prop-num" value="1"></label>
+        <div>
+          <div class="text-[10px] text-geist-500 mb-1">キーフレーム</div>
+          <button id="btn-add-key" class="motion-btn w-full text-[11px] mb-1"><i class="fa-solid fa-key mr-1"></i>現在フレームに打つ</button>
+          <label class="text-[10px] text-geist-500">次キーへのイージング</label>
+          <select id="prop-easing" class="w-full mt-1 bg-black/50 border border-white/10 rounded-md text-[12px] px-2 py-1.5 text-white">
+            <option value="linear">Linear</option>
+            <option value="easeIn">Ease In</option>
+            <option value="easeOut" selected>Ease Out</option>
+            <option value="easeInOut">Ease In Out</option>
+            <option value="cubicIn">Cubic In</option>
+            <option value="cubicOut">Cubic Out</option>
+            <option value="cubicInOut">Cubic In Out</option>
+          </select>
+        </div>
+        <div>
+          <div class="text-[10px] text-geist-500 mb-1">オニオン</div>
+          <label class="prop-row"><span>前</span><input id="onion-before" type="number" min="0" max="6" class="prop-num" value="2"></label>
+          <label class="prop-row"><span>後</span><input id="onion-after" type="number" min="0" max="6" class="prop-num" value="1"></label>
+        </div>
+      </div>
+    </aside>
+  </div>
+  <section id="timeline" class="h-[220px] shrink-0 border-t border-white/10 bg-[#0a0a0a] flex flex-col">
+    <div class="h-9 flex items-center gap-2 px-3 border-b border-white/10">
+      <button id="tl-prev" class="tl-ctrl" title="前のフレーム"><i class="fa-solid fa-caret-left"></i></button>
+      <button id="tl-play" class="tl-ctrl tl-play" title="再生 / 停止 (Space)"><i class="fa-solid fa-play"></i></button>
+      <button id="tl-next" class="tl-ctrl" title="次のフレーム"><i class="fa-solid fa-caret-right"></i></button>
+      <div class="h-4 w-px bg-white/10"></div>
+      <label class="text-[11px] text-geist-400 flex items-center gap-1">FPS
+        <input id="tl-fps" type="number" min="1" max="60" value="24" class="w-12 bg-black/50 border border-white/10 rounded px-1 py-0.5 text-white text-[11px]">
+      </label>
+      <label class="text-[11px] text-geist-400 flex items-center gap-1 ml-2">長さ
+        <input id="tl-duration" type="number" min="1" max="600" value="48" class="w-14 bg-black/50 border border-white/10 rounded px-1 py-0.5 text-white text-[11px]">
+        <span>f</span>
+      </label>
+      <div class="flex-1"></div>
+      <button id="tl-add-layer" class="motion-btn text-[11px]"><i class="fa-solid fa-plus mr-1"></i>レイヤー</button>
+      <button id="tl-add-cel" class="motion-btn text-[11px]"><i class="fa-solid fa-clone mr-1"></i>コマ追加</button>
+    </div>
+    <div class="flex-1 flex min-h-0">
+      <div id="tl-layer-names" class="w-40 shrink-0 border-r border-white/10 overflow-y-auto text-[11px]"></div>
+      <div id="tl-scroll" class="flex-1 overflow-auto relative">
+        <canvas id="tl-canvas" height="160"></canvas>
+      </div>
+    </div>
+  </section>
+  <input type="file" id="import-file" accept="application/json,.json,image/*" class="hidden">
+  <script src="./js/motion-app.js"></script>
+</body>
+</html>
