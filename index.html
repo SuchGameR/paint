@@ -122,6 +122,7 @@
           'https://cdn.jsdelivr.net/gh/SuchGameR/paint@b75c9d3f0edba50ede086bf80eb23ef35a83199e/index.html',
           'https://raw.githubusercontent.com/SuchGameR/paint/b75c9d3f0edba50ede086bf80eb23ef35a83199e/index.html'
         ];
+        var base = 'https://cdn.jsdelivr.net/gh/SuchGameR/paint@b75c9d3f0edba50ede086bf80eb23ef35a83199e/';
 
         function fail(msg) {
           window.__VERSE_DRAW_LOADING = false;
@@ -130,25 +131,31 @@
           if (status) status.textContent = msg || '読み込みに失敗しました。ネットワークを確認して再試行してください。';
         }
 
+        function rewrite(html) {
+          html = html.split('href="./').join('href="' + base);
+          html = html.split('src="./').join('src="' + base);
+          html = html.split('href="css/').join('href="' + base + 'css/');
+          html = html.split('src="js/').join('src="' + base + 'js/');
+          var a = html.indexOf('id="mode-anim-btn"');
+          if (a >= 0) {
+            var b0 = html.lastIndexOf('<button', a);
+            var b1 = html.indexOf('</button>', a);
+            if (b0 >= 0 && b1 >= 0) html = html.slice(0, b0) + html.slice(b1 + 9);
+          }
+          html = html.split('id="anim-bar"').join('id="anim-bar" style="display:none!important"');
+          return html;
+        }
+
         function tryLoad(i) {
           if (i >= urls.length) return fail('すべてのソースから取得できませんでした');
           fetch(urls[i], { cache: 'no-store' })
             .then(function (r) {
-              if (!r.ok) throw new Error(r.status);
+              if (!r.ok) throw new Error(String(r.status));
               return r.text();
             })
             .then(function (html) {
-              var base = 'https://cdn.jsdelivr.net/gh/SuchGameR/paint@b75c9d3f0edba50ede086bf80eb23ef35a83199e/';
-              html = html.replace(/(href|src)=\"\.\/([^\"]+)\"/g, function (_, attr, path) {
-                return attr + '=\"' + base + path + '\"';
-              });
-              html = html.replace(/(href|src)=\"(css\/|js\/)([^\"]+)\"/g, function (_, attr, prefix, path) {
-                return attr + '=\"' + base + prefix + path + '\"';
-              });
-              html = html.replace(/<button id=\"mode-anim-btn\"[\\s\\S]*?<\\/button>/, '');
-              html = html.replace(/id=\"anim-bar\"/, 'id=\"anim-bar\" style=\"display:none!important\"');
               document.open();
-              document.write(html);
+              document.write(rewrite(html));
               document.close();
             })
             .catch(function (err) {
