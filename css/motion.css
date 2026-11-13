@@ -1,0 +1,45 @@
+body { font-family: 'Noto Sans JP', system-ui, sans-serif; }
+.motion-btn {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  padding: 6px 10px;
+  color: #e5e5e5;
+  cursor: pointer;
+}
+.motion-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+.tool-btn {
+  width: 36px; height: 36px; border-radius: 8px;
+  color: #a3a3a3; background: transparent; border: none; cursor: pointer;
+}
+.tool-btn:hover { background: rgba(255,255,255,0.06); color: #fff; }
+.tool-btn.active { background: rgba(255,255,255,0.12); color: #fff; }
+.prop-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  color: #a3a3a3; font-size: 11px;
+}
+.prop-num {
+  width: 88px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 6px; color: #fff; padding: 4px 6px; font-size: 12px;
+}
+.tl-ctrl {
+  width: 28px; height: 28px; border-radius: 6px; border: none;
+  background: rgba(255,255,255,0.06); color: #e5e5e5; cursor: pointer;
+}
+.tl-ctrl:hover { background: rgba(255,255,255,0.12); }
+.tl-play { background: #fff; color: #000; }
+#stage {
+  background: #fff;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.08), 0 20px 60px rgba(0,0,0,0.5);
+  max-width: 100%; max-height: 100%;
+  object-fit: contain;
+}
+.tl-layer-row {
+  height: 28px; display: flex; align-items: center; padding: 0 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.06); color: #d4d4d4; cursor: pointer;
+}
+.tl-layer-row.active { background: rgba(255,255,255,0.06); color: #fff; }
+.start-workspace.active {
+  outline: 1px solid rgba(255,255,255,0.35);
+  background: rgba(255,255,255,0.08);
+}
