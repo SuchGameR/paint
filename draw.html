@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ja" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0c0c0c">
+  <title>VersePaint</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            geist: {
+              50:'#fafafa',100:'#f5f5f5',200:'#e5e5e5',300:'#d4d4d4',
+              400:'#a3a3a3',500:'#737373',600:'#525252',700:'#404040',
+              800:'#262626',900:'#171717',950:'#0a0a0a'
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="./css/draw.css">
+</head>
+<body class="bg-[#0a0a0a] text-gray-100 h-screen w-screen overflow-hidden select-none">
+
+  <div id="logo-menu" class="fixed z-[100] hidden" style="top:48px;left:12px;">
+    <div class="logo-menu-panel rounded-xl border border-white/12 overflow-hidden min-w-[180px]">
+      <button class="logo-menu-item" data-act="new"><i class="fa-solid fa-file mr-2 opacity-60"></i>新規</button>
+      <button class="logo-menu-item" data-act="open"><i class="fa-solid fa-folder-open mr-2 opacity-60"></i>開く</button>
+      <button class="logo-menu-item" data-act="save"><i class="fa-solid fa-floppy-disk mr-2 opacity-60"></i>保存</button>
+      <button class="logo-menu-item" data-act="export"><i class="fa-solid fa-download mr-2 opacity-60"></i>PNG書き出し</button>
+      <div class="h-px bg-white/10 my-1"></div>
+      <button class="logo-menu-item" data-act="to-motion"><i class="fa-solid fa-film mr-2 opacity-60"></i>モーションへ</button>
+      <div class="h-px bg-white/10 my-1"></div>
+      <button class="logo-menu-item text-rose-400" data-act="quit"><i class="fa-solid fa-right-from-bracket mr-2 opacity-60"></i>QUIT</button>
+    </div>
+  </div>
+
+  <div class="flex h-full w-full">
+
+    <aside class="w-[72px] shrink-0 flex flex-col items-center border-r border-white/10 bg-[#0c0c0c] py-2 gap-3 relative z-20">
+      <button id="btn-logo" class="logo-btn flex flex-col items-center gap-0.5 px-1 py-1.5 rounded-lg hover:bg-white/5 w-[60px]" title="メニュー">
+        <span class="text-[10px] font-semibold tracking-tight leading-none">Verse</span>
+        <span class="text-[10px] font-semibold tracking-tight leading-none text-geist-400">Paint</span>
+      </button>
+
+      <div class="palette-wrap flex flex-col items-center gap-2 mt-1">
+        <div class="relative">
+          <canvas id="palette-ring" width="56" height="56" class="rounded-full cursor-pointer"></canvas>
+          <div id="palette-swatch" class="absolute inset-0 m-auto w-5 h-5 rounded-full border-2 border-white/80 shadow pointer-events-none" style="background:#111; top:0;bottom:0;left:0;right:0;"></div>
+        </div>
+        <input id="color-hex" type="color" value="#111111" class="w-8 h-6 rounded overflow-hidden border border-white/15 bg-transparent cursor-pointer p-0">
+        <div class="flex flex-col gap-1 mt-1">
+          <button class="swatch" data-c="#111111" style="background:#111"></button>
+          <button class="swatch" data-c="#ffffff" style="background:#fff"></button>
+          <button class="swatch" data-c="#ef4444" style="background:#ef4444"></button>
+          <button class="swatch" data-c="#3b82f6" style="background:#3b82f6"></button>
+          <button class="swatch" data-c="#22c55e" style="background:#22c55e"></button>
+        </div>
+      </div>
+
+      <div class="flex-1"></div>
+      <div class="text-[9px] text-geist-600 font-mono px-1 text-center leading-tight" id="size-label">4px</div>
+    </aside>
+
+    <main class="flex-1 relative min-w-0 bg-[#141414] overflow-hidden" id="stage-main">
+      <div id="canvas-wrap" class="absolute inset-0 flex items-center justify-center">
+        <canvas id="draw-canvas" width="1920" height="1080"></canvas>
+      </div>
+
+      <div id="layer-plate" class="layer-plate">
+        <button id="layer-plate-toggle" class="layer-plate-handle" title="レイヤー">
+          <i class="fa-solid fa-layer-group text-[11px]"></i>
+        </button>
+        <div id="layer-plate-body" class="layer-plate-body">
+          <div class="flex items-center justify-between px-2 py-1.5 border-b border-white/10">
+            <span class="text-[11px] font-medium text-geist-300">レイヤー</span>
+            <button id="btn-add-layer" class="text-[11px] px-1.5 py-0.5 rounded hover:bg-white/10 text-geist-300" title="追加">
+              <i class="fa-solid fa-plus"></i>
+            </button>
+          </div>
+          <div id="layer-list" class="overflow-y-auto flex-1 py-1"></div>
+        </div>
+      </div>
+
+      <div class="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-black/50 border border-white/10 rounded-full px-3 py-1.5 backdrop-blur-sm">
+        <i class="fa-solid fa-circle text-[8px] text-geist-400"></i>
+        <input id="brush-size" type="range" min="1" max="64" value="4" class="w-28 accent-white">
+        <span id="brush-size-val" class="text-[11px] font-mono text-geist-300 w-8">4</span>
+      </div>
+    </main>
+
+    <aside class="w-12 shrink-0 flex flex-col items-center border-l border-white/10 bg-[#0c0c0c] py-2 gap-1 relative z-20">
+      <button class="tool-btn active" data-tool="brush" title="ブラシ (B)"><i class="fa-solid fa-paintbrush"></i></button>
+      <button class="tool-btn" data-tool="eraser" title="消しゴム (E)"><i class="fa-solid fa-eraser"></i></button>
+      <button class="tool-btn" data-tool="select" title="選択 (V)"><i class="fa-solid fa-arrow-pointer"></i></button>
+      <button class="tool-btn" data-tool="hand" title="手のひら (H)"><i class="fa-regular fa-hand"></i></button>
+      <button class="tool-btn" data-tool="fill" title="塗りつぶし (G)"><i class="fa-solid fa-fill-drip"></i></button>
+      <div class="h-px w-6 bg-white/10 my-1"></div>
+      <button class="tool-btn" data-tool="eyedrop" title="スポイト (I)"><i class="fa-solid fa-eye-dropper"></i></button>
+      <div class="flex-1"></div>
+      <button id="btn-undo" class="tool-btn" title="元に戻す"><i class="fa-solid fa-rotate-left"></i></button>
+      <button id="btn-redo" class="tool-btn" title="やり直す"><i class="fa-solid fa-rotate-right"></i></button>
+    </aside>
+
+    <aside id="prop-panel" class="prop-panel hidden">
+      <div class="px-3 py-2 border-b border-white/10 text-[12px] font-medium">プロパティ</div>
+      <div class="p-3 text-[11px] text-geist-400">ツールやレイヤーの詳細設定</div>
+    </aside>
+  </div>
+
+  <input type="file" id="file-open" accept="image/*,.json" class="hidden">
+  <script src="./js/draw-app.js"></script>
+</body>
+</html>
