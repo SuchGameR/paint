@@ -1,1 +1,95 @@
-RESTORE_PLACEHOLDER
+<!DOCTYPE html>
+<html lang="ja" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0a0a0a">
+  <title>VersePaint</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { darkMode: 'class', theme: { extend: { colors: { geist: {
+      50:'#fafafa',100:'#f5f5f5',200:'#e5e5e5',300:'#d4d4d4',400:'#a3a3a3',500:'#737373',
+      600:'#525252',700:'#404040',800:'#262626',900:'#171717',950:'#0a0a0a'
+    }}}}};
+  </script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="./css/app.css">
+  <style>
+    .ws-card { transition: border-color .15s, background .15s; }
+    .ws-card.active { border-color: #fff; background: rgba(255,255,255,.06); }
+    .ws-card:hover { border-color: rgba(255,255,255,.35); }
+  </style>
+</head>
+<body class="bg-black text-gray-100 min-h-screen">
+  <div id="start-screen" class="fixed inset-0 z-[200] flex items-center justify-center" style="background:#0a0a0a">
+    <div class="rounded-2xl p-6 w-[min(480px,94vw)] flex flex-col gap-5 border border-white/10" style="background:#111">
+      <div class="text-center">
+        <h1 class="text-xl font-semibold tracking-tight">VersePaint</h1>
+        <p class="text-[12px] text-geist-400 mt-1">作業環境を選んで開始</p>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <button type="button" id="start-go-draw" class="ws-card start-workspace active rounded-xl border border-white/15 p-4 text-left" data-ws="draw">
+          <div class="text-[13px] font-medium mb-1"><i class="fa-solid fa-pen-nib mr-1.5 text-geist-300"></i>イラスト</div>
+          <div class="text-[11px] text-geist-500 leading-snug">ベクター＋ラスターで絵を描く。完成後モーションに読み込み可。</div>
+        </button>
+        <button type="button" id="start-go-motion" class="ws-card start-workspace rounded-xl border border-white/15 p-4 text-left" data-ws="motion">
+          <div class="text-[13px] font-medium mb-1"><i class="fa-solid fa-film mr-1.5 text-geist-300"></i>モーション</div>
+          <div class="text-[11px] text-geist-500 leading-snug">キーフレーム＋手描きセル＋オニオン。本格アニメ制作。</div>
+        </button>
+      </div>
+      <div id="start-draw-options" class="flex flex-col gap-3">
+        <label class="flex items-center gap-2 text-[13px] text-geist-200 cursor-pointer">
+          <input type="checkbox" id="start-infinite" checked class="accent-white w-4 h-4"> 無限キャンバス
+        </label>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="text-[11px] text-geist-400">幅</label>
+            <input id="start-w" type="number" value="1920" class="w-full bg-black/50 border border-white/10 rounded-md text-white text-[13px] px-2 py-1.5">
+          </div>
+          <div>
+            <label class="text-[11px] text-geist-400">高さ</label>
+            <input id="start-h" type="number" value="1080" class="w-full bg-black/50 border border-white/10 rounded-md text-white text-[13px] px-2 py-1.5">
+          </div>
+        </div>
+        <button id="btn-start-create" class="w-full py-3 rounded-xl bg-white text-black font-medium text-[14px] hover:bg-geist-200 transition">イラストを開始</button>
+      </div>
+      <div id="start-motion-options" class="hidden flex-col gap-3">
+        <div class="grid grid-cols-3 gap-2">
+          <div>
+            <label class="text-[11px] text-geist-400">幅</label>
+            <input id="motion-w" type="number" value="1920" class="w-full bg-black/50 border border-white/10 rounded-md text-white text-[13px] px-2 py-1.5">
+          </div>
+          <div>
+            <label class="text-[11px] text-geist-400">高さ</label>
+            <input id="motion-h" type="number" value="1080" class="w-full bg-black/50 border border-white/10 rounded-md text-white text-[13px] px-2 py-1.5">
+          </div>
+          <div>
+            <label class="text-[11px] text-geist-400">FPS</label>
+            <input id="motion-fps" type="number" value="24" class="w-full bg-black/50 border border-white/10 rounded-md text-white text-[13px] px-2 py-1.5">
+          </div>
+        </div>
+        <button id="btn-start-motion" class="w-full py-3 rounded-xl bg-white text-black font-medium text-[14px] hover:bg-geist-200 transition">モーションを開始</button>
+      </div>
+      <p class="text-[10px] text-geist-600 text-center">映像タブは廃止。絵とアニメは完全に分離しています。</p>
+    </div>
+  </div>
+
+  <div id="app-root" class="hidden"></div>
+  <script src="./js/draw-boot.js"></script>
+  <script>
+    document.getElementById('btn-start-create')?.addEventListener('click', function() {
+      if (window.__VERSE_MAIN_READY) return;
+      alert('イラストエンジンを読み込み中です。しばらく待つか、ページを再読み込みしてください。\nモーションは今すぐ使えます。');
+    });
+  </script>
+  <script>
+  (function(){
+    var s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/gh/SuchGameR/paint@b75c9d3f0edba50ede086bf80eb23ef35a83199e/js/main.js';
+    s.onload = function(){ window.__VERSE_MAIN_READY = true; document.dispatchEvent(new Event('DOMContentLoaded')); };
+    s.onerror = function(){ console.warn('CDN main load failed'); };
+    document.head.appendChild(s);
+  })();
+  </script>
+</body>
+</html>
