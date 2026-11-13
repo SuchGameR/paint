@@ -52,6 +52,7 @@
             pixelSnap: false,
             profiles: {},
             infiniteCanvas: true,
+            projectKind: 'illustration',
             canvasWidth: 1920,
             canvasHeight: 1080,
             exportRegion: null,
