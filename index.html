@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="ja" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0a0a0a">
+  <title>VersePaint</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { darkMode: 'class', theme: { extend: { colors: { geist: {
+      50:'#fafafa',100:'#f5f5f5',200:'#e5e5e5',300:'#d4d4d4',400:'#a3a3a3',500:'#737373',
+      600:'#525252',700:'#404040',800:'#262626',900:'#171717',950:'#0a0a0a'
+    }}}}};
+  </script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="./css/app.css">
+  <style>
+    .ws-card { transition: border-color .15s, background .15s; cursor: pointer; }
+    .ws-card.active { border-color: #fff !important; background: rgba(255,255,255,.07); }
+    .ws-card:hover { border-color: rgba(255,255,255,.4); }
+  </style>
+</head>
+<body class="bg-black text-gray-100 min-h-screen">
+  <div id="start-screen" class="fixed inset-0 z-[200] flex items-center justify-center p-4" style="background:#0a0a0a">
+    <div class="rounded-2xl p-6 w-[min(480px,96vw)] flex flex-col gap-5 border border-white/10 shadow-2xl" style="background:#111">
+      <div class="text-center">
+        <h1 class="text-xl font-semibold tracking-tight">VersePaint</h1>
+        <p class="text-[12px] text-geist-400 mt-1">作業環境を選んで開始</p>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <button type="button" id="start-go-draw" class="ws-card start-workspace active rounded-xl border border-white/20 p-4 text-left" data-ws="draw">
+          <div class="text-[13px] font-medium mb-1"><i class="fa-solid fa-pen-nib mr-1.5 text-geist-300"></i>イラスト</div>
+          <div class="text-[11px] text-geist-500 leading-snug">ベクター＋ラスターで絵を描く</div>
+        </button>
+        <button type="button" id="start-go-motion" class="ws-card start-workspace rounded-xl border border-white/15 p-4 text-left" data-ws="motion">
+          <div class="text-[13px] font-medium mb-1"><i class="fa-solid fa-film mr-1.5 text-geist-300"></i>モーション</div>
+          <div class="text-[11px] text-geist-500 leading-snug">キーフレーム・手描きセル・オニオン</div>
+        </button>
+      </div>
+
+      <div id="start-draw-options" class="flex flex-col gap-3">
+        <p class="text-[11px] text-geist-500 leading-relaxed">
+          イラストは安定版エンジンを読み込みます。初回は数秒かかることがあります。
+        </p>
+        <button id="btn-start-create" type="button" class="w-full py-3.5 rounded-xl bg-white text-black font-medium text-[14px] hover:bg-geist-200 transition">
+          イラストを開始
+        </button>
+        <p id="draw-status" class="text-[11px] text-geist-500 text-center hidden"></p>
+      </div>
+
+      <div id="start-motion-options" class="hidden flex-col gap-3" style="display:none">
+        <div class="grid grid-cols-3 gap-2">
+          <div>
+            <label class="text-[11px] text-geist-400">幅</label>
+            <input id="motion-w" type="number" value="1920" class="w-full bg-black/50 border border-white/10 rounded-md text-white text-[13px] px-2 py-1.5">
+          </div>
+          <div>
+            <label class="text-[11px] text-geist-400">高さ</label>
+            <input id="motion-h" type="number" value="1080" class="w-full bg-black/50 border border-white/10 rounded-md text-white text-[13px] px-2 py-1.5">
+          </div>
+          <div>
+            <label class="text-[11px] text-geist-400">FPS</label>
+            <input id="motion-fps" type="number" value="24" class="w-full bg-black/50 border border-white/10 rounded-md text-white text-[13px] px-2 py-1.5">
+          </div>
+        </div>
+        <button id="btn-start-motion" type="button" class="w-full py-3.5 rounded-xl bg-white text-black font-medium text-[14px] hover:bg-geist-200 transition">
+          モーションを開始
+        </button>
+      </div>
+
+      <p class="text-[10px] text-geist-600 text-center">映像タブは廃止しました。絵とアニメは完全に分かれています。</p>
+    </div>
+  </div>
+
+  <div id="app-host"></div>
+
+  <script src="./js/draw-boot.js"></script>
+  <script>
+  (function () {
+    function $(id) { return document.getElementById(id); }
+
+    function setWs(ws) {
+      document.querySelectorAll('.start-workspace').forEach(function (b) {
+        b.classList.toggle('active', b.dataset.ws === ws);
+      });
+      var d = $('start-draw-options');
+      var m = $('start-motion-options');
+      if (d) { d.style.display = ws === 'draw' ? 'flex' : 'none'; d.classList.toggle('hidden', ws !== 'draw'); }
+      if (m) { m.style.display = ws === 'motion' ? 'flex' : 'none'; m.classList.toggle('hidden', ws !== 'motion'); }
+    }
+    document.querySelectorAll('.start-workspace').forEach(function (b) {
+      b.addEventListener('click', function () { setWs(b.dataset.ws || 'draw'); });
+    });
+    setWs('draw');
+
+    var motionBtn = $('btn-start-motion');
+    if (motionBtn) {
+      motionBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        var w = ($('motion-w') && $('motion-w').value) || 1920;
+        var h = ($('motion-h') && $('motion-h').value) || 1080;
+        var fps = ($('motion-fps') && $('motion-fps').value) || 24;
+        location.href = './motion.html?w=' + encodeURIComponent(w) + '&h=' + encodeURIComponent(h) + '&fps=' + encodeURIComponent(fps);
+      });
+    }
+
+    var drawBtn = $('btn-start-create');
+    var status = $('draw-status');
+    if (drawBtn) {
+      drawBtn.addEventListener('click', function () {
+        if (window.__VERSE_DRAW_LOADING) return;
+        window.__VERSE_DRAW_LOADING = true;
+        drawBtn.disabled = true;
+        drawBtn.textContent = '読み込み中…';
+        if (status) {
+          status.classList.remove('hidden');
+          status.textContent = '安定版エンジンを取得しています…';
+        }
+
+        var urls = [
+          'https://cdn.jsdelivr.net/gh/SuchGameR/paint@b75c9d3f0edba50ede086bf80eb23ef35a83199e/index.html',
+          'https://raw.githubusercontent.com/SuchGameR/paint/b75c9d3f0edba50ede086bf80eb23ef35a83199e/index.html'
+        ];
+
+        function fail(msg) {
+          window.__VERSE_DRAW_LOADING = false;
+          drawBtn.disabled = false;
+          drawBtn.textContent = 'イラストを開始';
+          if (status) status.textContent = msg || '読み込みに失敗しました。ネットワークを確認して再試行してください。';
+        }
+
+        function tryLoad(i) {
+          if (i >= urls.length) return fail('すべてのソースから取得できませんでした');
+          fetch(urls[i], { cache: 'no-store' })
+            .then(function (r) {
+              if (!r.ok) throw new Error(r.status);
+              return r.text();
+            })
+            .then(function (html) {
+              var base = 'https://cdn.jsdelivr.net/gh/SuchGameR/paint@b75c9d3f0edba50ede086bf80eb23ef35a83199e/';
+              html = html.replace(/(href|src)=\"\.\/([^\"]+)\"/g, function (_, attr, path) {
+                return attr + '=\"' + base + path + '\"';
+              });
+              html = html.replace(/(href|src)=\"(css\/|js\/)([^\"]+)\"/g, function (_, attr, prefix, path) {
+                return attr + '=\"' + base + prefix + path + '\"';
+              });
+              html = html.replace(/<button id=\"mode-anim-btn\"[\\s\\S]*?<\\/button>/, '');
+              html = html.replace(/id=\"anim-bar\"/, 'id=\"anim-bar\" style=\"display:none!important\"');
+              document.open();
+              document.write(html);
+              document.close();
+            })
+            .catch(function (err) {
+              console.warn(urls[i], err);
+              tryLoad(i + 1);
+            });
+        }
+        tryLoad(0);
+      });
+    }
+  })();
+  </script>
+</body>
+</html>
