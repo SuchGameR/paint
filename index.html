@@ -13,7 +13,6 @@
     }}}}};
   </script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  <link rel="stylesheet" href="./css/app.css">
   <style>
     .ws-card { transition: border-color .15s, background .15s; cursor: pointer; }
     .ws-card.active { border-color: #fff !important; background: rgba(255,255,255,.07); }
@@ -27,58 +26,31 @@
         <h1 class="text-xl font-semibold tracking-tight">VersePaint</h1>
         <p class="text-[12px] text-geist-400 mt-1">作業環境を選んで開始</p>
       </div>
-
       <div class="grid grid-cols-2 gap-3">
         <button type="button" id="start-go-draw" class="ws-card start-workspace active rounded-xl border border-white/20 p-4 text-left" data-ws="draw">
-          <div class="text-[13px] font-medium mb-1"><i class="fa-solid fa-pen-nib mr-1.5 text-geist-300"></i>イラスト</div>
-          <div class="text-[11px] text-geist-500 leading-snug">パレット・レイヤー・ブラシで描く</div>
+          <div class="text-[13px] font-medium mb-1"><i class="fa-solid fa-pen-nib mr-1.5"></i>イラスト</div>
+          <div class="text-[11px] text-geist-500">全機能そのまま・UI整理版</div>
         </button>
         <button type="button" id="start-go-motion" class="ws-card start-workspace rounded-xl border border-white/15 p-4 text-left" data-ws="motion">
-          <div class="text-[13px] font-medium mb-1"><i class="fa-solid fa-film mr-1.5 text-geist-300"></i>モーション</div>
-          <div class="text-[11px] text-geist-500 leading-snug">キーフレーム・手描きセル・オニオン</div>
+          <div class="text-[13px] font-medium mb-1"><i class="fa-solid fa-film mr-1.5"></i>モーション</div>
+          <div class="text-[11px] text-geist-500">キーフレーム・セル・オニオン</div>
         </button>
       </div>
-
       <div id="start-draw-options" class="flex flex-col gap-3">
-        <div class="grid grid-cols-2 gap-2">
-          <div>
-            <label class="text-[11px] text-geist-400">幅</label>
-            <input id="draw-w" type="number" value="1920" class="w-full bg-black/50 border border-white/10 rounded-md text-white text-[13px] px-2 py-1.5">
-          </div>
-          <div>
-            <label class="text-[11px] text-geist-400">高さ</label>
-            <input id="draw-h" type="number" value="1080" class="w-full bg-black/50 border border-white/10 rounded-md text-white text-[13px] px-2 py-1.5">
-          </div>
-        </div>
-        <button id="btn-start-create" type="button" class="w-full py-3.5 rounded-xl bg-white text-black font-medium text-[14px] hover:bg-geist-200 transition">
-          イラストを開始
-        </button>
+        <p class="text-[11px] text-geist-500">ベクター＋ラスターなど既存機能はそのまま。見た目だけスケッチ寄りにしています。</p>
+        <button id="btn-start-create" type="button" class="w-full py-3.5 rounded-xl bg-white text-black font-medium text-[14px]">イラストを開始</button>
+        <p id="draw-status" class="text-[11px] text-geist-500 text-center hidden"></p>
       </div>
-
-      <div id="start-motion-options" class="hidden flex-col gap-3" style="display:none">
+      <div id="start-motion-options" style="display:none" class="flex-col gap-3">
         <div class="grid grid-cols-3 gap-2">
-          <div>
-            <label class="text-[11px] text-geist-400">幅</label>
-            <input id="motion-w" type="number" value="1920" class="w-full bg-black/50 border border-white/10 rounded-md text-white text-[13px] px-2 py-1.5">
-          </div>
-          <div>
-            <label class="text-[11px] text-geist-400">高さ</label>
-            <input id="motion-h" type="number" value="1080" class="w-full bg-black/50 border border-white/10 rounded-md text-white text-[13px] px-2 py-1.5">
-          </div>
-          <div>
-            <label class="text-[11px] text-geist-400">FPS</label>
-            <input id="motion-fps" type="number" value="24" class="w-full bg-black/50 border border-white/10 rounded-md text-white text-[13px] px-2 py-1.5">
-          </div>
+          <div><label class="text-[11px] text-geist-400">幅</label><input id="motion-w" type="number" value="1920" class="w-full bg-black/50 border border-white/10 rounded-md text-white text-[13px] px-2 py-1.5"></div>
+          <div><label class="text-[11px] text-geist-400">高さ</label><input id="motion-h" type="number" value="1080" class="w-full bg-black/50 border border-white/10 rounded-md text-white text-[13px] px-2 py-1.5"></div>
+          <div><label class="text-[11px] text-geist-400">FPS</label><input id="motion-fps" type="number" value="24" class="w-full bg-black/50 border border-white/10 rounded-md text-white text-[13px] px-2 py-1.5"></div>
         </div>
-        <button id="btn-start-motion" type="button" class="w-full py-3.5 rounded-xl bg-white text-black font-medium text-[14px] hover:bg-geist-200 transition">
-          モーションを開始
-        </button>
+        <button id="btn-start-motion" type="button" class="w-full py-3.5 rounded-xl bg-white text-black font-medium text-[14px]">モーションを開始</button>
       </div>
-
-      <p class="text-[10px] text-geist-600 text-center">絵とアニメは完全に分かれています</p>
     </div>
   </div>
-
   <script>
   (function () {
     function $(id) { return document.getElementById(id); }
@@ -86,27 +58,78 @@
       document.querySelectorAll('.start-workspace').forEach(function (b) {
         b.classList.toggle('active', b.dataset.ws === ws);
       });
-      var d = $('start-draw-options');
-      var m = $('start-motion-options');
-      if (d) { d.style.display = ws === 'draw' ? 'flex' : 'none'; }
-      if (m) { m.style.display = ws === 'motion' ? 'flex' : 'none'; }
+      $('start-draw-options').style.display = ws === 'draw' ? 'flex' : 'none';
+      $('start-motion-options').style.display = ws === 'motion' ? 'flex' : 'none';
     }
     document.querySelectorAll('.start-workspace').forEach(function (b) {
       b.addEventListener('click', function () { setWs(b.dataset.ws || 'draw'); });
     });
     setWs('draw');
 
-    $('btn-start-create').addEventListener('click', function () {
-      var w = ($('draw-w') && $('draw-w').value) || 1920;
-      var h = ($('draw-h') && $('draw-h').value) || 1080;
-      location.href = './draw.html?w=' + encodeURIComponent(w) + '&h=' + encodeURIComponent(h);
-    });
-    $('btn-start-motion').addEventListener('click', function () {
-      var w = ($('motion-w') && $('motion-w').value) || 1920;
-      var h = ($('motion-h') && $('motion-h').value) || 1080;
-      var fps = ($('motion-fps') && $('motion-fps').value) || 24;
+    $('btn-start-motion').onclick = function () {
+      var w = $('motion-w').value || 1920, h = $('motion-h').value || 1080, fps = $('motion-fps').value || 24;
       location.href = './motion.html?w=' + encodeURIComponent(w) + '&h=' + encodeURIComponent(h) + '&fps=' + encodeURIComponent(fps);
-    });
+    };
+
+    $('btn-start-create').onclick = function () {
+      if (window.__VP_LOADING) return;
+      window.__VP_LOADING = true;
+      var btn = $('btn-start-create');
+      var st = $('draw-status');
+      btn.disabled = true;
+      btn.textContent = '読み込み中…';
+      st.classList.remove('hidden');
+      st.textContent = 'フル機能エンジンを読み込んでいます…';
+
+      var commit = 'b75c9d3f0edba50ede086bf80eb23ef35a83199e';
+      var base = 'https://cdn.jsdelivr.net/gh/SuchGameR/paint@' + commit + '/';
+      var urls = [
+        base + 'index.html',
+        'https://raw.githubusercontent.com/SuchGameR/paint/' + commit + '/index.html'
+      ];
+
+      function fail(msg) {
+        window.__VP_LOADING = false;
+        btn.disabled = false;
+        btn.textContent = 'イラストを開始';
+        st.textContent = msg || '読み込みに失敗しました';
+      }
+
+      function rewrite(html) {
+        html = html.split('href="./').join('href="' + base);
+        html = html.split('src="./').join('src="' + base);
+        html = html.split('href="css/').join('href="' + base + 'css/');
+        html = html.split('src="js/').join('src="' + base + 'js/');
+        var a = html.indexOf('id="mode-anim-btn"');
+        if (a >= 0) {
+          var b0 = html.lastIndexOf('<button', a);
+          var b1 = html.indexOf('</button>', a);
+          if (b0 >= 0 && b1 >= 0) html = html.slice(0, b0) + html.slice(b1 + 9);
+        }
+        html = html.split('id="anim-bar"').join('id="anim-bar" style="display:none!important"');
+        var skinLink = '<link rel="stylesheet" href="./css/draw-skin.css">';
+        var skinJs = '<script src="./js/draw-skin.js"><\\/script>';
+        if (html.indexOf('</head>') >= 0) html = html.replace('</head>', skinLink + '\n</head>');
+        if (html.indexOf('</body>') >= 0) html = html.replace('</body>', skinJs + '\n</body>');
+        return html;
+      }
+
+      function tryLoad(i) {
+        if (i >= urls.length) return fail('エンジンを取得できませんでした');
+        fetch(urls[i], { cache: 'no-store' })
+          .then(function (r) { if (!r.ok) throw new Error(r.status); return r.text(); })
+          .then(function (html) {
+            document.open();
+            document.write(rewrite(html));
+            document.close();
+          })
+          .catch(function (err) {
+            console.warn(urls[i], err);
+            tryLoad(i + 1);
+          });
+      }
+      tryLoad(0);
+    };
   })();
   </script>
 </body>
