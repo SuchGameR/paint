@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>VersePaint</title>
+  <link rel="icon" type="image/png" href="./versepaint-logo.png">
   <link rel="stylesheet" href="./js/vp-chrome.css">
   <style>
     html, body { margin:0; height:100%; background:#0b0b0b; color:#aaa; font-family: system-ui, -apple-system, Segoe UI, sans-serif; }
@@ -28,8 +29,14 @@
         f.contentWindow.postMessage(Object.assign({ source: 'verse-new-ui' }, msg), '*');
       }
     }
+    if (location.protocol === 'file:') {
+      fail('ローカルサーバーで開いてください。<br><small>例: このフォルダで <code>python -m http.server</code> を実行し http://localhost:8000/ を開く</small>');
+      return;
+    }
     function wireUi() {
       document.querySelectorAll('.tool-button[data-tool]').forEach(function (btn) {
+        if (btn.__vpWired) return;
+        btn.__vpWired = true;
         btn.addEventListener('click', function () {
           document.querySelectorAll('.tool-button[data-tool]').forEach(function (b) {
             b.setAttribute('aria-pressed', b === btn ? 'true' : 'false');
@@ -48,11 +55,15 @@
         if (!el) return;
         el.addEventListener('input', function () { send({ type: 'brushSize', size: el.value }); });
       });
+      var appearanceSent = false;
       function pushAppearance() {
+        if (appearanceSent) return;
+        appearanceSent = true;
         var pal = document.getElementById('palette-color');
         send({ type: 'tool', tool: 'brush' });
         send({ type: 'color', color: (pal && pal.value) || '#ff6600' });
-        send({ type: 'brushSize', size: 16 });
+        var sizeEl = document.getElementById('quick-brush-size-number') || document.getElementById('brush-size');
+        send({ type: 'brushSize', size: (sizeEl && sizeEl.value) || 16 });
       }
       var palIn = document.getElementById('palette-color');
       if (palIn) palIn.addEventListener('input', function () { send({ type: 'color', color: palIn.value }); });
@@ -65,10 +76,6 @@
     }
     function loadScripts() {
       wireUi();
-      var link = document.createElement('link');
-      link.rel = 'stylesheet';
-      link.href = './js/vp-chrome.css';
-      document.head.appendChild(link);
       ['draw-ui-integrate.js', 'draw-panels.js', 'draw-menu-nest.js', 'draw-icons.js'].forEach(function (src) {
         var s = document.createElement('script');
         s.src = './js/' + src;
@@ -103,15 +110,13 @@
         document.head.appendChild(link);
         Array.prototype.slice.call(document.body.querySelectorAll('script')).forEach(function (old) {
           var src = old.src || '';
-          var code = old.textContent || '';
           if (src.indexOf('lucide') >= 0) { old.remove(); return; }
-          if (code.indexOf('Lucide icons failed') >= 0 || code.indexOf('lucide.createIcons') >= 0) {
-            old.remove();
-            return;
-          }
           var neu = document.createElement('script');
           if (old.src) neu.src = old.src;
-          else neu.textContent = old.textContent;
+          else neu.textContent = (old.textContent || '').replace(
+            /if\s*\(window\.lucide\)\s*\{\s*window\.lucide\.createIcons\(\);\s*\}\s*else\s*\{\s*console\.error\([^)]*\);\s*\}/,
+            ''
+          );
           old.parentNode.replaceChild(neu, old);
         });
         setTimeout(loadScripts, 0);

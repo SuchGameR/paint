@@ -83,7 +83,8 @@
   window.__VP_ENGINE_BOOT = true;
 
   var COMMIT = 'b75c9d3f0edba50ede086bf80eb23ef35a83199e';
-  var base = 'https://cdn.jsdelivr.net/gh/SuchGameR/paint@' + COMMIT + '/';
+  var REMOTE = 'https://cdn.jsdelivr.net/gh/SuchGameR/paint@' + COMMIT + '/';
+  var base = './';
 
   window.GridManager = window.GridManager || function GridManager(opts) {
     opts = opts || {};
@@ -125,6 +126,15 @@
       'if(mob){state.dpr=Math.min(state.dpr||1,1.25);if(state.maxHistory>40)state.maxHistory=40;}}'
     );
     js = js.replace('function render() {', 'function render() { window.__VP_RENDER = render;');
+    js = js.replace(
+      "document.addEventListener('DOMContentLoaded', () => {",
+      ";(document.readyState === 'loading' ? document : { addEventListener: function (t, f) { f(); } })" +
+      ".addEventListener('DOMContentLoaded', () => {"
+    );
+    js = js.replace(
+      '        };\n\n        // After paint stroke ends, full rebuild',
+      '        };\n        window.__VP_RENDER = render;\n        window.VersePaintRender = render;\n\n        // After paint stroke ends, full rebuild'
+    );
     js = js.split('Math.min(16, Math.max(0.08, state.zoom').join('Math.min(256, Math.max(0.02, state.zoom');
     js = js.split('Math.min(16, state.zoom *').join('Math.min(256, state.zoom *');
     js = js.split('Math.max(0.08, state.zoom /').join('Math.max(0.02, state.zoom /');
@@ -136,11 +146,16 @@
   }
 
   function fetchShell() {
-    return fetch(base + 'index.html', { cache: 'force-cache' })
-      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.text(); })
+    return fetch('./engine-shell.html', { cache: 'no-store' })
+      .then(function (r) { if (!r.ok) throw new Error(r.status); base = './'; return r.text(); })
       .catch(function () {
-        return fetch('https://raw.githubusercontent.com/SuchGameR/paint/' + COMMIT + '/index.html', { cache: 'no-store' })
-          .then(function (r) { return r.text(); });
+        base = REMOTE;
+        return fetch(REMOTE + 'index.html', { cache: 'force-cache' })
+          .then(function (r) { if (!r.ok) throw new Error(r.status); return r.text(); })
+          .catch(function () {
+            return fetch('https://raw.githubusercontent.com/SuchGameR/paint/' + COMMIT + '/index.html', { cache: 'no-store' })
+              .then(function (r) { return r.text(); });
+          });
       });
   }
 
@@ -201,8 +216,8 @@
       })
       .then(function () {
         if (window.__VP_MAIN_LOADED) return;
-        return fetch(base + 'js/main.js', { cache: 'force-cache' })
-          .then(function (r) { return r.text(); })
+        return fetch(base + 'js/main.js', { cache: 'no-store' })
+          .then(function (r) { if (!r.ok) throw new Error('main.js ' + r.status); return r.text(); })
           .then(function (js) {
             if (window.__VP_MAIN_LOADED) return;
             window.__VP_MAIN_LOADED = true;

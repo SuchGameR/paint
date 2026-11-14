@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#0a0a0a">
   <title>VersePaint</title>
+  <link rel="icon" type="image/png" href="./versepaint-logo.png">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = { darkMode: 'class', theme: { extend: { colors: { geist: {
@@ -63,6 +64,15 @@
       b.addEventListener('click', function () { setWs(b.dataset.ws || 'draw'); });
     });
     setWs('draw');
+    if (location.protocol === 'file:') {
+      var card = document.querySelector('.fixed > div');
+      if (card) {
+        var warn = document.createElement('div');
+        warn.style.cssText = 'border:1px solid #7f1d1d;background:#450a0a;color:#fca5a5;border-radius:10px;padding:10px 12px;font-size:12px;line-height:1.5';
+        warn.innerHTML = 'ローカルサーバーで開いてください。<br>このフォルダで <code>python -m http.server</code> を実行し、<br><b>http://localhost:8000/</b> を開いてください。';
+        card.insertBefore(warn, card.firstChild);
+      }
+    }
     $('btn-start-create').onclick = function () { location.href = './draw.html'; };
     $('btn-start-motion').onclick = function () {
       location.href = './motion.html?w=' + ($('motion-w').value||1920) + '&h=' + ($('motion-h').value||1080) + '&fps=' + ($('motion-fps').value||24);

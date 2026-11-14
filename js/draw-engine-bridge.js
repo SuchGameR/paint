@@ -118,6 +118,26 @@
     return a;
   }
 
+  function cancelActiveStroke(st) {
+    if (!st) return;
+    var hadStroke = !!(st.isDrawing || st._paintStroke || st.currentObj);
+    st.isDrawing = false;
+    st.isPanning = false;
+    st.currentObj = null;
+    st.activeStrokeCanvas = null;
+    st._paintStroke = false;
+    st._rasterErase = false;
+    st._penDragging = false;
+    st._dragMove = false;
+    st._lastPaint = null;
+    st._lastErase = null;
+    if (hadStroke && st.undoStack && st.undoStack.length) {
+      var u = $('btn-undo');
+      if (u && !u.disabled) u.click();
+    }
+    redraw();
+  }
+
   function beginGesture() {
     var st = getState();
     if (!st || active.size < 2) return;
@@ -129,9 +149,7 @@
       startPanY: st.panY,
       startMid: mid(p[0], p[1])
     };
-    st.isDrawing = false;
-    st.isPanning = false;
-    st.currentObj = null;
+    cancelActiveStroke(st);
   }
 
   function updateGesture() {
@@ -187,38 +205,35 @@
   function setTool(name) {
     var engineName = TOOL_MAP[name] || name || 'brush';
     if (engineName === 'shapes') engineName = 'rect';
+    var paintTools = { brush: 1, eraser: 1, fill: 1, eyedropper: 1 };
+    var vectorTools = { select: 1, pen: 1, text: 1, rect: 1 };
+    if (paintTools[engineName]) click($('mode-paint-btn'));
+    else if (vectorTools[engineName]) click($('mode-vector-btn'));
     var btnId = 'tool-' + (engineName === 'rect' ? 'shapes' : engineName);
     var btn = $(btnId);
     if (btn) btn.click();
-    else {
-      var st = getState();
-      if (st) st.tool = engineName;
-    }
-    var paintTools = { brush: 1, eraser: 1, fill: 1, eyedropper: 1 };
-    var vectorTools = { select: 1, pen: 1, text: 1, rect: 1, hand: 1 };
-    if (paintTools[engineName]) click($('mode-paint-btn'));
-    if (vectorTools[engineName] && engineName !== 'hand') click($('mode-vector-btn'));
-    var st2 = getState();
-    if (st2) st2.tool = engineName === 'rect' ? (st2.tool || 'rect') : engineName;
+    var st = getState();
+    if (st) st.tool = engineName;
   }
 
   function setColor(hex) {
     if (!hex) return;
     if (String(hex).indexOf('rgb') === 0) {
-      var m = String(hex).match(/\\d+/g);
+      var m = String(hex).match(/\d+/g);
       if (m) hex = '#' + m.slice(0, 3).map(function (n) {
         return Number(n).toString(16).padStart(2, '0');
       }).join('');
     }
     var st = getState();
     if (st) st.color = hex;
-    document.querySelectorAll('input[type="color"], #brush-panel-color, #color-input').forEach(function (inp) {
+    var inp = $('color-input');
+    if (inp) {
       try {
         inp.value = hex;
         inp.dispatchEvent(new Event('input', { bubbles: true }));
         inp.dispatchEvent(new Event('change', { bubbles: true }));
       } catch (e) {}
-    });
+    }
     redraw();
   }
 
@@ -230,6 +245,7 @@
     document.querySelectorAll('#size-slider-left, #size-slider, #brush-size').forEach(function (s) {
       s.value = String(n);
       s.dispatchEvent(new Event('input', { bubbles: true }));
+      s.dispatchEvent(new Event('change', { bubbles: true }));
     });
   }
 

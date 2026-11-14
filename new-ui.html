@@ -6,7 +6,7 @@
     <meta name="description" content="VersePaint is a web-based painting application that allows users to create digital artwork with various tools and features.">
     <link rel="icon" type="image/x-icon" href="versepaint-logo.png">
     <title>VersePaint</title>
-    
+        
 </head>
 <body>
     <style>
@@ -282,12 +282,12 @@
         main {
             display: flex;
             width: 100%;
-            height: calc(100vh - 60px);
+            height: calc(100vh - 55px);
         }
 
         aside {
             width: 200px;
-            height: calc(100vh - 60px);
+            height: 100%;
             background-color: var(--primary-color);
             float: left;
         }
@@ -1859,8 +1859,10 @@
 
         .canvas {
             background-color: var(--secondary-color);
-            height: calc(100vh - 60px);
-            width: 100%;
+            flex: 1 1 auto;
+            min-width: 0;
+            height: 100%;
+            width: auto;
             border-radius: var(--border-radius);
         }
     </style>
