@@ -2,10 +2,10 @@
 <html lang="ja" class="dark">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>VersePaint Engine</title>
   <style>
-    html, body { margin:0; padding:0; width:100%; height:100%; overflow:hidden; background:#2b2b2b; }
+    html, body { margin:0; padding:0; width:100%; height:100%; overflow:hidden; background:#2b2b2b; touch-action:none; overscroll-behavior:none; }
     body.engine-embedded #start-screen,
     body.engine-embedded #app-menubar,
     body.engine-embedded #top-bar,
@@ -29,9 +29,9 @@
     body.engine-embedded #canvas-container {
       position: fixed !important;
       inset: 0 !important;
-      left: 0 !important; top: 0 !important; right: 0 !important; bottom: 0 !important;
       width: 100% !important; height: 100% !important;
       margin: 0 !important; border: none !important;
+      touch-action: none !important;
     }
   </style>
 </head>
@@ -45,34 +45,55 @@
     'https://raw.githubusercontent.com/SuchGameR/paint/' + COMMIT + '/index.html'
   ];
 
-  function rewrite(html) {
+  function rewriteIndex(html) {
     html = html.split('href="./').join('href="' + base);
     html = html.split('src="./').join('src="' + base);
     html = html.split('href="css/').join('href="' + base + 'css/');
     html = html.split('src="js/').join('src="' + base + 'js/');
     html = html.replace('<body', '<body class="engine-embedded"');
     html = html.replace('id="start-screen"', 'id="start-screen" style="display:none!important"');
+
+    if (html.indexOf('viewport') >= 0) {
+      html = html.replace(
+        /<meta name="viewport"[^>]*>/,
+        '<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">'
+      );
+    }
+
     var a = html.indexOf('id="mode-anim-btn"');
     if (a >= 0) {
       var b0 = html.lastIndexOf('<button', a);
       var b1 = html.indexOf('</button>', a);
       if (b0 >= 0 && b1 >= 0) html = html.slice(0, b0) + html.slice(b1 + 9);
     }
-    var bridge = '<script src="./js/draw-engine-bridge.js"><' + '/script>';
+
+    html = html.replace(
+      /<script src="[^"]*js\/main\.js"><\/script>/,
+      '<script src="' + base + 'js/main.js" id="vp-main-src" data-vp-patch="1"><\/script>' +
+      '<script>(function(){var s=document.getElementById("vp-main-src");if(!s)return;s.remove();' +
+      'fetch("' + base + 'js/main.js",{cache:"force-cache"}).then(function(r){return r.text()}).then(function(js){' +
+      'js=js.replace("const state = window.VersePaintState.createInitialState(window.devicePixelRatio);",' +
+      '"const state = window.__VP_STATE = window.VersePaintState.createInitialState(window.devicePixelRatio); if(state){state.pressureEnabled=true;if(state.pressureMin==null)state.pressureMin=0.2;}");' +
+      'js=js.replace("function render() {","function render() { window.__VP_RENDER = render;");' +
+      'var el=document.createElement("script");el.textContent=js;document.body.appendChild(el);' +
+      '}).catch(function(e){console.error(e);var f=document.createElement("script");f.src="' + base + 'js/main.js";document.body.appendChild(f);});})();<\/script>'
+    );
+
+    var bridge = '<script src="./js/draw-engine-bridge.js"><\/script>';
     if (html.indexOf('</body>') >= 0) html = html.replace('</body>', bridge + '</body>');
     return html;
   }
 
   function tryLoad(i) {
     if (i >= urls.length) {
-      document.body.innerHTML = '<p style="color:#f88;padding:24px;font:14px system-ui">描画エンジンの読み込みに失敗しました。再読み込みしてください。</p>';
+      document.body.innerHTML = '<p style="color:#f88;padding:24px;font:14px system-ui">描画エンジンの読み込みに失敗しました。</p>';
       return;
     }
     fetch(urls[i], { cache: 'no-store' })
       .then(function (r) { if (!r.ok) throw new Error(r.status); return r.text(); })
       .then(function (html) {
         document.open();
-        document.write(rewrite(html));
+        document.write(rewriteIndex(html));
         document.close();
       })
       .catch(function (e) {
