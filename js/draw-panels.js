@@ -1,0 +1,231 @@
+/**
+ * Dockable panels for VersePaint new-ui (layers, regions, color, props).
+ */
+(function () {
+  'use strict';
+
+  var GRID = 12;
+  var panels = {};
+  var engineState = { layers: [], regions: [], color: '#171717', zoom: 1, tool: 'brush' };
+
+  var PALETTES = {
+    vercel: ['#171717', '#0070f3', '#7928ca', '#ff0080', '#f5a623', '#50e3c2'],
+    mono: ['#171717', '#404040', '#737373', '#a3a3a3', '#d4d4d4', '#ffffff'],
+    pastel: ['#2b2d42', '#ef476f', '#ffd166', '#06d6a0', '#118ab2', '#f8edeb'],
+    earth: ['#1b4332', '#2d6a4f', '#40916c', '#52b788', '#74c69d', '#d8f3dc'],
+    neon: ['#0a0a0a', '#00f0ff', '#ff00aa', '#aaff00', '#ff5500', '#ffffff']
+  };
+
+  function send(msg) {
+    var f = document.getElementById('engine-frame');
+    if (f && f.contentWindow) {
+      f.contentWindow.postMessage(Object.assign({ source: 'verse-new-ui' }, msg), '*');
+    }
+  }
+
+  function ensureStyles() {
+    if (document.getElementById('vp-panel-styles')) return;
+    var s = document.createElement('style');
+    s.id = 'vp-panel-styles';
+    s.textContent = '#vp-dock-root{position:fixed;left:0;right:0;top:60px;bottom:0;z-index:35;pointer-events:none;display:grid;grid-template-columns:repeat(12,1fr);grid-template-rows:repeat(12,1fr);gap:8px;padding:8px;box-sizing:border-box}.vp-panel{pointer-events:auto;background:#171717;border:1px solid #2a2a2a;border-radius:12px;box-shadow:0 8px 28px rgba(0,0,0,.4);display:flex;flex-direction:column;min-width:0;min-height:0;overflow:hidden;color:#e8e8e8;font:12px/1.4 system-ui,sans-serif}.vp-panel[hidden]{display:none!important}.vp-panel-hd{display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid #2a2a2a;cursor:grab;user-select:none;flex-shrink:0}.vp-panel-hd:active{cursor:grabbing}.vp-panel-title{font-weight:600;font-size:12px;flex:1}.vp-panel-x{border:0;background:transparent;color:#888;cursor:pointer;font-size:14px;padding:2px 6px;border-radius:6px}.vp-panel-x:hover{background:#292929;color:#fff}.vp-panel-bd{padding:10px;overflow:auto;flex:1}.vp-swatch-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}.vp-swatch{aspect-ratio:1;border-radius:6px;border:1px solid rgba(255,255,255,.12);cursor:pointer}.vp-swatch:hover{outline:2px solid #0070f3;outline-offset:1px}.vp-layer-row,.vp-region-row{display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:8px;cursor:pointer}.vp-layer-row:hover,.vp-region-row:hover{background:#222}.vp-layer-row.active{background:#292929;outline:1px solid #3a3a3a}.vp-btn{border:0;background:#292929;color:#eee;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:11px}.vp-btn:hover{background:#333}.vp-btn-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.vp-muted{color:#8a8a8a;font-size:11px}.vp-field{display:flex;flex-direction:column;gap:4px;margin-bottom:8px}.vp-field label{font-size:10px;color:#8a8a8a}.vp-field input[type=range]{width:100%}.vp-field input[type=color]{width:100%;height:32px;border:0;background:transparent;padding:0}';
+    document.head.appendChild(s);
+  }
+
+  function ensureRoot() {
+    var root = document.getElementById('vp-dock-root');
+    if (!root) {
+      root = document.createElement('div');
+      root.id = 'vp-dock-root';
+      document.body.appendChild(root);
+    }
+    return root;
+  }
+
+  function snap(v, max) { return Math.max(1, Math.min(max, Math.round(v))); }
+
+  function place(el, col, row, colSpan, rowSpan) {
+    el.style.gridColumn = col + ' / span ' + colSpan;
+    el.style.gridRow = row + ' / span ' + rowSpan;
+    el.dataset.col = col; el.dataset.row = row;
+    el.dataset.colSpan = colSpan; el.dataset.rowSpan = rowSpan;
+  }
+
+  function makeDraggable(panel) {
+    var hd = panel.querySelector('.vp-panel-hd');
+    if (!hd) return;
+    var dragging = false, ox = 0, oy = 0;
+    hd.addEventListener('pointerdown', function (e) {
+      if (e.target.closest('.vp-panel-x')) return;
+      dragging = true;
+      hd.setPointerCapture(e.pointerId);
+      ox = e.clientX; oy = e.clientY;
+      panel.style.opacity = '0.92';
+    });
+    hd.addEventListener('pointermove', function (e) {
+      if (!dragging) return;
+      var root = ensureRoot();
+      var rect = root.getBoundingClientRect();
+      var cellW = rect.width / GRID, cellH = rect.height / GRID;
+      var dx = e.clientX - ox, dy = e.clientY - oy;
+      var col = snap(Number(panel.dataset.col) + dx / cellW, GRID - Number(panel.dataset.colSpan) + 1);
+      var row = snap(Number(panel.dataset.row) + dy / cellH, GRID - Number(panel.dataset.rowSpan) + 1);
+      place(panel, col, row, Number(panel.dataset.colSpan), Number(panel.dataset.rowSpan));
+      ox = e.clientX; oy = e.clientY;
+    });
+    hd.addEventListener('pointerup', function () { dragging = false; panel.style.opacity = '1'; });
+  }
+
+  function createPanel(id, title, col, row, cs, rs) {
+    var root = ensureRoot();
+    var el = document.createElement('section');
+    el.className = 'vp-panel';
+    el.id = 'vp-panel-' + id;
+    el.innerHTML = '<div class="vp-panel-hd"><span class="vp-panel-title"></span><button type="button" class="vp-panel-x" aria-label="閉じる">×</button></div><div class="vp-panel-bd"></div>';
+    el.querySelector('.vp-panel-title').textContent = title;
+    el.querySelector('.vp-panel-x').onclick = function () { setPanel(id, false); };
+    place(el, col, row, cs, rs);
+    root.appendChild(el);
+    makeDraggable(el);
+    panels[id] = el;
+    return el;
+  }
+
+  function setPanel(id, show) {
+    var el = panels[id];
+    if (!el) return;
+    if (show) el.removeAttribute('hidden');
+    else el.setAttribute('hidden', '');
+    try { localStorage.setItem('vp-panel-' + id, show ? '1' : '0'); } catch (e) {}
+  }
+
+  function togglePanel(id) {
+    var el = panels[id];
+    if (!el) return;
+    setPanel(id, el.hasAttribute('hidden'));
+  }
+
+  function renderLayers() {
+    var el = panels.layers; if (!el) return;
+    var bd = el.querySelector('.vp-panel-bd');
+    var layers = engineState.layers || [];
+    var html = layers.map(function (L) {
+      var active = L.id === engineState.activeLayerId ? ' active' : '';
+      var vis = L.visible === false ? '○' : '●';
+      return '<div class="vp-layer-row' + active + '" data-id="' + L.id + '"><button type="button" class="vp-btn" data-vis="' + L.id + '">' + vis + '</button><span style="flex:1">' + (L.name || L.id) + '</span></div>';
+    }).join('') || '<p class="vp-muted">レイヤーがありません</p>';
+    html += '<div class="vp-btn-row"><button type="button" class="vp-btn" data-act="add-layer">レイヤー追加</button></div>';
+    bd.innerHTML = html;
+    bd.querySelectorAll('.vp-layer-row').forEach(function (row) {
+      row.onclick = function (e) {
+        if (e.target.getAttribute('data-vis')) return;
+        send({ type: 'api', method: 'setActiveLayer', id: row.getAttribute('data-id') });
+      };
+    });
+    bd.querySelectorAll('[data-vis]').forEach(function (b) {
+      b.onclick = function (e) {
+        e.stopPropagation();
+        send({ type: 'api', method: 'toggleLayerVis', id: b.getAttribute('data-vis') });
+      };
+    });
+    var add = bd.querySelector('[data-act="add-layer"]');
+    if (add) add.onclick = function () { send({ type: 'api', method: 'addLayer' }); send({ type: 'ping' }); };
+  }
+
+  function renderRegions() {
+    var el = panels.regions; if (!el) return;
+    var bd = el.querySelector('.vp-panel-bd');
+    var regions = engineState.regions || [];
+    var html = regions.map(function (r) {
+      return '<div class="vp-region-row"><span style="flex:1">' + (r.name || r.id) + '</span></div>';
+    }).join('') || '<p class="vp-muted">リージョン未保存</p>';
+    html += '<div class="vp-btn-row"><button type="button" class="vp-btn" data-act="region-save">現在を保存</button></div>';
+    bd.innerHTML = html;
+    var b = bd.querySelector('[data-act="region-save"]');
+    if (b) b.onclick = function () { send({ type: 'menu', action: 'region-save' }); send({ type: 'ping' }); };
+  }
+
+  function renderColor() {
+    var el = panels.color; if (!el) return;
+    var bd = el.querySelector('.vp-panel-bd');
+    var html = '<div class="vp-field"><label>カラー</label><input type="color" id="vp-color-input" value="' + (engineState.color || '#171717') + '"></div>';
+    Object.keys(PALETTES).forEach(function (k) {
+      html += '<p class="vp-muted" style="margin:8px 0 4px">' + k + '</p><div class="vp-swatch-grid">';
+      PALETTES[k].forEach(function (c) {
+        html += '<button type="button" class="vp-swatch" data-color="' + c + '" style="background:' + c + '" title="' + c + '"></button>';
+      });
+      html += '</div>';
+    });
+    bd.innerHTML = html;
+    var inp = bd.querySelector('#vp-color-input');
+    if (inp) inp.oninput = function () { send({ type: 'color', color: inp.value }); };
+    bd.querySelectorAll('.vp-swatch').forEach(function (sw) {
+      sw.onclick = function () {
+        var c = sw.getAttribute('data-color');
+        send({ type: 'color', color: c });
+        if (inp) inp.value = c;
+      };
+    });
+  }
+
+  function renderProps() {
+    var el = panels.props; if (!el) return;
+    var bd = el.querySelector('.vp-panel-bd');
+    bd.innerHTML =
+      '<div class="vp-field"><label>ブラシサイズ <span id="vp-size-val">' + (engineState.strokeWidth || 8) + '</span></label>' +
+      '<input type="range" id="vp-size" min="1" max="200" value="' + (engineState.strokeWidth || 8) + '"></div>' +
+      '<div class="vp-field"><label>ズーム ' + Math.round((engineState.zoom || 1) * 100) + '%</label></div>' +
+      '<div class="vp-btn-row">' +
+      '<button type="button" class="vp-btn" data-z="in">ズーム＋</button>' +
+      '<button type="button" class="vp-btn" data-z="out">ズーム−</button>' +
+      '<button type="button" class="vp-btn" data-z="reset">リセット</button></div>' +
+      '<p class="vp-muted" style="margin-top:10px">ツール: ' + (engineState.tool || '-') +
+      ' / モード: ' + (engineState.mode || '-') +
+      ' / 選択: ' + (engineState.selectedCount || 0) + '</p>' +
+      '<div class="vp-btn-row">' +
+      '<button type="button" class="vp-btn" data-act="pressure-on">筆圧ON</button>' +
+      '<button type="button" class="vp-btn" data-act="grid">グリッド</button>' +
+      '<button type="button" class="vp-btn" data-act="effect-more">Effect More</button></div>';
+    var range = bd.querySelector('#vp-size');
+    var val = bd.querySelector('#vp-size-val');
+    if (range) range.oninput = function () {
+      val.textContent = range.value;
+      send({ type: 'brushSize', size: range.value });
+    };
+    bd.querySelectorAll('[data-z]').forEach(function (b) {
+      b.onclick = function () { send({ type: 'zoom', dir: b.getAttribute('data-z') }); };
+    });
+    bd.querySelectorAll('[data-act]').forEach(function (b) {
+      b.onclick = function () { send({ type: 'menu', action: b.getAttribute('data-act') }); };
+    });
+  }
+
+  function init() {
+    ensureStyles();
+    ensureRoot();
+    if (!panels.color) createPanel('color', 'カラーパレット', 1, 1, 3, 5);
+    if (!panels.layers) createPanel('layers', 'レイヤー', 1, 6, 3, 4);
+    if (!panels.regions) createPanel('regions', 'リージョン', 1, 10, 3, 3);
+    if (!panels.props) createPanel('props', 'プロパティ', 10, 1, 3, 5);
+    ['color', 'layers', 'props'].forEach(function (id) {
+      var saved = null;
+      try { saved = localStorage.getItem('vp-panel-' + id); } catch (e) {}
+      setPanel(id, saved !== '0');
+    });
+    try { setPanel('regions', localStorage.getItem('vp-panel-regions') === '1'); } catch (e) { setPanel('regions', false); }
+    renderColor(); renderLayers(); renderRegions(); renderProps();
+  }
+
+  window.addEventListener('message', function (ev) {
+    if (!ev.data || ev.data.source !== 'verse-engine') return;
+    if (ev.data.type === 'state') {
+      engineState = Object.assign(engineState, ev.data);
+      renderLayers(); renderRegions(); renderProps();
+    }
+  });
+
+  window.VersePanels = { toggle: togglePanel, show: function (id) { setPanel(id, true); }, hide: function (id) { setPanel(id, false); }, init: init };
+
+  if (document.body) init();
+  else document.addEventListener('DOMContentLoaded', init);
+  setTimeout(init, 50);
+})();
