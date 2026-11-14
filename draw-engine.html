@@ -39,9 +39,50 @@
 <body>
 <script>
 (function () {
+  if (window.__VP_ENGINE_BOOT) return;
+  window.__VP_ENGINE_BOOT = true;
+
   var COMMIT = 'b75c9d3f0edba50ede086bf80eb23ef35a83199e';
   var base = 'https://cdn.jsdelivr.net/gh/SuchGameR/paint@' + COMMIT + '/';
-  var urls = [base + 'index.html', 'https://raw.githubusercontent.com/SuchGameR/paint/' + COMMIT + '/index.html'];
+
+  window.GridManager = window.GridManager || function GridManager(opts) {
+    opts = opts || {};
+    this.gridSize = opts.gridSize || 20;
+    this.enabled = opts.enabled !== false;
+    this.snapToGrid = !!opts.snapToGrid;
+    this.setEnabled = function (v) { this.enabled = !!v; };
+    this.setSnap = function (v) { this.snapToGrid = !!v; };
+  };
+  window.VectorPath = window.VectorPath || function VectorPath() { this.paths = []; };
+  window.PaletteStore = window.PaletteStore || function PaletteStore() {
+    this.presets = [];
+    this.favorites = [];
+    this.getFavorites = function () { return this.favorites.slice(0, 6); };
+  };
+
+  var MODULES = [
+    'js/modules/app-state.js',
+    'js/modules/color-palettes.js',
+    'js/modules/palette-store.js',
+    'js/modules/brush-store.js',
+    'js/modules/brush-panel.js',
+    'js/modules/ui-layout.js',
+    'js/modules/statusbar.js',
+    'js/modules/timeline-enhance.js',
+    'js/modules/menu-bar.js',
+    'js/modules/minimap.js'
+  ];
+
+  function loadScript(src) {
+    return new Promise(function (resolve) {
+      var s = document.createElement('script');
+      s.src = src;
+      s.async = false;
+      s.onload = function () { resolve(); };
+      s.onerror = function () { console.warn('fail', src); resolve(); };
+      document.head.appendChild(s);
+    });
+  }
 
   function patchMain(js) {
     js = js.replace(
@@ -56,89 +97,85 @@
     js = js.split('Math.min(16, state.zoom *').join('Math.min(256, state.zoom *');
     js = js.split('Math.max(0.08, state.zoom /').join('Math.max(0.02, state.zoom /');
     js = js.split('Math.min(16, Math.max(0.08, state.zoom * factor))').join('Math.min(256, Math.max(0.02, state.zoom * factor))');
+    js = js.replace(
+      'const gridManager = new window.GridManager({',
+      'const gridManager = new (window.GridManager || function(o){this.gridSize=20;this.enabled=true;})( {'
+    );
     return js;
   }
 
-  function rewriteIndex(html) {
+  function fetchShell() {
+    return fetch(base + 'index.html', { cache: 'force-cache' })
+      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.text(); })
+      .catch(function () {
+        return fetch('https://raw.githubusercontent.com/SuchGameR/paint/' + COMMIT + '/index.html', { cache: 'no-store' })
+          .then(function (r) { return r.text(); });
+      });
+  }
+
+  function mountShell(html) {
     html = html.split('href="./').join('href="' + base);
     html = html.split('src="./').join('src="' + base);
     html = html.split('href="css/').join('href="' + base + 'css/');
     html = html.split('src="js/').join('src="' + base + 'js/');
+    html = html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '');
     html = html.replace('<body', '<body class="engine-embedded"');
     html = html.replace('id="start-screen"', 'id="start-screen" style="display:none!important"');
-    if (html.indexOf('viewport') >= 0) {
-      html = html.replace(/<meta name="viewport"[^>]*>/,
-        '<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">');
-    }
     var a = html.indexOf('id="mode-anim-btn"');
     if (a >= 0) {
       var b0 = html.lastIndexOf('<button', a);
       var b1 = html.indexOf('</button>', a);
       if (b0 >= 0 && b1 >= 0) html = html.slice(0, b0) + html.slice(b1 + 9);
     }
-    html = html.replace(/<script src="[^"]*js\/main\.js"><\/script>/, '<!-- main patched -->');
-    return html;
+    var parsed = new DOMParser().parseFromString(html, 'text/html');
+    Array.prototype.slice.call(parsed.head.querySelectorAll('link, style, meta')).forEach(function (n) {
+      document.head.appendChild(document.importNode(n, true));
+    });
+    document.body.className = (parsed.body.className || '') + ' engine-embedded';
+    Array.prototype.slice.call(parsed.body.childNodes).forEach(function (n) {
+      if (n.nodeName === 'SCRIPT') return;
+      document.body.appendChild(document.importNode(n, true));
+    });
   }
 
-  function runScriptsSequentially(nodes, done) {
-    var i = 0;
-    function next() {
-      if (i >= nodes.length) { done(); return; }
-      var old = nodes[i++];
-      var neu = document.createElement('script');
-      if (old.src) {
-        neu.src = old.src;
-        neu.onload = next;
-        neu.onerror = next;
-        document.body.appendChild(neu);
-      } else {
-        neu.textContent = old.textContent;
-        document.body.appendChild(neu);
-        next();
-      }
-    }
-    next();
-  }
-
-  function tryLoad(i) {
-    if (i >= urls.length) {
-      document.body.innerHTML = '<p style="color:#f88;padding:24px;font:14px system-ui">エンジン読込失敗</p>';
-      return;
-    }
-    fetch(urls[i], { cache: 'no-store' })
-      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.text(); })
-      .then(function (html) {
-        var out = rewriteIndex(html);
-        var parsed = new DOMParser().parseFromString(out, 'text/html');
-        document.head.innerHTML = parsed.head.innerHTML;
-        document.body.innerHTML = '';
-        var scripts = Array.prototype.slice.call(parsed.body.querySelectorAll('script'));
-        Array.prototype.slice.call(parsed.body.childNodes).forEach(function (n) {
-          if (n.nodeName === 'SCRIPT') return;
-          document.body.appendChild(document.importNode(n, true));
+  function boot() {
+    fetchShell()
+      .then(mountShell)
+      .then(function () {
+        var chain = Promise.resolve();
+        MODULES.forEach(function (path) {
+          chain = chain.then(function () { return loadScript(base + path); });
         });
-        runScriptsSequentially(scripts, function () {
-          fetch(base + 'js/main.js', { cache: 'force-cache' })
-            .then(function (r) { return r.text(); })
-            .then(function (js) {
-              var el = document.createElement('script');
-              el.textContent = patchMain(js);
-              document.body.appendChild(el);
-              var b1 = document.createElement('script');
-              b1.src = './js/draw-engine-bridge.js';
-              b1.onload = function () {
-                var b2 = document.createElement('script');
-                b2.src = './js/draw-engine-actions.js';
-                document.body.appendChild(b2);
-              };
-              document.body.appendChild(b1);
-            })
-            .catch(function (e) { console.error(e); });
-        });
+        return chain;
       })
-      .catch(function (e) { console.warn(urls[i], e); tryLoad(i + 1); });
+      .then(function () {
+        if (window.__VP_MAIN_LOADED) return;
+        return fetch(base + 'js/main.js', { cache: 'force-cache' })
+          .then(function (r) { return r.text(); })
+          .then(function (js) {
+            if (window.__VP_MAIN_LOADED) return;
+            window.__VP_MAIN_LOADED = true;
+            var el = document.createElement('script');
+            el.textContent = patchMain(js);
+            document.body.appendChild(el);
+          });
+      })
+      .then(function () {
+        return loadScript('./js/draw-engine-bridge.js')
+          .then(function () { return loadScript('./js/draw-engine-actions.js'); });
+      })
+      .catch(function (e) {
+        console.error(e);
+        document.body.insertAdjacentHTML('beforeend',
+          '<p style="color:#f88;padding:16px;font:13px system-ui">エンジン読込エラー: ' + String(e.message || e) + '</p>');
+      });
   }
-  tryLoad(0);
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot);
+  } else {
+    boot();
+  }
 })();
 </script>
 </body>
