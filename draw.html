@@ -55,6 +55,22 @@
         if (!el) return;
         el.addEventListener('input', function () { send({ type: 'brushSize', size: el.value }); });
       });
+      var modeVec = document.getElementById('draw-mode-vector');
+      var modePaint = document.getElementById('draw-mode-paint');
+      function setModeUi(m) {
+        var isPaint = m === 'paint';
+        if (modeVec) { modeVec.classList.toggle('active', !isPaint); modeVec.setAttribute('aria-pressed', String(!isPaint)); }
+        if (modePaint) { modePaint.classList.toggle('active', isPaint); modePaint.setAttribute('aria-pressed', String(isPaint)); }
+      }
+      window.__vpSetModeUi = setModeUi;
+      if (modeVec) modeVec.addEventListener('click', function () {
+        send({ type: 'api', method: 'click', id: 'mode-vector-btn' });
+        setModeUi('vector');
+      });
+      if (modePaint) modePaint.addEventListener('click', function () {
+        send({ type: 'api', method: 'click', id: 'mode-paint-btn' });
+        setModeUi('paint');
+      });
       var appearanceSent = false;
       function pushAppearance() {
         if (appearanceSent) return;
@@ -68,8 +84,19 @@
       var palIn = document.getElementById('palette-color');
       if (palIn) palIn.addEventListener('input', function () { send({ type: 'color', color: palIn.value }); });
       window.addEventListener('message', function (ev) {
-        if (ev.data && ev.data.source === 'verse-engine' && (ev.data.type === 'ready' || ev.data.type === 'pong')) {
+        if (!ev.data || ev.data.source !== 'verse-engine') return;
+        if (ev.data.type === 'ready' || ev.data.type === 'pong') {
           pushAppearance();
+        } else if (ev.data.type === 'brushSize') {
+          var n = ev.data.size;
+          ['quick-brush-size-range', 'brush-size'].forEach(function (id) {
+            var el = document.getElementById(id);
+            if (el) el.value = n;
+          });
+          var num = document.getElementById('quick-brush-size-number');
+          if (num) num.value = n;
+        } else if (ev.data.type === 'state') {
+          setModeUi(ev.data.mode);
         }
       });
       setTimeout(function () { send({ type: 'ping' }); }, 1200);

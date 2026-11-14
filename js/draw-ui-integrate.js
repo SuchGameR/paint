@@ -167,6 +167,11 @@
     if (act === 'zoom-in') { send({ type: 'zoom', dir: 'in' }); return; }
     if (act === 'zoom-out') { send({ type: 'zoom', dir: 'out' }); return; }
     if (act === 'zoom-reset' || act === 'zoom-fit') { send({ type: 'zoom', dir: 'reset' }); return; }
+    if (act === 'mode-vector' || act === 'mode-paint') {
+      send({ type: 'menu', action: act });
+      if (window.__vpSetModeUi) window.__vpSetModeUi(act === 'mode-paint' ? 'paint' : 'vector');
+      return;
+    }
     send({ type: 'menu', action: act });
   }
 

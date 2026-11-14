@@ -163,6 +163,55 @@
             return { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
         }
 
+        function liftRasterRect(x, y, w, h) {
+            const chunks = ensurePaintLayer();
+            if (!chunks.size || w < 1 || h < 1) return false;
+            const x0 = Math.floor(x), y0 = Math.floor(y);
+            const x1 = Math.ceil(x + w), y1 = Math.ceil(y + h);
+            const rw = x1 - x0, rh = y1 - y0;
+            if (rw < 1 || rh < 1) return false;
+            const tmp = document.createElement('canvas');
+            tmp.width = rw; tmp.height = rh;
+            const tctx = tmp.getContext('2d');
+            let painted = false;
+            chunks.forEach((tile, key) => {
+                const [cx, cy] = key.split(',').map(Number);
+                const px = cx * PAINT_CHUNK_SIZE, py = cy * PAINT_CHUNK_SIZE;
+                const ix = Math.max(x0, px), iy = Math.max(y0, py);
+                const ax = Math.min(x1, px + PAINT_CHUNK_SIZE), ay = Math.min(y1, py + PAINT_CHUNK_SIZE);
+                if (ax <= ix || ay <= iy) return;
+                tctx.drawImage(tile.canvas, ix - px, iy - py, ax - ix, ay - iy, ix - x0, iy - y0, ax - ix, ay - iy);
+                painted = true;
+            });
+            if (!painted) return false;
+            try {
+                const data = tctx.getImageData(0, 0, rw, rh).data;
+                let any = false;
+                for (let i = 3; i < data.length; i += 4) { if (data[i] > 0) { any = true; break; } }
+                if (!any) return false;
+            } catch (e) { /* ignore */ }
+            pushHistory();
+            chunks.forEach((tile, key) => {
+                const [cx, cy] = key.split(',').map(Number);
+                const px = cx * PAINT_CHUNK_SIZE, py = cy * PAINT_CHUNK_SIZE;
+                const ix = Math.max(x0, px), iy = Math.max(y0, py);
+                const ax = Math.min(x1, px + PAINT_CHUNK_SIZE), ay = Math.min(y1, py + PAINT_CHUNK_SIZE);
+                if (ax <= ix || ay <= iy) return;
+                const target = writablePaintChunk(cx, cy);
+                if (target) target.ctx.clearRect(ix - px, iy - py, ax - ix, ay - iy);
+            });
+            state.objects.push({
+                id: uid(), type: 'image', src: tmp.toDataURL('image/png'),
+                x: x0, y: y0, w: rw, h: rh,
+                opacity: 1, layerId: state.activeLayerId
+            });
+            state.selectedIds.add(state.objects[state.objects.length - 1].id);
+            invalidateScene();
+            invalidateObjectIndex();
+            render();
+            return true;
+        }
+
         function serializePaintLayer(chunks = ensurePaintLayer()) {
             const tiles = [];
             chunks.forEach((tile, key) => {
@@ -2472,12 +2521,17 @@ return null;
                 const minX = Math.min(w1.x, w2.x), maxX = Math.max(w1.x, w2.x);
                 const minY = Math.min(w1.y, w2.y), maxY = Math.max(w1.y, w2.y);
                 if (maxX - minX > 4 || maxY - minY > 4) {
+                    let selectedVector = false;
                     queryObjectsInBounds({ x: minX, y: minY, w: maxX - minX, h: maxY - minY }).forEach(({ obj: o, bounds: b }) => {
                         const cx = b.x + b.w / 2, cy = b.y + b.h / 2;
                         if (cx >= minX && cx <= maxX && cy >= minY && cy <= maxY) {
                             state.selectedIds.add(o.id);
+                            selectedVector = true;
                         }
                     });
+                    if (!selectedVector) {
+                        try { liftRasterRect(minX, minY, maxX - minX, maxY - minY); } catch (err) { console.warn('raster select failed', err); }
+                    }
                     updateSelectionUI();
                     render();
                 }

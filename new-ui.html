@@ -76,6 +76,39 @@
             height: 17px;
         }
 
+        .mode-switch {
+            display: flex;
+            gap: 2px;
+            padding: 2px;
+            border: 1px solid #2a2e2b;
+            border-radius: 9px;
+            background: #121412;
+        }
+
+        .mode-switch-btn {
+            border: 0;
+            border-radius: 7px;
+            background: transparent;
+            color: #a7aaa8;
+            font-size: 11px;
+            line-height: 1;
+            padding: 7px 10px;
+            cursor: pointer;
+            transition: background-color 140ms ease, color 140ms ease;
+        }
+
+        .mode-switch-btn:hover,
+        .mode-switch-btn:focus-visible {
+            outline: none;
+            color: #f0f3f0;
+            background: #1d211e;
+        }
+
+        .mode-switch-btn.active {
+            background: #2b312c;
+            color: #f0f3f0;
+        }
+
         .main-navigation {
             position: relative;
             z-index: 2;
@@ -283,6 +316,7 @@
             display: flex;
             width: 100%;
             height: calc(100vh - 55px);
+            overflow: hidden;
         }
 
         aside {
@@ -296,7 +330,7 @@
             background-color: var(--primary-color);
             padding: 10px 9px;
             overflow: auto;
-            resize: both;
+            flex: 0 0 auto;
             min-width: 180px;
             min-height: 240px;
             max-width: min(65vw, 480px);
@@ -794,7 +828,6 @@
             max-height: calc(100vh - 60px);
             padding: 32px 5px 8px;
             overflow: auto;
-            resize: both;
         }
 
         .tool-list {
@@ -809,23 +842,23 @@
 
         .panel-grip {
             display: grid;
-            grid-template-columns: repeat(3, 3px);
-            grid-template-rows: repeat(2, 3px);
+            grid-template-columns: repeat(2, 2px);
+            grid-template-rows: repeat(3, 2px);
             gap: 2px;
-            width: 24px;
+            width: 18px;
             height: 24px;
             flex: 0 0 auto;
             place-content: center;
             border: 1px solid #343b35;
-            border-radius: 7px;
+            border-radius: 6px;
             background: #171b18;
             cursor: grab;
             touch-action: none;
         }
 
         .panel-grip span {
-            width: 3px;
-            height: 3px;
+            width: 2px;
+            height: 2px;
             border-radius: 50%;
             background: #879188;
         }
@@ -852,6 +885,96 @@
             position: fixed !important;
             z-index: 8 !important;
             box-shadow: 0 16px 38px #0009;
+        }
+
+        .panel-snapping {
+            transition: left 180ms cubic-bezier(0.2, 0.8, 0.2, 1),
+                top 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        .panel-resizer {
+            position: relative;
+            z-index: 6;
+            flex: 0 0 6px;
+            width: 6px;
+            margin: 0 -2px;
+            cursor: col-resize;
+            touch-action: none;
+        }
+
+        .panel-resizer::after {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 2px;
+            width: 2px;
+            border-radius: 2px;
+            background: transparent;
+            content: "";
+            transition: background-color 140ms ease, box-shadow 140ms ease;
+        }
+
+        .panel-resizer:hover::after,
+        .panel-resizer:focus-visible::after,
+        .panel-resizer.is-dragging::after {
+            background: var(--accent-color, #22c55e);
+            box-shadow: 0 0 8px #22c55e88;
+        }
+
+        .panel-resizer:focus-visible {
+            outline: none;
+        }
+
+        body.panel-resizing,
+        body.panel-resizing * {
+            cursor: col-resize !important;
+            user-select: none;
+        }
+
+        .edge-snap-hint {
+            position: fixed;
+            z-index: 40;
+            border-radius: 6px;
+            background: linear-gradient(180deg, #22c55e00, #22c55e66, #22c55e00);
+            box-shadow: 0 0 22px #22c55e55;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 140ms ease;
+        }
+
+        .edge-snap-hint[data-edge="left"],
+        .edge-snap-hint[data-edge="right"] {
+            top: 0;
+            width: 10px;
+            height: 100%;
+        }
+
+        .edge-snap-hint[data-edge="left"] {
+            left: 0;
+        }
+
+        .edge-snap-hint[data-edge="right"] {
+            right: 0;
+        }
+
+        .edge-snap-hint[data-edge="top"],
+        .edge-snap-hint[data-edge="bottom"] {
+            left: 0;
+            width: 100%;
+            height: 10px;
+            background: linear-gradient(90deg, #22c55e00, #22c55e66, #22c55e00);
+        }
+
+        .edge-snap-hint[data-edge="top"] {
+            top: 0;
+        }
+
+        .edge-snap-hint[data-edge="bottom"] {
+            bottom: 0;
+        }
+
+        .edge-snap-hint.is-active {
+            opacity: 1;
         }
 
         .tool-button {
@@ -1966,6 +2089,10 @@
                 </details>
             </nav>
             <div class="header-actions">
+                <div class="mode-switch" role="group" aria-label="描画モード">
+                    <button type="button" class="mode-switch-btn active" id="draw-mode-vector" aria-pressed="true">ベクター</button>
+                    <button type="button" class="mode-switch-btn" id="draw-mode-paint" aria-pressed="false">ラスター</button>
+                </div>
                 <button class="settings-trigger" id="settings-open" type="button" aria-label="設定を開く" title="設定">
                     <i class="tool-icon" data-lucide="settings-2" aria-hidden="true"></i>
                 </button>
@@ -2635,16 +2762,68 @@
             }
         });
 
-        if (window.matchMedia("(hover: hover) and (pointer: fine)").matches) {
+        const closeSubmenus = (except) => {
             mainNavigation.querySelectorAll(".navigation-submenu").forEach((submenu) => {
-                submenu.addEventListener("pointerenter", () => {
-                    submenu.open = true;
-                });
-                submenu.addEventListener("pointerleave", () => {
+                if (submenu !== except) {
                     submenu.open = false;
-                });
+                }
             });
-        }
+        };
+        const getHoveredSubmenu = (event) => (
+            event.target instanceof Element
+                ? event.target.closest(".navigation-submenu")
+                : null
+        );
+        let submenuOpenTimer = null;
+        let submenuCloseTimer = null;
+        mainNavigation.addEventListener("pointerover", (event) => {
+            if (event.pointerType === "touch") {
+                return;
+            }
+            const submenu = getHoveredSubmenu(event);
+            if (!submenu) {
+                return;
+            }
+            if (event.relatedTarget instanceof Node && submenu.contains(event.relatedTarget)) {
+                return;
+            }
+            clearTimeout(submenuCloseTimer);
+            clearTimeout(submenuOpenTimer);
+            submenuOpenTimer = setTimeout(() => {
+                if (!mainNavigation.open || !submenu.isConnected) {
+                    return;
+                }
+                closeSubmenus(submenu);
+                submenu.open = true;
+            }, 70);
+        });
+        mainNavigation.addEventListener("pointerout", (event) => {
+            if (event.pointerType === "touch") {
+                return;
+            }
+            const submenu = getHoveredSubmenu(event);
+            if (!submenu) {
+                return;
+            }
+            if (event.relatedTarget instanceof Node && submenu.contains(event.relatedTarget)) {
+                return;
+            }
+            clearTimeout(submenuOpenTimer);
+            clearTimeout(submenuCloseTimer);
+            submenuCloseTimer = setTimeout(() => {
+                if (submenu.isConnected) {
+                    submenu.open = false;
+                }
+            }, 180);
+        });
+        mainNavigation.addEventListener("pointerleave", (event) => {
+            if (event.pointerType === "touch") {
+                return;
+            }
+            clearTimeout(submenuOpenTimer);
+            clearTimeout(submenuCloseTimer);
+            submenuCloseTimer = setTimeout(() => closeSubmenus(null), 180);
+        });
 
         mainNavigation.querySelectorAll(".navigation-menu a").forEach((link) => {
             link.addEventListener("click", () => {
@@ -2838,7 +3017,7 @@
                 return "クリックして選択色に適用";
             }
             if (target.matches(".panel-grip")) {
-                return `ドラッグして移動 · ${panelSnapStep}px グリッドにスナップ`;
+                return `ドラッグして移動 · ${panelSnapStep}px グリッド · 画面端にスナップ`;
             }
             if (target.matches(".brush-preset")) {
                 return target.dataset.description;
@@ -3047,16 +3226,180 @@
         });
         Object.values(panelNodes).forEach((panel) => panelResizeObserver.observe(panel));
 
+        const canvasPane = document.querySelector(".canvas");
+        const edgeSnapMargin = 8;
+        const edgeSnapThreshold = 48;
+
+        function panelMinTop(panel) {
+            return panel.id === "tool-settings"
+                ? edgeSnapMargin
+                : document.querySelector("header").offsetHeight + edgeSnapMargin;
+        }
+
+        let canvasResizeTimer = null;
+        function scheduleCanvasResize() {
+            clearTimeout(canvasResizeTimer);
+            canvasResizeTimer = setTimeout(() => {
+                const frame = document.getElementById("engine-frame");
+                if (frame && frame.contentWindow) {
+                    frame.contentWindow.dispatchEvent(new Event("resize"));
+                }
+                window.dispatchEvent(new Event("resize"));
+            }, 60);
+        }
+
+        function createPanelResizer(panel, key, minWidth, maxWidth, label, invert) {
+            const resizer = document.createElement("div");
+            resizer.className = "panel-resizer";
+            resizer.dataset.resizer = key;
+            resizer.tabIndex = 0;
+            resizer.setAttribute("role", "separator");
+            resizer.setAttribute("aria-orientation", "vertical");
+            resizer.setAttribute("aria-label", label);
+            resizer.setAttribute("aria-valuemin", String(minWidth));
+            resizer.setAttribute("aria-valuemax", String(maxWidth));
+
+            const setWidth = (value) => {
+                const width = Math.max(minWidth, Math.min(maxWidth, Math.round(value)));
+                panel.style.flex = "0 0 auto";
+                panel.style.width = `${width}px`;
+                resizer.setAttribute("aria-valuenow", String(width));
+                return width;
+            };
+            setWidth(panel.getBoundingClientRect().width);
+
+            let active = false;
+            let startX = 0;
+            let startWidth = 0;
+
+            resizer.addEventListener("pointerdown", (event) => {
+                if (event.button !== 0) {
+                    return;
+                }
+                event.preventDefault();
+                active = true;
+                startX = event.clientX;
+                startWidth = panel.getBoundingClientRect().width;
+                resizer.classList.add("is-dragging");
+                document.body.classList.add("panel-resizing");
+                resizer.setPointerCapture(event.pointerId);
+            });
+
+            resizer.addEventListener("pointermove", (event) => {
+                if (!active) {
+                    return;
+                }
+                setWidth(startWidth + (event.clientX - startX) * invert);
+                scheduleCanvasResize();
+            });
+
+            const endResize = (event) => {
+                if (!active) {
+                    return;
+                }
+                active = false;
+                resizer.classList.remove("is-dragging");
+                document.body.classList.remove("panel-resizing");
+                if (resizer.hasPointerCapture(event.pointerId)) {
+                    resizer.releasePointerCapture(event.pointerId);
+                }
+                scheduleCanvasResize();
+            };
+
+            resizer.addEventListener("pointerup", endResize);
+            resizer.addEventListener("pointercancel", endResize);
+            resizer.addEventListener("dblclick", () => {
+                setWidth(key === "properties" ? 200 : 56);
+                scheduleCanvasResize();
+            });
+            resizer.addEventListener("keydown", (event) => {
+                if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") {
+                    return;
+                }
+                event.preventDefault();
+                const step = event.shiftKey ? 24 : 8;
+                const delta = event.key === "ArrowRight" ? step : -step;
+                setWidth(panel.getBoundingClientRect().width + delta * invert);
+                scheduleCanvasResize();
+            });
+
+            return resizer;
+        }
+
+        const propertiesMaxWidth = Math.min(window.innerWidth * 0.65, 480);
+        const propertiesResizer = createPanelResizer(
+            propertiesPane,
+            "properties",
+            180,
+            propertiesMaxWidth,
+            "プロパティパネルの幅を調整",
+            1
+        );
+        canvasPane.insertAdjacentElement("beforebegin", propertiesResizer);
+        const toolsResizer = createPanelResizer(
+            toolsAside,
+            "tools",
+            52,
+            180,
+            "ツールパネルの幅を調整",
+            -1
+        );
+        toolsAside.insertAdjacentElement("beforebegin", toolsResizer);
+
+        const edgeSnapHints = {};
+        ["left", "right", "top", "bottom"].forEach((edge) => {
+            const hint = document.createElement("div");
+            hint.className = "edge-snap-hint";
+            hint.dataset.edge = edge;
+            document.body.appendChild(hint);
+            edgeSnapHints[edge] = hint;
+        });
+
+        function setEdgeSnapHints(edges) {
+            Object.entries(edgeSnapHints).forEach(([edge, hint]) => {
+                hint.classList.toggle("is-active", edges.includes(edge));
+            });
+        }
+
+        function getEdgeSnap(left, top, width, height, minTop) {
+            const result = { left, top, edges: [] };
+            const horizontalGap = [
+                { edge: "left", gap: left - edgeSnapMargin, value: edgeSnapMargin },
+                { edge: "right", gap: window.innerWidth - (left + width) - edgeSnapMargin, value: window.innerWidth - width - edgeSnapMargin }
+            ];
+            const nearestHorizontal = horizontalGap
+                .filter(({ gap }) => gap >= 0 && gap <= edgeSnapThreshold)
+                .sort((a, b) => a.gap - b.gap)[0];
+            if (nearestHorizontal) {
+                result.left = nearestHorizontal.value;
+                result.edges.push(nearestHorizontal.edge);
+            }
+            const canSnapVertically = height <= window.innerHeight - minTop - edgeSnapMargin * 2;
+            const verticalGap = [
+                { edge: "top", gap: top - minTop, value: minTop },
+                { edge: "bottom", gap: window.innerHeight - (top + height) - edgeSnapMargin, value: window.innerHeight - height - edgeSnapMargin }
+            ];
+            const nearestVertical = verticalGap
+                .filter(({ gap }) => canSnapVertically && gap >= 0 && gap <= edgeSnapThreshold)
+                .sort((a, b) => a.gap - b.gap)[0];
+            if (nearestVertical) {
+                result.top = nearestVertical.value;
+                result.edges.push(nearestVertical.edge);
+            }
+            return result;
+        }
+
         function resetPanelLayout() {
             Object.values(panelNodes).forEach((panel) => {
                 panel.classList.remove("panel-floating", "panel-dragging");
-                ["position", "left", "top", "right", "bottom", "width", "height", "margin"].forEach((property) => {
+                ["position", "left", "top", "right", "bottom", "width", "height", "margin", "flex"].forEach((property) => {
                     panel.style.removeProperty(property);
                 });
             });
             if (lastSettingsTool && !toolSettings.hidden) {
                 positionToolSettings(lastSettingsTool);
             }
+            scheduleCanvasResize();
         }
 
         function enablePanelDragging(handle) {
@@ -3108,12 +3451,16 @@
                     const height = panel.getBoundingClientRect().height;
                     const minLeft = 8;
                     const maxLeft = Math.max(minLeft, window.innerWidth - width - 8);
-                    const minTop = panel.id === "tool-settings" ? 8 : document.querySelector("header").offsetHeight + 8;
+                    const minTop = panelMinTop(panel);
                     const maxTop = Math.max(minTop, window.innerHeight - height - 8);
                     const left = Math.round((moveEvent.clientX - offsetX) / panelSnapStep) * panelSnapStep;
                     const top = Math.round((moveEvent.clientY - offsetY) / panelSnapStep) * panelSnapStep;
-                    panel.style.left = `${Math.min(Math.max(minLeft, left), maxLeft)}px`;
-                    panel.style.top = `${Math.min(Math.max(minTop, top), maxTop)}px`;
+                    const finalLeft = Math.min(Math.max(minLeft, left), maxLeft);
+                    const finalTop = Math.min(Math.max(minTop, top), maxTop);
+                    panel.style.left = `${finalLeft}px`;
+                    panel.style.top = `${finalTop}px`;
+                    const snap = getEdgeSnap(finalLeft, finalTop, width, height, minTop);
+                    setEdgeSnapHints(snap.edges);
                 };
 
                 const cleanup = () => {
@@ -3129,12 +3476,26 @@
                 const finishDrag = (finishEvent) => {
                     if (started) {
                         movePanel(finishEvent);
+                        const rect = panel.getBoundingClientRect();
+                        const snap = getEdgeSnap(rect.left, rect.top, rect.width, rect.height, panelMinTop(panel));
+                        if (snap.edges.length) {
+                            panel.classList.add("panel-snapping");
+                            panel.style.left = `${snap.left}px`;
+                            panel.style.top = `${snap.top}px`;
+                            window.setTimeout(() => {
+                                panel.classList.remove("panel-snapping");
+                                setEdgeSnapHints([]);
+                            }, 220);
+                        } else {
+                            setEdgeSnapHints([]);
+                        }
                     }
                     cleanup();
                 };
 
                 const cancelDrag = () => {
                     cleanup();
+                    setEdgeSnapHints([]);
                     if (!started) {
                         return;
                     }

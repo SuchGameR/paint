@@ -202,13 +202,36 @@
     el.addEventListener('pointercancel', onPointerUpCapture, o);
   }
 
+  function installWheel() {
+    if (window.__vpWheel) return;
+    window.__vpWheel = true;
+    window.addEventListener('wheel', function (e) {
+      if (!(e.ctrlKey || e.metaKey)) return;
+      var st = getState();
+      if (!st) return;
+      e.preventDefault();
+      e.stopPropagation();
+      var step = e.deltaY < 0 ? 2 : -2;
+      var n = Math.round(Math.max(1, Math.min(500, (Number(st.strokeWidth) || 1) + step)));
+      st.strokeWidth = n;
+      ['size-slider', 'size-slider-left'].forEach(function (id) {
+        var el = $(id); if (el) el.value = String(n);
+      });
+      ['size-val', 'size-val-left'].forEach(function (id) {
+        var el = $(id); if (el) el.textContent = String(n);
+      });
+      redraw();
+      if (window.parent && window.parent !== window) {
+        try { window.parent.postMessage({ source: 'verse-engine', type: 'brushSize', size: n }, '*'); } catch (_) {}
+      }
+    }, { capture: true, passive: false });
+  }
+
   function setTool(name) {
     var engineName = TOOL_MAP[name] || name || 'brush';
     if (engineName === 'shapes') engineName = 'rect';
-    var paintTools = { brush: 1, eraser: 1, fill: 1, eyedropper: 1 };
     var vectorTools = { select: 1, pen: 1, text: 1, rect: 1 };
-    if (paintTools[engineName]) click($('mode-paint-btn'));
-    else if (vectorTools[engineName]) click($('mode-vector-btn'));
+    if (vectorTools[engineName]) click($('mode-vector-btn'));
     var btnId = 'tool-' + (engineName === 'rect' ? 'shapes' : engineName);
     var btn = $(btnId);
     if (btn) btn.click();
@@ -313,11 +336,13 @@
     ensureBoardAndStart();
     enablePressure();
     installGestures();
+    installWheel();
     setTimeout(hideChrome, 600);
     setTimeout(function () {
       hideChrome();
       enablePressure();
       installGestures();
+      installWheel();
       setTool('brush');
       centerBoard();
       postState();
