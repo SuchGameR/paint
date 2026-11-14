@@ -61,15 +61,11 @@
       link.rel = 'stylesheet';
       link.href = './js/vp-chrome.css';
       document.head.appendChild(link);
-      var a = document.createElement('script');
-      a.src = './js/draw-ui-integrate.js';
-      document.body.appendChild(a);
-      var b = document.createElement('script');
-      b.src = './js/draw-panels.js';
-      document.body.appendChild(b);
-      var c = document.createElement('script');
-      c.src = './js/draw-menu-nest.js';
-      document.body.appendChild(c);
+      ['draw-ui-integrate.js', 'draw-panels.js', 'draw-menu-nest.js', 'draw-icons.js'].forEach(function (src) {
+        var s = document.createElement('script');
+        s.src = './js/' + src;
+        document.body.appendChild(s);
+      });
     }
     fetch('./new-ui.html', { cache: 'no-store' })
       .then(function (r) {
@@ -98,6 +94,13 @@
         link.href = './js/vp-chrome.css';
         document.head.appendChild(link);
         Array.prototype.slice.call(document.body.querySelectorAll('script')).forEach(function (old) {
+          var src = old.src || '';
+          var code = old.textContent || '';
+          if (src.indexOf('lucide') >= 0) { old.remove(); return; }
+          if (code.indexOf('Lucide icons failed') >= 0 || code.indexOf('lucide.createIcons') >= 0) {
+            old.remove();
+            return;
+          }
           var neu = document.createElement('script');
           if (old.src) neu.src = old.src;
           else neu.textContent = old.textContent;
