@@ -28,21 +28,25 @@
     [
       'start-screen', 'app-menubar', 'top-bar', 'left-toolbar', 'left-paint-panel',
       'compact-tools', 'anim-bar', 'status-bar', 'mode-anim-btn', 'hud-coords',
-      'mobile-dock'
+      'mobile-dock', 'props-panel'
     ].forEach(function (id) {
       var el = $(id);
-      if (el) { el.style.display = 'none'; el.style.pointerEvents = 'none'; }
+      if (el) { el.style.display = 'none'; el.style.pointerEvents = 'none'; el.style.visibility = 'hidden'; }
     });
     var cc = $('canvas-container');
     if (cc) {
-      cc.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;margin:0;border:none;touch-action:none;';
+      cc.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;margin:0;border:none;touch-action:none;z-index:1;';
     }
     document.documentElement.style.touchAction = 'none';
     document.body.style.touchAction = 'none';
     document.body.style.overscrollBehavior = 'none';
-    ['effect-more-sheet', 'export-region-modal', 'settings-modal', 'shapes-menu'].forEach(function (id) {
+    ['effect-more-sheet', 'export-region-modal', 'settings-modal', 'shapes-menu', 'ctx-menu'].forEach(function (id) {
       var el = $(id);
-      if (el) { el.style.zIndex = '10000'; el.style.pointerEvents = 'auto'; }
+      if (!el) return;
+      el.style.zIndex = '300';
+      if (el.classList.contains('hidden')) {
+        el.style.display = 'none';
+      }
     });
   }
 
@@ -158,21 +162,17 @@
   function setTool(name) {
     var engineName = TOOL_MAP[name] || name || 'brush';
     if (engineName === 'shapes') engineName = 'rect';
-
     var btnId = 'tool-' + (engineName === 'rect' ? 'shapes' : engineName);
     var btn = $(btnId);
-    if (btn) {
-      btn.click();
-    } else {
+    if (btn) btn.click();
+    else {
       var st = getState();
       if (st) st.tool = engineName;
     }
-
     var paintTools = { brush: 1, eraser: 1, fill: 1, eyedropper: 1 };
     var vectorTools = { select: 1, pen: 1, text: 1, rect: 1, hand: 1 };
     if (paintTools[engineName]) click($('mode-paint-btn'));
     if (vectorTools[engineName] && engineName !== 'hand') click($('mode-vector-btn'));
-
     var st2 = getState();
     if (st2) st2.tool = engineName === 'rect' ? (st2.tool || 'rect') : engineName;
   }
@@ -220,28 +220,18 @@
         return { id: r.id, name: r.name || r.id };
       });
       window.parent.postMessage({
-        source: 'verse-engine',
-        type: 'state',
-        tool: st.tool,
-        mode: st.mode,
-        color: st.color,
-        strokeWidth: st.strokeWidth,
-        zoom: st.zoom,
-        infiniteCanvas: st.infiniteCanvas,
-        activeLayerId: st.activeLayerId,
-        layers: layers,
-        regions: regions,
+        source: 'verse-engine', type: 'state',
+        tool: st.tool, mode: st.mode, color: st.color, strokeWidth: st.strokeWidth,
+        zoom: st.zoom, infiniteCanvas: st.infiniteCanvas, activeLayerId: st.activeLayerId,
+        layers: layers, regions: regions,
         selectedCount: st.selectedIds ? st.selectedIds.size : 0
       }, '*');
     } catch (e) {}
   }
 
   window.VerseEngineAPI = {
-    setTool: setTool,
-    setColor: setColor,
-    setBrushSize: setBrushSize,
-    getState: getState,
-    redraw: redraw,
+    setTool: setTool, setColor: setColor, setBrushSize: setBrushSize,
+    getState: getState, redraw: redraw,
     click: function (id) { return click($(id)); },
     postState: postState
   };
@@ -259,15 +249,11 @@
         else click($('zoom-reset'));
         postState();
         break;
-      case 'menu':
-        break;
       case 'api':
         if (data.method === 'click' && data.id) click($(data.id));
         if (data.method === 'addLayer') click($('btn-add-layer'));
         if (data.method === 'setActiveLayer' && getState()) {
-          getState().activeLayerId = data.id;
-          postState();
-          redraw();
+          getState().activeLayerId = data.id; postState(); redraw();
         }
         if (data.method === 'toggleLayerVis' && getState()) {
           var L = (getState().layers || []).find(function (x) { return x.id === data.id; });
