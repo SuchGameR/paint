@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>VersePaint</title>
   <style>
     html, body { margin:0; height:100%; background:#0b0b0b; color:#aaa; font-family: system-ui, sans-serif; }
@@ -56,38 +56,6 @@
         });
       });
 
-      document.querySelectorAll('.menu-command, .exit-command').forEach(function (btn) {
-        btn.disabled = false;
-        btn.removeAttribute('disabled');
-        btn.addEventListener('click', function (e) {
-          e.preventDefault();
-          var text = (btn.textContent || '').replace(/\s+/g, ' ').trim();
-
-          document.querySelectorAll('details.navigation-submenu[open], details.main-navigation[open]').forEach(function (d) {
-            d.open = false;
-          });
-
-          if (btn.classList.contains('exit-command') || /終了|QUIT/i.test(text)) {
-            location.href = './index.html';
-            return;
-          }
-          if (/新規/.test(text)) { send({ type: 'menu', action: 'clear' }); return; }
-          if (/開く/.test(text)) { send({ type: 'menu', action: 'open' }); return; }
-          if (/保存|書き出|PNG|エクスポート/i.test(text)) { send({ type: 'menu', action: 'export' }); return; }
-          if (/元に戻す/.test(text)) { send({ type: 'menu', action: 'undo' }); return; }
-          if (/やり直/.test(text)) { send({ type: 'menu', action: 'redo' }); return; }
-          if (/切り取り/.test(text)) { send({ type: 'menu', action: 'cut' }); return; }
-          if (/コピー/.test(text)) { send({ type: 'menu', action: 'copy' }); return; }
-          if (/貼り付け/.test(text)) { send({ type: 'menu', action: 'paste' }); return; }
-          if (/すべて選択/.test(text)) { send({ type: 'menu', action: 'selectAll' }); return; }
-          if (/ズームイン/.test(text)) { send({ type: 'zoom', dir: 'in' }); return; }
-          if (/ズームアウト/.test(text)) { send({ type: 'zoom', dir: 'out' }); return; }
-          if (/画面に合わせ|フィット|100%|リセット/.test(text)) { send({ type: 'zoom', dir: 'reset' }); return; }
-          if (/グリッド/.test(text)) { send({ type: 'menu', action: 'grid' }); return; }
-          if (/画像|挿入/.test(text)) { send({ type: 'menu', action: 'insert' }); return; }
-        });
-      });
-
       window.addEventListener('message', function (ev) {
         if (ev.data && ev.data.source === 'verse-engine' && (ev.data.type === 'ready' || ev.data.type === 'pong')) {
           send({ type: 'tool', tool: 'brush' });
@@ -104,7 +72,7 @@
       .then(function (html) {
         var iframe =
           '<iframe id="engine-frame" src="./draw-engine.html" title="キャンバス" ' +
-          'style="width:100%;height:100%;border:0;display:block;background:#3a3a3a;border-radius:inherit;" ' +
+          'style="width:100%;height:100%;border:0;display:block;background:#3a3a3a;border-radius:inherit;touch-action:none;" ' +
           'allow="clipboard-read; clipboard-write"></iframe>';
 
         if (/<div class="canvas" id="canvas">\s*<\/div>/.test(html)) {
@@ -118,18 +86,17 @@
           throw new Error('new-ui.html に #canvas がありません');
         }
 
-        html = html.replace(/\sdisabled(="")?/g, function (m, _, offset, s) {
-          var slice = s.slice(Math.max(0, offset - 80), offset);
-          if (slice.indexOf('menu-command') >= 0 || slice.indexOf('exit-command') >= 0) return '';
-          return m;
-        });
-
         document.open();
         document.write(html);
         document.close();
 
         setTimeout(wireUi, 0);
         document.addEventListener('DOMContentLoaded', wireUi);
+        setTimeout(function () {
+          var s = document.createElement('script');
+          s.src = './js/draw-ui-integrate.js';
+          document.body.appendChild(s);
+        }, 30);
       })
       .catch(function (err) {
         console.error(err);
