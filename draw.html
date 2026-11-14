@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>VersePaint</title>
   <style>
-    html, body { margin:0; height:100%; background:#0b0b0b; color:#aaa; font-family: system-ui, sans-serif; }
+    html, body { margin:0; height:100%; background:#0b0b0b; color:#aaa; font-family: system-ui, -apple-system, Segoe UI, sans-serif; }
     #boot { display:grid; place-items:center; height:100%; gap:8px; font-size:14px; }
     #boot small { opacity:.6; font-size:12px; }
   </style>
@@ -13,7 +13,7 @@
 <body>
   <div id="boot">
     <div>新UIを読み込み中…</div>
-    <small>フル描画エンジン（無限キャンバス対応）を接続します</small>
+    <small>エンジン接続 · パネル準備</small>
   </div>
   <script>
   (function () {
@@ -43,17 +43,13 @@
         var sw = e.target.closest('.swatch, [data-color], .recent-color');
         if (!sw) return;
         var c = sw.getAttribute('data-color') || sw.getAttribute('data-swatch') || getComputedStyle(sw).backgroundColor;
-        if (c && c !== 'transparent' && c !== 'rgba(0, 0, 0, 0)') {
-          send({ type: 'color', color: c });
-        }
+        if (c && c !== 'transparent' && c !== 'rgba(0, 0, 0, 0)') send({ type: 'color', color: c });
       });
 
       ['quick-brush-size-range', 'quick-brush-size-number', 'quick-eraser-size-range', 'brush-size'].forEach(function (id) {
         var el = document.getElementById(id);
         if (!el) return;
-        el.addEventListener('input', function () {
-          send({ type: 'brushSize', size: el.value });
-        });
+        el.addEventListener('input', function () { send({ type: 'brushSize', size: el.value }); });
       });
 
       window.addEventListener('message', function (ev) {
@@ -61,7 +57,17 @@
           send({ type: 'tool', tool: 'brush' });
         }
       });
-      setTimeout(function () { send({ type: 'ping' }); }, 1500);
+      setTimeout(function () { send({ type: 'ping' }); }, 1200);
+    }
+
+    function loadScripts() {
+      wireUi();
+      var a = document.createElement('script');
+      a.src = './js/draw-ui-integrate.js';
+      document.body.appendChild(a);
+      var b = document.createElement('script');
+      b.src = './js/draw-panels.js';
+      document.body.appendChild(b);
     }
 
     fetch('./new-ui.html', { cache: 'no-store' })
@@ -78,7 +84,7 @@
         if (/<div class="canvas" id="canvas">\s*<\/div>/.test(html)) {
           html = html.replace(
             /<div class="canvas" id="canvas">\s*<\/div>/,
-            '<div class="canvas" id="canvas">' + iframe + '</div>'
+            '<div class="canvas" id="canvas" style="position:relative;overflow:hidden;">' + iframe + '</div>'
           );
         } else if (html.indexOf('id="canvas"') >= 0) {
           html = html.replace(/(id="canvas"[^>]*>)/, '$1' + iframe);
@@ -86,17 +92,25 @@
           throw new Error('new-ui.html に #canvas がありません');
         }
 
-        document.open();
-        document.write(html);
-        document.close();
+        var parsed = new DOMParser().parseFromString(html, 'text/html');
+        document.head.innerHTML = parsed.head.innerHTML;
+        document.body.innerHTML = parsed.body.innerHTML;
 
-        setTimeout(wireUi, 0);
-        document.addEventListener('DOMContentLoaded', wireUi);
-        setTimeout(function () {
-          var s = document.createElement('script');
-          s.src = './js/draw-ui-integrate.js';
-          document.body.appendChild(s);
-        }, 30);
+        if (!document.querySelector('meta[name="viewport"]')) {
+          var m = document.createElement('meta');
+          m.name = 'viewport';
+          m.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover';
+          document.head.appendChild(m);
+        }
+
+        Array.prototype.slice.call(document.body.querySelectorAll('script')).forEach(function (old) {
+          var neu = document.createElement('script');
+          if (old.src) neu.src = old.src;
+          else neu.textContent = old.textContent;
+          old.parentNode.replaceChild(neu, old);
+        });
+
+        setTimeout(loadScripts, 0);
       })
       .catch(function (err) {
         console.error(err);
