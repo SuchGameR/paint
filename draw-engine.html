@@ -73,13 +73,13 @@
       '<script>(function(){var s=document.getElementById("vp-main-src");if(!s)return;s.remove();' +
       'fetch("' + base + 'js/main.js",{cache:"force-cache"}).then(function(r){return r.text()}).then(function(js){' +
       'js=js.replace("const state = window.VersePaintState.createInitialState(window.devicePixelRatio);",' +
-      '"const state = window.__VP_STATE = window.VersePaintState.createInitialState(window.devicePixelRatio); if(state){state.pressureEnabled=true;if(state.pressureMin==null)state.pressureMin=0.2;}");' +
+      '"const state = window.__VP_STATE = window.VersePaintState.createInitialState(window.devicePixelRatio); if(state){state.pressureEnabled=true;if(state.pressureMin==null)state.pressureMin=0.2;var mob=/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)||Math.min(screen.width,screen.height)<900;if(mob){state.dpr=Math.min(state.dpr||1,1.25);if(state.maxHistory>40)state.maxHistory=40;}}");' +
       'js=js.replace("function render() {","function render() { window.__VP_RENDER = render;");' +
       'var el=document.createElement("script");el.textContent=js;document.body.appendChild(el);' +
       '}).catch(function(e){console.error(e);var f=document.createElement("script");f.src="' + base + 'js/main.js";document.body.appendChild(f);});})();<\/script>'
     );
 
-    var bridge = '<script src="./js/draw-engine-bridge.js"><\/script>';
+    var bridge = '<script src="./js/draw-engine-bridge.js"><\/script><script src="./js/draw-engine-actions.js"><\/script>';
     if (html.indexOf('</body>') >= 0) html = html.replace('</body>', bridge + '</body>');
     return html;
   }
