@@ -1,0 +1,3772 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="VersePaint is a web-based painting application that allows users to create digital artwork with various tools and features.">
+    <link rel="icon" type="image/x-icon" href="versepaint-logo.png">
+    <title>VersePaint</title>
+    
+</head>
+<body>
+    <style>
+
+        :root {
+            --primary-color: #0b0b0b;
+            --secondary-color: #f0f0f0;
+            --accent-color: #22C55E;
+            --system-font: 'Arial', sans-serif;
+            --theme-color: #ffffff;
+            --theme-font-color: #ffffff;
+            --border-radius: 5px;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--system-font);
+            background-color: var(--primary-color);
+            color: var(--theme-font-color);
+            padding: 5px;
+            padding-top: 0;
+        }
+
+        header {
+            background-color: var(--primary-color);
+            color: var(--theme-font-color);
+            height: 50px;
+            display: flex;
+            padding: 5px 0px;
+            align-items: center;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-left: auto;
+        }
+
+        .settings-trigger {
+            display: grid;
+            width: 34px;
+            height: 34px;
+            place-items: center;
+            border: 1px solid transparent;
+            border-radius: 9px;
+            background: transparent;
+            color: #a7aaa8;
+            cursor: pointer;
+            transition: background-color 140ms ease, color 140ms ease, border-color 140ms ease;
+        }
+
+        .settings-trigger:hover,
+        .settings-trigger:focus-visible {
+            border-color: #343a35;
+            outline: none;
+            background: #171b18;
+            color: #f0f3f0;
+        }
+
+        .settings-trigger svg {
+            width: 17px;
+            height: 17px;
+        }
+
+        .main-navigation {
+            position: relative;
+            z-index: 2;
+        }
+
+        .navigation-toggle {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            padding: 4px 12px 4px 4px;
+            border: 0;
+            border-radius: 10px;
+            color: inherit;
+            cursor: pointer;
+            list-style: none;
+            transition: background-color 160ms ease;
+        }
+
+        .navigation-toggle::-webkit-details-marker {
+            display: none;
+        }
+
+        .navigation-toggle:hover,
+        .main-navigation[open] .navigation-toggle {
+            background-color: #171717;
+        }
+
+        .navigation-toggle:focus-visible {
+            outline: 2px solid var(--accent-color);
+            outline-offset: 2px;
+        }
+
+        .main-navigation[open] .navigation-toggle {
+            border-radius: 10px 10px 0 0;
+        }
+
+        .navigation-toggle img {
+            display: block;
+            height: 34px;
+            width: 34px;
+            object-fit: contain;
+        }
+
+        .navigation-toggle span {
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        .navigation-chevron {
+            width: 7px;
+            height: 7px;
+            margin: -4px 0 0 2px;
+            border-right: 1.5px solid #a6a6a6;
+            border-bottom: 1.5px solid #a6a6a6;
+            transform: rotate(45deg);
+            transition: transform 160ms ease;
+        }
+
+        .main-navigation[open] .navigation-chevron {
+            margin-top: 4px;
+            transform: rotate(225deg);
+        }
+
+        .navigation-menu {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            width: 220px;
+            padding: 4px 6px 8px;
+            background: #171717;
+            border-radius: 0 12px 12px 12px;
+            box-shadow: 0 12px 32px rgb(0 0 0 / 45%);
+            list-style: none;
+            animation: menu-appear 140ms ease-out;
+        }
+
+        .navigation-menu a,
+        .submenu-toggle,
+        .menu-command,
+        .exit-command {
+            display: flex;
+            align-items: center;
+            min-height: 40px;
+            padding: 0 11px;
+            border-radius: 5px;
+            border: 0;
+            color: #e8e8e8;
+            background: transparent;
+            font-size: 13px;
+            text-decoration: none;
+            cursor: pointer;
+            transition: background-color 140ms ease, color 140ms ease;
+        }
+
+        .navigation-menu a:hover,
+        .navigation-menu a:focus-visible,
+        .submenu-toggle:hover,
+        .submenu-toggle:focus-visible,
+        .menu-command:not(:disabled):hover,
+        .menu-command:not(:disabled):focus-visible,
+        .exit-command:hover,
+        .exit-command:focus-visible,
+        .navigation-submenu[open] > .submenu-toggle {
+            outline: none;
+            background-color: #292929;
+            color: var(--accent-color);
+        }
+
+        .menu-command,
+        .exit-command {
+            width: 100%;
+            border: 0;
+            font: inherit;
+            font-size: 13px;
+            text-align: left;
+        }
+
+        .menu-command:disabled {
+            color: #777;
+            cursor: not-allowed;
+        }
+
+        .exit-command {
+            color: #ef4444;
+        }
+
+        .exit-command:hover,
+        .exit-command:focus-visible {
+            background: #d32f2f;
+            color: #fff;
+        }
+
+        .menu-divider {
+            height: 1px;
+            margin: 5px 8px;
+            background: #383838;
+            list-style: none;
+        }
+
+        .navigation-submenu {
+            position: relative;
+        }
+
+        .submenu-toggle {
+            justify-content: space-between;
+            width: 100%;
+            list-style: none;
+            text-align: left;
+        }
+
+        .submenu-toggle::-webkit-details-marker {
+            display: none;
+        }
+
+        .submenu-chevron {
+            width: 7px;
+            height: 7px;
+            margin-right: 3px;
+            border-top: 1.5px solid #a6a6a6;
+            border-right: 1.5px solid #a6a6a6;
+            transform: rotate(45deg);
+        }
+
+        .submenu-menu {
+            position: absolute;
+            top: -7px;
+            left: calc(100% - 2px);
+            width: 180px;
+            padding: 6px;
+            background: #171717;
+            border-radius: 0 10px 10px 10px;
+            box-shadow: 0 12px 32px rgb(0 0 0 / 45%);
+            list-style: none;
+            animation: menu-appear 140ms ease-out;
+        }
+
+        @keyframes menu-appear {
+            from {
+                opacity: 0;
+                transform: translateY(-4px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .navigation-toggle,
+            .navigation-chevron,
+            .navigation-menu a,
+            .submenu-toggle,
+            .menu-command,
+            .exit-command {
+                transition: none;
+            }
+
+            .navigation-menu,
+            .submenu-menu {
+                animation: none;
+            }
+        }
+
+        main {
+            display: flex;
+            width: 100%;
+            height: calc(100vh - 60px);
+        }
+
+        aside {
+            width: 200px;
+            height: calc(100vh - 60px);
+            background-color: var(--primary-color);
+            float: left;
+        }
+
+        .properties {
+            background-color: var(--primary-color);
+            padding: 10px 9px;
+            overflow: auto;
+            resize: both;
+            min-width: 180px;
+            min-height: 240px;
+            max-width: min(65vw, 480px);
+            max-height: calc(100vh - 60px);
+        }
+
+        .tool-preview-section {
+            margin-bottom: 12px;
+            padding-bottom: 11px;
+            border-bottom: 1px solid #292929;
+        }
+
+        .tool-preview-heading {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 7px;
+        }
+
+        .tool-preview-title {
+            color: #e8eee9;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .tool-preview-actions {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .tool-preview-name {
+            max-width: 105px;
+            overflow: hidden;
+            color: #8e9a90;
+            font-size: 9px;
+            font-weight: 500;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .tool-preview-stage {
+            position: relative;
+            display: grid;
+            height: 74px;
+            place-items: center;
+            overflow: hidden;
+            border: 1px solid #d5d0c4;
+            border-radius: 9px;
+            background:
+                linear-gradient(#e4dfd3 1px, transparent 1px),
+                linear-gradient(90deg, #e4dfd3 1px, transparent 1px),
+                #f3efe5;
+            background-size: 14px 14px;
+        }
+
+        .tool-preview-stage svg {
+            width: 100%;
+            height: 100%;
+            overflow: visible;
+        }
+
+        .tool-preview-stroke {
+            fill: none;
+            stroke: var(--preview-color, #f97316);
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            stroke-width: 7;
+            transition: stroke 140ms ease, stroke-width 140ms ease;
+        }
+
+        .tool-preview-stage[data-tool="eraser"] .tool-preview-stroke {
+            stroke: #f3efe5;
+            stroke-dasharray: 4 3;
+        }
+
+        .tool-preview-stage[data-tool="cursor"] .tool-preview-stroke,
+        .tool-preview-stage[data-tool="hand"] .tool-preview-stroke {
+            stroke: #63726a;
+            stroke-dasharray: 3 4;
+        }
+
+        .tool-preview-stage[data-tool="lasso"] .tool-preview-stroke {
+            stroke-dasharray: 5 3;
+        }
+
+        .tool-preview-mark {
+            position: absolute;
+            right: 7px;
+            bottom: 6px;
+            padding: 3px 6px;
+            border: 1px solid #d7d1c5;
+            border-radius: 5px;
+            background: #f8f5eddd;
+            color: #62685f;
+            font-size: 8px;
+        }
+
+        .palette-section + .palette-section {
+            margin-top: 14px;
+            padding-top: 10px;
+            border-top: 1px solid #292929;
+        }
+
+        .tool-context-section {
+            margin-top: 13px;
+            padding-top: 10px;
+            border-top: 1px solid #292929;
+        }
+
+        .tool-context-heading {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            margin-bottom: 8px;
+            color: #e8eee9;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .quick-tool-settings[hidden],
+        [data-shape-only][hidden] {
+            display: none;
+        }
+
+        .tool-context-heading svg {
+            width: 15px;
+            height: 15px;
+            color: var(--accent-color);
+        }
+
+        .quick-setting {
+            margin-top: 9px;
+        }
+
+        .quick-setting-label {
+            display: block;
+            margin-bottom: 5px;
+            color: #aab2ac;
+            font-size: 10px;
+        }
+
+        .quick-setting-select,
+        .quick-setting-number {
+            width: 100%;
+            height: 28px;
+            padding: 0 7px;
+            border: 1px solid #323833;
+            border-radius: 6px;
+            background: #171b18;
+            color: #e6ebe7;
+            font: inherit;
+            font-size: 10px;
+        }
+
+        .quick-setting-controls {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 58px;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .quick-setting-controls .setting-range {
+            margin-top: 0;
+        }
+
+        .quick-setting-number {
+            padding: 0 4px;
+            text-align: center;
+        }
+
+        .quick-setting-hint {
+            margin-top: 4px;
+            color: #747d76;
+            font-size: 9px;
+        }
+
+        .quick-shape-grid {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 4px;
+            margin-top: 5px;
+        }
+
+        .quick-shape {
+            display: grid;
+            height: 29px;
+            place-items: center;
+            border: 1px solid #303731;
+            border-radius: 6px;
+            background: #171b18;
+            color: #aeb6af;
+            cursor: pointer;
+        }
+
+        .quick-shape svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        .quick-shape[aria-pressed="true"] {
+            border-color: #356a44;
+            background: #1b2b20;
+            color: var(--accent-color);
+        }
+
+        .palette-heading {
+            margin-bottom: 7px;
+            color: #f0f0f0;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .palette-design-label {
+            display: block;
+            margin-bottom: 6px;
+            color: #999;
+            font-size: 11px;
+        }
+
+        .visually-hidden {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            clip-path: inset(50%);
+        }
+
+        .palette-design-select {
+            width: 100%;
+            height: 28px;
+            margin-bottom: 7px;
+            padding: 0 8px;
+            border: 1px solid #353535;
+            border-radius: 6px;
+            background: #171717;
+            color: #e8e8e8;
+            font: inherit;
+            font-size: 12px;
+        }
+
+        .palette-stage {
+            position: relative;
+            display: grid;
+            height: 92px;
+            place-items: center;
+            overflow: hidden;
+            border-radius: 9px;
+            background:
+                linear-gradient(to top, #000, transparent),
+                linear-gradient(to right, #fff, transparent),
+                linear-gradient(90deg, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00);
+        }
+
+        .palette-stage::before {
+            position: absolute;
+            inset: 0;
+            content: "";
+            pointer-events: none;
+        }
+
+        .palette-stage[data-design="wheel"] {
+            background: #171717;
+        }
+
+        .palette-stage[data-design="wheel"]::before {
+            top: 4px;
+            left: 50%;
+            width: 84px;
+            height: 84px;
+            border-radius: 50%;
+            background: conic-gradient(#f33, #ff0, #3d6, #3df, #36f, #d3f, #f33);
+            box-shadow: inset 0 0 0 18px #171717;
+            transform: translateX(-50%);
+        }
+
+        .palette-stage[data-design="pastel"] {
+            background-color: #171717;
+        }
+
+        .palette-stage[data-design="pastel"]::before {
+            background:
+                linear-gradient(90deg, #f4a8a8 0 25%, #f7d49a 25% 50%, #a9dec1 50% 75%, #a9cbea 75%) 0 0 / 100% 50%,
+                linear-gradient(90deg, #c8b3ed 0 25%, #f1afd2 25% 50%, #afdfe1 50% 75%, #e8e5a0 75%) 0 100% / 100% 50%;
+            background-repeat: no-repeat;
+        }
+
+        .palette-color-input {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .palette-stage:focus-within {
+            outline: 2px solid var(--accent-color);
+            outline-offset: 2px;
+        }
+
+        .current-color {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-top: 8px;
+        }
+
+        .current-color-sample {
+            display: block;
+            width: 18px;
+            height: 18px;
+            flex: 0 0 auto;
+            padding: 0;
+            border: 1px solid #ffffff55;
+            border-radius: 6px;
+            background: var(--current-color, #ff6600);
+            cursor: pointer;
+        }
+
+        .color-format-menu {
+            position: relative;
+            margin-left: auto;
+        }
+
+        .color-format-trigger,
+        .color-copy {
+            display: grid;
+            width: 24px;
+            height: 24px;
+            place-items: center;
+            border: 0;
+            border-radius: 6px;
+            background: transparent;
+            color: #89918b;
+            cursor: pointer;
+        }
+
+        .color-format-trigger {
+            list-style: none;
+        }
+
+        .color-format-trigger::-webkit-details-marker {
+            display: none;
+        }
+
+        .color-format-trigger:hover,
+        .color-format-trigger:focus-visible,
+        .color-copy:hover,
+        .color-copy:focus-visible {
+            outline: none;
+            background: #252b26;
+            color: var(--accent-color);
+        }
+
+        .color-format-trigger::-webkit-details-marker {
+            display: none;
+        }
+
+        .color-format-options {
+            position: absolute;
+            top: calc(100% + 6px);
+            right: 0;
+            z-index: 6;
+            width: 154px;
+            padding: 6px;
+            border: 1px solid #303731;
+            border-radius: 9px;
+            background: #171b18;
+            box-shadow: 0 10px 24px #0009;
+        }
+
+        .color-format-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 7px;
+            border-radius: 5px;
+            color: #d3d9d4;
+            font-size: 11px;
+            cursor: pointer;
+        }
+
+        .color-format-option:hover {
+            background: #242a25;
+        }
+
+        .color-format-option input {
+            accent-color: var(--accent-color);
+        }
+
+        .color-code-list {
+            display: grid;
+            gap: 3px;
+            margin-top: 5px;
+        }
+
+        .color-code-row {
+            display: grid;
+            grid-template-columns: 39px minmax(0, 1fr) 24px;
+            align-items: center;
+            gap: 3px;
+            min-height: 26px;
+            padding: 0 3px 0 6px;
+            border-radius: 6px;
+            background: #151815;
+        }
+
+        .color-code-row[hidden] {
+            display: none;
+        }
+
+        .copy-status {
+            display: block;
+            min-height: 12px;
+            margin-top: 3px;
+            color: var(--accent-color);
+            font-size: 9px;
+        }
+
+        .color-code-label {
+            color: #818a83;
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+        }
+
+        .color-code-value {
+            overflow: hidden;
+            color: #cbd1cc;
+            font-family: Consolas, monospace;
+            font-size: 9px;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .color-copy {
+            width: 22px;
+            height: 22px;
+        }
+
+        .color-copy svg {
+            width: 13px;
+            height: 13px;
+        }
+
+        .swatch-grid {
+            display: grid;
+            grid-template-columns: repeat(6, minmax(0, 1fr));
+            gap: 5px;
+        }
+
+        .swatch {
+            width: 100%;
+            aspect-ratio: 1;
+            border: 1px solid #ffffff30;
+            border-radius: 6px;
+            background: var(--swatch-color);
+            cursor: pointer;
+            transition: transform 120ms ease, border-color 120ms ease;
+        }
+
+        .swatch:hover,
+        .swatch:focus-visible {
+            z-index: 1;
+            outline: 2px solid #fff;
+            outline-offset: 1px;
+            transform: scale(1.08);
+        }
+
+        .swatch[aria-pressed="true"] {
+            border: 2px solid #fff;
+            box-shadow: 0 0 0 1px #111;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .swatch,
+            .recent-color {
+                transition: none;
+            }
+        }
+
+        .tools {
+            position: relative;
+            z-index: 3;
+            background-color: var(--primary-color);
+            width: 56px;
+            flex: 0 0 auto;
+            min-width: 52px;
+            min-height: 180px;
+            max-width: 180px;
+            max-height: calc(100vh - 60px);
+            padding: 32px 5px 8px;
+            overflow: auto;
+            resize: both;
+        }
+
+        .tool-list {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            max-height: calc(100% - 24px);
+            overflow-y: auto;
+            scrollbar-width: none;
+        }
+
+        .panel-grip {
+            display: grid;
+            grid-template-columns: repeat(3, 3px);
+            grid-template-rows: repeat(2, 3px);
+            gap: 2px;
+            width: 24px;
+            height: 24px;
+            flex: 0 0 auto;
+            place-content: center;
+            border: 1px solid #343b35;
+            border-radius: 7px;
+            background: #171b18;
+            cursor: grab;
+            touch-action: none;
+        }
+
+        .panel-grip span {
+            width: 3px;
+            height: 3px;
+            border-radius: 50%;
+            background: #879188;
+        }
+
+        .panel-grip:hover,
+        .panel-grip:focus-visible {
+            border-color: #4a5a4d;
+            outline: 2px solid #22c55e55;
+            outline-offset: 1px;
+        }
+
+        .panel-grip:active {
+            cursor: grabbing;
+        }
+
+        .panel-grip--tools {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            z-index: 2;
+        }
+
+        .panel-floating {
+            position: fixed !important;
+            z-index: 8 !important;
+            box-shadow: 0 16px 38px #0009;
+        }
+
+        .tool-button {
+            display: grid;
+            width: 42px;
+            height: 42px;
+            flex: 0 0 auto;
+            place-items: center;
+            border: 1px solid transparent;
+            border-radius: 10px;
+            background: transparent;
+            color: #a7aaa8;
+            cursor: pointer;
+            transition: background-color 140ms ease, color 140ms ease, border-color 140ms ease;
+        }
+
+        .tool-button:hover,
+        .tool-button:focus-visible {
+            border-color: #303832;
+            outline: none;
+            background: #171d19;
+            color: #e8eee9;
+        }
+
+        .tool-button[aria-pressed="true"] {
+            border-color: #24452f;
+            background: #17241b;
+            color: var(--accent-color);
+            box-shadow: inset 0 0 0 1px #1c3323;
+        }
+
+        .tool-icon {
+            display: block;
+            width: 20px;
+            height: 20px;
+            fill: none;
+            stroke: currentColor;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            stroke-width: 1.75;
+        }
+
+        .tool-icon--filled {
+            fill: currentColor;
+        }
+
+        .tool-divider {
+            width: 26px;
+            height: 1px;
+            margin: 3px 0;
+            background: #292d2a;
+        }
+
+        .tool-settings {
+            position: fixed;
+            top: 12px;
+            right: 68px;
+            width: min(320px, calc(100vw - 88px));
+            min-width: min(220px, calc(100vw - 24px));
+            min-height: 160px;
+            max-height: calc(100vh - 24px);
+            max-width: min(480px, calc(100vw - 24px));
+            padding: 12px;
+            overflow: auto;
+            resize: both;
+            border: 1px solid #2b332d;
+            border-radius: 14px;
+            background: #141815;
+            box-shadow: 0 18px 48px rgb(0 0 0 / 55%);
+            transform: none;
+            animation: menu-appear 140ms ease-out;
+        }
+
+        .tool-settings[hidden],
+        .tool-settings-content[hidden] {
+            display: none;
+        }
+
+        .tool-settings::after {
+            position: absolute;
+            top: var(--pointer-y, 24px);
+            right: -7px;
+            width: 13px;
+            height: 13px;
+            border-radius: 2px;
+            background: #141815;
+            content: "";
+            transform: rotate(45deg);
+            margin-top: -6px;
+        }
+
+        .tool-settings-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 9px;
+            height: auto;
+            padding: 0;
+            background: transparent;
+        }
+
+        .tool-settings-header-actions {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .tool-settings-kicker {
+            display: none;
+            color: var(--accent-color);
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+        }
+
+        .tool-settings-title {
+            color: #f2f5f2;
+            font-size: 16px;
+            font-weight: 650;
+        }
+
+        .tool-settings-close {
+            display: grid;
+            width: 26px;
+            height: 26px;
+            flex: 0 0 auto;
+            place-items: center;
+            border: 0;
+            border-radius: 7px;
+            background: transparent;
+            color: #919992;
+            cursor: pointer;
+        }
+
+        .tool-settings-close:hover,
+        .tool-settings-close:focus-visible {
+            outline: none;
+            background: #252b26;
+            color: #fff;
+        }
+
+        .tool-settings-description {
+            display: none;
+            color: #9da69f;
+            font-size: 11px;
+            line-height: 1.5;
+        }
+
+        .setting-group {
+            margin-top: 9px;
+        }
+
+        .setting-label-row,
+        .setting-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .setting-label,
+        .setting-row-label {
+            color: #cbd1cc;
+            font-size: 11px;
+        }
+
+        .setting-value,
+        .setting-help {
+            color: #858e87;
+            font-size: 10px;
+        }
+
+        .setting-range {
+            display: block;
+            width: 100%;
+            height: 4px;
+            margin-top: 9px;
+            accent-color: var(--accent-color);
+        }
+
+        .setting-select,
+        .setting-input {
+            width: 100%;
+            height: 32px;
+            margin-top: 7px;
+            padding: 0 9px;
+            border: 1px solid #343b35;
+            border-radius: 7px;
+            background: #1b201c;
+            color: #e5e9e6;
+            font: inherit;
+            font-size: 11px;
+        }
+
+        .setting-segments,
+        .setting-mode-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 5px;
+            margin-top: 7px;
+        }
+
+        .setting-segments.three-columns {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .setting-option {
+            position: relative;
+            display: block;
+            cursor: pointer;
+        }
+
+        .setting-option input {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            opacity: 0;
+        }
+
+        .setting-option span {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            padding: 8px 7px;
+            border: 1px solid #303731;
+            border-radius: 7px;
+            color: #aeb6af;
+            font-size: 10px;
+            text-align: center;
+        }
+
+        .setting-option svg {
+            width: 13px;
+            height: 13px;
+            flex: 0 0 auto;
+        }
+
+        .tool-context-section .setting-option span {
+            gap: 3px;
+            padding: 7px 3px;
+            font-size: 9px;
+        }
+
+        .setting-option input:checked + span {
+            border-color: #356a44;
+            background: #1b2b20;
+            color: var(--accent-color);
+        }
+
+        .setting-option input:focus-visible + span {
+            outline: 2px solid var(--accent-color);
+            outline-offset: 2px;
+        }
+
+        .setting-check {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #cbd1cc;
+            font-size: 11px;
+            cursor: pointer;
+        }
+
+        .setting-check input {
+            accent-color: var(--accent-color);
+        }
+
+        .setting-divider {
+            height: 1px;
+            margin: 13px 0;
+            background: #2a302b;
+        }
+
+        .shortcut-key {
+            display: inline-flex;
+            min-width: 34px;
+            height: 23px;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #424943;
+            border-bottom-width: 2px;
+            border-radius: 5px;
+            color: #e4e9e5;
+            font-size: 10px;
+        }
+
+        .magnifier-preview {
+            position: relative;
+            width: 76px;
+            height: 76px;
+            margin: 8px auto 4px;
+            overflow: hidden;
+            border: 3px solid #dfe6e0;
+            border-radius: 50%;
+            background:
+                linear-gradient(90deg, transparent 49%, #ffffff88 50%, transparent 51%),
+                linear-gradient(transparent 49%, #ffffff88 50%, transparent 51%),
+                linear-gradient(90deg, #f8f8f8 50%, #555 50%);
+            background-size: 18px 18px, 18px 18px, 36px 36px;
+            box-shadow: 0 4px 16px #0009;
+        }
+
+        .magnifier-preview::after {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 5px;
+            height: 5px;
+            border: 1px solid #fff;
+            border-radius: 50%;
+            content: "";
+            transform: translate(-50%, -50%);
+        }
+
+        .recent-colors {
+            display: flex;
+            gap: 7px;
+            margin-top: 8px;
+        }
+
+        .recent-color {
+            position: relative;
+            width: 27px;
+            height: 27px;
+            padding: 0;
+            border: 1px solid #ffffff3b;
+            border-radius: 8px;
+            background: var(--recent-color);
+            cursor: pointer;
+            transition: transform 120ms ease, border-color 120ms ease;
+        }
+
+        .recent-color:hover,
+        .recent-color:focus-visible {
+            outline: 2px solid #fff;
+            outline-offset: 2px;
+            border-color: #fff;
+            transform: scale(1.06);
+        }
+
+        .recent-color:first-child::after {
+            position: absolute;
+            right: -4px;
+            bottom: -4px;
+            display: grid;
+            width: 13px;
+            height: 13px;
+            place-items: center;
+            border-radius: 50%;
+            background: #252b26;
+            color: #eaf3eb;
+            content: "4";
+            font-size: 8px;
+        }
+
+        .shape-grid {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 5px;
+            margin-top: 7px;
+        }
+
+        .shape-choice {
+            display: grid;
+            height: 36px;
+            place-items: center;
+            border: 1px solid #303731;
+            border-radius: 7px;
+            background: transparent;
+            color: #cbd1cc;
+            font-size: 10px;
+            cursor: pointer;
+        }
+
+        .shape-choice[aria-pressed="true"] {
+            border-color: #356a44;
+            background: #1b2b20;
+            color: var(--accent-color);
+        }
+
+        .brush-picker {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(102px, 0.9fr);
+            align-items: stretch;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .brush-preset-list-column {
+            display: grid;
+            min-width: 0;
+            align-content: start;
+            gap: 4px;
+        }
+
+        .brush-preset-list {
+            display: grid;
+            align-content: start;
+            gap: 4px;
+            max-height: 90px;
+            padding-right: 2px;
+            overflow-y: auto;
+            overscroll-behavior: contain;
+            scrollbar-color: #465148 #1a1e1a;
+            scrollbar-width: thin;
+        }
+
+        .list-load-status {
+            color: #78837a;
+            font-size: 8px;
+            text-align: right;
+        }
+
+        .brush-preset {
+            display: flex;
+            min-width: 0;
+            min-height: 31px;
+            align-items: center;
+            gap: 7px;
+            padding: 4px 6px;
+            overflow: hidden;
+            border: 1px solid #303731;
+            border-radius: 7px;
+            background: #191e1a;
+            color: #cbd1cc;
+            font: inherit;
+            font-size: 9px;
+            text-align: left;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            cursor: pointer;
+        }
+
+        .brush-preset:hover,
+        .brush-preset:focus-visible,
+        .brush-preset[aria-pressed="true"] {
+            outline: none;
+            border-color: #356a44;
+            background: #1b2b20;
+            color: var(--accent-color);
+        }
+
+        .brush-preset-mark {
+            width: 20px;
+            height: 4px;
+            flex: 0 0 auto;
+            border-radius: 50%;
+            background: var(--preset-color, #f97316);
+            box-shadow: 0 0 6px #f9731640;
+        }
+
+        .brush-preview-panel {
+            display: flex;
+            min-width: 0;
+            align-items: center;
+            gap: 7px;
+            padding: 8px 6px;
+            overflow: hidden;
+            border: 1px solid #323a33;
+            border-radius: 9px;
+            background:
+                radial-gradient(circle at 16% 18%, #263a2b 0, transparent 44%),
+                #171c18;
+        }
+
+        .brush-preview-panel.is-peeking {
+            animation: brush-peek 220ms ease-out;
+        }
+
+        .brush-preview-panel[data-preset="hard-round"] .brush-preview-image {
+            color: #e8ba72;
+        }
+
+        .brush-preview-panel[data-preset="ink"] .brush-preview-image {
+            color: #86c9bd;
+        }
+
+        .brush-preview-image {
+            width: 29px;
+            height: 38px;
+            flex: 0 0 auto;
+            color: var(--accent-color);
+            filter: drop-shadow(0 3px 5px #0008);
+        }
+
+        .brush-preview-image path {
+            fill: currentColor;
+            stroke: #d7eadb;
+            stroke-width: 1.2;
+        }
+
+        .brush-preview-image .brush-preview-detail {
+            fill: none;
+            stroke: currentColor;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            stroke-width: 2;
+        }
+
+        .brush-preview-copy {
+            min-width: 0;
+        }
+
+        .brush-preview-name {
+            display: block;
+            color: #f0f4f0;
+            font-size: 9px;
+            line-height: 1.3;
+            overflow-wrap: anywhere;
+        }
+
+        .brush-preview-description {
+            display: block;
+            margin-top: 4px;
+            color: #8e9a90;
+            font-size: 8px;
+            line-height: 1.4;
+        }
+
+        .font-source-options {
+            margin-top: 7px;
+        }
+
+        .font-list {
+            display: grid;
+            gap: 3px;
+            max-height: 138px;
+            margin-top: 7px;
+            padding: 3px;
+            overflow-y: auto;
+            border: 1px solid #303731;
+            border-radius: 8px;
+            background: #111512;
+            overscroll-behavior: contain;
+            scrollbar-color: #465148 #171b18;
+            scrollbar-width: thin;
+        }
+
+        .font-load-status {
+            display: block;
+            margin-top: 4px;
+            color: #78837a;
+            font-size: 8px;
+            text-align: right;
+        }
+
+        .font-choice {
+            display: flex;
+            min-height: 29px;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            padding: 5px 8px;
+            border: 1px solid transparent;
+            border-radius: 6px;
+            background: transparent;
+            color: #cbd1cc;
+            font: inherit;
+            font-size: 10px;
+            text-align: left;
+            cursor: pointer;
+        }
+
+        .font-choice:hover,
+        .font-choice:focus-visible,
+        .font-choice[aria-selected="true"] {
+            outline: none;
+            border-color: #344237;
+            background: #1b2b20;
+            color: #e7f2e9;
+        }
+
+        .font-choice[hidden] {
+            display: none;
+        }
+
+        .font-choice-source {
+            color: #7d897f;
+            font-size: 8px;
+        }
+
+        .font-preview-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-top: 8px;
+            padding: 8px 10px;
+            border: 1px solid #303731;
+            border-radius: 8px;
+            background: #171b18;
+        }
+
+        .font-preview-name {
+            color: #aab4ac;
+            font-size: 9px;
+        }
+
+        .font-preview-sample {
+            color: #eef3ee;
+            font-size: 16px;
+            line-height: 1;
+        }
+
+        @keyframes brush-peek {
+            from {
+                opacity: 0.5;
+                transform: translateX(9px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .tool-label-tooltip {
+            position: fixed;
+            top: 8px;
+            left: 8px;
+            z-index: 30;
+            display: grid;
+            width: min(264px, calc(100vw - 16px));
+            gap: 9px;
+            padding: 10px;
+            border: 1px solid #414a42;
+            border-radius: 12px;
+            background: #141815f5;
+            box-shadow: 0 12px 30px #0009;
+            color: #e9eee9;
+            font-size: 10px;
+            line-height: 1.45;
+            pointer-events: none;
+            overflow-wrap: anywhere;
+        }
+
+        .tool-label-tooltip[hidden] {
+            display: none;
+        }
+
+        .tool-tooltip-heading {
+            display: grid;
+            grid-template-columns: 36px minmax(0, 1fr);
+            align-items: center;
+            gap: 9px;
+        }
+
+        .tool-tooltip-icon {
+            display: grid;
+            width: 36px;
+            height: 36px;
+            place-items: center;
+            border: 1px solid #344237;
+            border-radius: 10px;
+            background: #1b2b20;
+            color: #d7ecdc;
+        }
+
+        .tool-tooltip-icon[data-color] {
+            border-color: #ffffff55;
+            background: var(--tooltip-swatch-color);
+        }
+
+        .tool-tooltip-icon svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .tool-tooltip-copy {
+            min-width: 0;
+        }
+
+        .tool-tooltip-title {
+            display: block;
+            color: #f0f3f0;
+            font-size: 11px;
+            font-weight: 650;
+        }
+
+        .tool-tooltip-description {
+            display: block;
+            margin-top: 2px;
+            color: #9aa49c;
+            font-size: 9px;
+        }
+
+        .tool-tooltip-preview {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            min-height: 40px;
+            padding: 5px 7px;
+            border: 1px solid #303731;
+            border-radius: 8px;
+            background: #101411;
+        }
+
+        .tool-tooltip-preview-art {
+            display: grid;
+            width: 72px;
+            height: 28px;
+            flex: 0 0 auto;
+            place-items: center;
+            overflow: hidden;
+            border-radius: 5px;
+            background:
+                linear-gradient(#242a25 1px, transparent 1px),
+                linear-gradient(90deg, #242a25 1px, transparent 1px),
+                #181d19;
+            background-size: 8px 8px;
+        }
+
+        .tool-tooltip-preview-art svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .tool-tooltip-preview-stroke {
+            fill: none;
+            stroke: var(--tooltip-preview-color, var(--accent-color));
+            stroke-linecap: round;
+            stroke-width: 3;
+        }
+
+        .tool-tooltip-preview-copy {
+            display: grid;
+            min-width: 0;
+            gap: 2px;
+        }
+
+        .tool-tooltip-preview-label {
+            color: #77827a;
+            font-size: 8px;
+        }
+
+        .tool-tooltip-preview-value {
+            overflow: hidden;
+            color: #dce4dd;
+            font-family: Consolas, monospace;
+            font-size: 9px;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .tool-tooltip-book-note {
+            display: none;
+            color: #9aa49c;
+            font-size: 9px;
+            line-height: 1.55;
+        }
+
+        .tool-label-tooltip[data-mode="compact"] {
+            display: block;
+            width: max-content;
+            max-width: min(220px, calc(100vw - 16px));
+            padding: 7px 10px;
+            border-radius: 7px;
+        }
+
+        .tool-label-tooltip[data-mode="compact"] .tool-tooltip-heading {
+            display: block;
+        }
+
+        .tool-label-tooltip[data-mode="compact"] .tool-tooltip-icon,
+        .tool-label-tooltip[data-mode="compact"] .tool-tooltip-description,
+        .tool-label-tooltip[data-mode="compact"] .tool-tooltip-preview,
+        .tool-label-tooltip[data-mode="compact"] .tool-tooltip-book-note {
+            display: none;
+        }
+
+        .tool-label-tooltip[data-mode="book"] {
+            width: min(330px, calc(100vw - 16px));
+            gap: 11px;
+            padding: 13px;
+        }
+
+        .tool-label-tooltip[data-mode="book"] .tool-tooltip-book-note {
+            display: block;
+        }
+
+        .tool-label-tooltip[data-mode="book"] .tool-tooltip-preview-art {
+            width: 92px;
+            height: 36px;
+        }
+
+        .tool-label-tooltip[hidden] {
+            display: none;
+        }
+
+        .settings-dialog {
+            width: min(460px, calc(100vw - 28px));
+            max-width: calc(100vw - 28px);
+            max-height: min(680px, calc(100vh - 28px));
+            margin: auto;
+            padding: 0;
+            overflow: auto;
+            border: 1px solid #343b35;
+            border-radius: 12px;
+            background: #111512;
+            color: #e9eee9;
+            box-shadow: 0 24px 80px #000b;
+        }
+
+        .settings-dialog::backdrop {
+            background: #000a;
+            backdrop-filter: blur(4px);
+        }
+
+        .settings-modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            height: auto;
+            padding: 17px 19px;
+            border-bottom: 1px solid #292f2a;
+            background: #111512;
+        }
+
+        .settings-modal-title {
+            color: #f2f5f2;
+            font-size: 16px;
+            font-weight: 650;
+        }
+
+        .settings-modal-close {
+            display: grid;
+            width: 30px;
+            height: 30px;
+            place-items: center;
+            border: 1px solid #303731;
+            border-radius: 8px;
+            background: #171b18;
+            color: #aab2ac;
+            cursor: pointer;
+        }
+
+        .settings-modal-content {
+            display: grid;
+            gap: 18px;
+            padding: 18px 19px;
+        }
+
+        .settings-modal-section {
+            display: grid;
+            gap: 7px;
+        }
+
+        .settings-modal-section h3 {
+            color: #e6ebe7;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .settings-modal-description {
+            color: #879189;
+            font-size: 10px;
+            line-height: 1.5;
+        }
+
+        .hint-mode-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 7px;
+        }
+
+        .hint-mode-choice {
+            position: relative;
+            cursor: pointer;
+        }
+
+        .hint-mode-choice input {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            opacity: 0;
+        }
+
+        .hint-mode-choice span {
+            display: grid;
+            min-height: 54px;
+            grid-template-columns: 17px minmax(0, 1fr);
+            align-content: center;
+            align-items: center;
+            gap: 2px 7px;
+            padding: 8px 9px;
+            border: 1px solid #303731;
+            border-radius: 8px;
+            background: #151a16;
+        }
+
+        .hint-mode-choice svg {
+            width: 15px;
+            height: 15px;
+            grid-row: span 2;
+            color: #8e9a90;
+        }
+
+        .hint-mode-choice strong {
+            color: #dce3dd;
+            font-size: 10px;
+            font-weight: 550;
+        }
+
+        .hint-mode-choice small {
+            color: #7d887f;
+            font-size: 8px;
+            line-height: 1.35;
+        }
+
+        .hint-mode-choice input:checked + span {
+            border-color: #45634b;
+            background: #1b2b20;
+        }
+
+        .hint-mode-choice input:checked + span svg,
+        .hint-mode-choice input:checked + span strong {
+            color: #b7e5c1;
+        }
+
+        .hint-mode-choice input:focus-visible + span {
+            outline: 2px solid var(--accent-color);
+            outline-offset: 2px;
+        }
+
+        .settings-modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            padding: 0 19px 18px;
+        }
+
+        .settings-done {
+            min-width: 76px;
+            height: 32px;
+            padding: 0 12px;
+            border: 1px solid #356a44;
+            border-radius: 8px;
+            background: #1b2b20;
+            color: #b7e5c1;
+            font: inherit;
+            font-size: 10px;
+            cursor: pointer;
+        }
+
+        .settings-reset {
+            justify-self: start;
+            margin-top: 5px;
+            padding: 6px 9px;
+            border: 1px solid #343b35;
+            border-radius: 7px;
+            background: #171b18;
+            color: #aab2ac;
+            font: inherit;
+            font-size: 10px;
+            cursor: pointer;
+        }
+
+        .settings-reset:hover,
+        .settings-reset:focus-visible,
+        .settings-modal-close:hover,
+        .settings-modal-close:focus-visible {
+            border-color: #4a544c;
+            outline: none;
+            background: #202621;
+            color: #eef3ef;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .tool-button,
+            .quick-shape,
+            .color-copy {
+                transition: none;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .tool-button {
+                transition: none;
+            }
+
+            .tool-settings {
+                animation: none;
+            }
+
+            .tool-preview-stroke {
+                transition: none;
+            }
+
+            .brush-preview-panel.is-peeking {
+                animation: none;
+            }
+        }
+
+        @media (max-width: 360px) {
+            .brush-picker {
+                grid-template-columns: minmax(0, 1fr);
+            }
+
+            .brush-preview-panel {
+                min-height: 48px;
+            }
+        }
+
+        .canvas {
+            background-color: var(--secondary-color);
+            height: calc(100vh - 60px);
+            width: 100%;
+            border-radius: var(--border-radius);
+        }
+    </style>
+        <header>
+            <nav aria-label="メインナビゲーション">
+                <details class="main-navigation">
+                    <summary class="navigation-toggle">
+                        <img src="verse-paint-logo.svg" alt="">
+                        <span>VersePaint</span>
+                        <span class="navigation-chevron" aria-hidden="true"></span>
+                    </summary>
+                    <ul class="navigation-menu">
+                        <li>
+                            <details class="navigation-submenu">
+                                <summary class="submenu-toggle">
+                                    ファイル
+                                    <span class="submenu-chevron" aria-hidden="true"></span>
+                                </summary>
+                                <ul class="submenu-menu">
+                                    <li><button class="menu-command" type="button" disabled>新規作成</button></li>
+                                    <li><button class="menu-command" type="button" disabled>開く...</button></li>
+                                    <li><button class="menu-command" type="button" disabled>保存</button></li>
+                                    <li><button class="menu-command" type="button" disabled>名前を付けて保存...</button></li>
+                                </ul>
+                            </details>
+                        </li>
+                        <li>
+                            <details class="navigation-submenu">
+                                <summary class="submenu-toggle">編集<span class="submenu-chevron" aria-hidden="true"></span></summary>
+                                <ul class="submenu-menu">
+                                    <li><button class="menu-command" type="button" disabled>元に戻す</button></li>
+                                    <li><button class="menu-command" type="button" disabled>やり直し</button></li>
+                                    <li><button class="menu-command" type="button" disabled>切り取り</button></li>
+                                    <li><button class="menu-command" type="button" disabled>コピー</button></li>
+                                    <li><button class="menu-command" type="button" disabled>貼り付け</button></li>
+                                </ul>
+                            </details>
+                        </li>
+                        <li>
+                            <details class="navigation-submenu">
+                                <summary class="submenu-toggle">選択<span class="submenu-chevron" aria-hidden="true"></span></summary>
+                                <ul class="submenu-menu">
+                                    <li><button class="menu-command" type="button" disabled>すべて選択</button></li>
+                                    <li><button class="menu-command" type="button" disabled>選択解除</button></li>
+                                    <li><button class="menu-command" type="button" disabled>選択範囲を反転</button></li>
+                                </ul>
+                            </details>
+                        </li>
+                        <li>
+                            <details class="navigation-submenu">
+                                <summary class="submenu-toggle">オブジェクト<span class="submenu-chevron" aria-hidden="true"></span></summary>
+                                <ul class="submenu-menu">
+                                    <li><button class="menu-command" type="button" disabled>グループ化</button></li>
+                                    <li><button class="menu-command" type="button" disabled>グループ解除</button></li>
+                                    <li><button class="menu-command" type="button" disabled>最前面へ</button></li>
+                                    <li><button class="menu-command" type="button" disabled>最背面へ</button></li>
+                                </ul>
+                            </details>
+                        </li>
+                        <li>
+                            <details class="navigation-submenu">
+                                <summary class="submenu-toggle">効果<span class="submenu-chevron" aria-hidden="true"></span></summary>
+                                <ul class="submenu-menu">
+                                    <li><button class="menu-command" type="button" disabled>色調補正</button></li>
+                                    <li><button class="menu-command" type="button" disabled>フィルター</button></li>
+                                </ul>
+                            </details>
+                        </li>
+                        <li>
+                            <details class="navigation-submenu">
+                                <summary class="submenu-toggle">表示<span class="submenu-chevron" aria-hidden="true"></span></summary>
+                                <ul class="submenu-menu">
+                                    <li><button class="menu-command" type="button" disabled>ズームイン</button></li>
+                                    <li><button class="menu-command" type="button" disabled>ズームアウト</button></li>
+                                    <li><button class="menu-command" type="button" disabled>画面に合わせる</button></li>
+                                    <li><button class="menu-command" type="button" disabled>グリッド表示</button></li>
+                                </ul>
+                            </details>
+                        </li>
+                        <li>
+                            <details class="navigation-submenu">
+                                <summary class="submenu-toggle">パネル<span class="submenu-chevron" aria-hidden="true"></span></summary>
+                                <ul class="submenu-menu">
+                                    <li><a href="#properties">プロパティ</a></li>
+                                    <li><a href="#tools">ツール</a></li>
+                                </ul>
+                            </details>
+                        </li>
+                        <li>
+                            <details class="navigation-submenu">
+                                <summary class="submenu-toggle">拡張機能<span class="submenu-chevron" aria-hidden="true"></span></summary>
+                                <ul class="submenu-menu">
+                                    <li><button class="menu-command" type="button" disabled>拡張機能を管理</button></li>
+                                    <li><button class="menu-command" type="button" disabled>拡張機能を追加</button></li>
+                                </ul>
+                            </details>
+                        </li>
+                        <li class="menu-divider" role="separator"></li>
+                        <li><button class="exit-command" type="button">終了</button></li>
+                    </ul>
+                </details>
+            </nav>
+            <div class="header-actions">
+                <button class="settings-trigger" id="settings-open" type="button" aria-label="設定を開く" title="設定">
+                    <i class="tool-icon" data-lucide="settings-2" aria-hidden="true"></i>
+                </button>
+            </div>
+        </header>
+    <main>
+        <aside class="properties" id="properties">
+            <section class="tool-preview-section" id="tool-preview-section" aria-label="ツールプレビュー">
+                <div class="tool-preview-heading">
+                    <h2 class="tool-preview-title">プレビュー</h2>
+                    <div class="tool-preview-actions">
+                        <output class="tool-preview-name" id="tool-preview-name">カーソル</output>
+                        <button class="panel-grip" type="button" data-panel-grip="properties" aria-label="プロパティパネルをドラッグ">
+                            <span></span><span></span><span></span><span></span><span></span><span></span>
+                        </button>
+                    </div>
+                </div>
+                <div class="tool-preview-stage" id="tool-preview-stage" data-tool="cursor" role="img" aria-label="現在のツールと色のプレビュー">
+                    <svg viewBox="0 0 180 72" aria-hidden="true">
+                        <path class="tool-preview-stroke" id="tool-preview-stroke" d="M12 48 C34 45 34 19 58 24 S83 54 105 42 S135 19 168 25"></path>
+                    </svg>
+                    <span class="tool-preview-mark" id="tool-preview-mark">選択</span>
+                </div>
+            </section>
+            <section class="palette-section" id="color-palette-section" aria-label="色の選択">
+                <label class="visually-hidden" for="palette-design">パレットの種類</label>
+                <select class="palette-design-select" id="palette-design">
+                    <option value="spectrum">色相スペクトラム</option>
+                    <option value="wheel">カラーホイール</option>
+                    <option value="pastel">パステルグリッド</option>
+                </select>
+                <div class="palette-stage" id="palette-stage" data-design="spectrum">
+                    <input class="palette-color-input" id="palette-color" type="color" value="#ff6600" aria-label="パレットから色を選択">
+                </div>
+                <div class="current-color" aria-live="polite">
+                    <button class="current-color-sample" id="current-color-toggle" type="button" aria-label="カラーコードの表示形式を追加" title="カラーコードの表示形式"></button>
+                    <details class="color-format-menu" id="color-format-menu">
+                        <summary class="color-format-trigger" aria-label="表示するカラーコードを選択" title="表示形式を追加">
+                            <i class="tool-icon" data-lucide="plus" aria-hidden="true"></i>
+                        </summary>
+                        <div class="color-format-options">
+                            <label class="color-format-option"><input type="checkbox" data-format-toggle="hsl">HSL</label>
+                            <label class="color-format-option"><input type="checkbox" data-format-toggle="hsb">HSB</label>
+                            <label class="color-format-option"><input type="checkbox" data-format-toggle="oklch">OKLCH</label>
+                        </div>
+                    </details>
+                </div>
+                <div class="color-code-list" id="color-code-list">
+                    <div class="color-code-row" data-color-format="hex">
+                        <span class="color-code-label">HEX</span><output class="color-code-value" data-color-value="hex">#FF6600</output>
+                        <button class="color-copy" type="button" data-copy-format="hex" aria-label="HEXをコピー" title="コピー">
+                            <i class="tool-icon" data-lucide="copy" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                    <div class="color-code-row" data-color-format="rgb">
+                        <span class="color-code-label">RGB</span><output class="color-code-value" data-color-value="rgb">rgb(255, 102, 0)</output>
+                        <button class="color-copy" type="button" data-copy-format="rgb" aria-label="RGBをコピー" title="コピー">
+                            <i class="tool-icon" data-lucide="copy" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                    <div class="color-code-row" data-color-format="cmyk">
+                        <span class="color-code-label">CMYK</span><output class="color-code-value" data-color-value="cmyk">0%, 60%, 100%, 0%</output>
+                        <button class="color-copy" type="button" data-copy-format="cmyk" aria-label="CMYKをコピー" title="コピー">
+                            <i class="tool-icon" data-lucide="copy" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                    <div class="color-code-row" data-color-format="hsl" hidden>
+                        <span class="color-code-label">HSL</span><output class="color-code-value" data-color-value="hsl"></output>
+                        <button class="color-copy" type="button" data-copy-format="hsl" aria-label="HSLをコピー" title="コピー">
+                            <i class="tool-icon" data-lucide="copy" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                    <div class="color-code-row" data-color-format="hsb" hidden>
+                        <span class="color-code-label">HSB</span><output class="color-code-value" data-color-value="hsb"></output>
+                        <button class="color-copy" type="button" data-copy-format="hsb" aria-label="HSBをコピー" title="コピー">
+                            <i class="tool-icon" data-lucide="copy" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                    <div class="color-code-row" data-color-format="oklch" hidden>
+                        <span class="color-code-label">OKLCH</span><output class="color-code-value" data-color-value="oklch"></output>
+                        <button class="color-copy" type="button" data-copy-format="oklch" aria-label="OKLCHをコピー" title="コピー">
+                            <i class="tool-icon" data-lucide="copy" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                </div>
+                <output class="copy-status" id="copy-status" role="status" aria-live="polite"></output>
+            </section>
+
+            <section class="tool-context-section" id="tool-context-section" aria-label="選択中のツール設定">
+                <h2 class="tool-context-heading">
+                    <i class="tool-icon" id="active-tool-icon" data-lucide="mouse-pointer-2" aria-hidden="true"></i>
+                    <span id="active-tool-name">カーソル</span>
+                </h2>
+                <div class="quick-tool-settings" data-quick-settings="cursor">
+                    <span class="quick-setting-label">操作</span>
+                    <div class="setting-segments three-columns" role="radiogroup" aria-label="カーソル操作">
+                        <label class="setting-option"><input type="radio" name="quick-cursor-mode" value="select" checked><span><i data-lucide="mouse-pointer-2" aria-hidden="true"></i>選択</span></label>
+                        <label class="setting-option"><input type="radio" name="quick-cursor-mode" value="move"><span><i data-lucide="move" aria-hidden="true"></i>移動</span></label>
+                        <label class="setting-option"><input type="radio" name="quick-cursor-mode" value="transform"><span><i data-lucide="maximize-2" aria-hidden="true"></i>変形</span></label>
+                    </div>
+                </div>
+                <div class="quick-tool-settings" data-quick-settings="brush" hidden>
+                    <span class="quick-setting-label">ブラシタイプ</span>
+                    <div class="setting-segments" role="radiogroup" aria-label="ブラシタイプ">
+                        <label class="setting-option"><input type="radio" name="quick-brush-type" value="raster" checked><span><i data-lucide="image" aria-hidden="true"></i>ラスター</span></label>
+                        <label class="setting-option"><input type="radio" name="quick-brush-type" value="vector"><span><i data-lucide="pen-tool" aria-hidden="true"></i>ベクター</span></label>
+                    </div>
+                    <div class="quick-setting">
+                        <label class="quick-setting-label" for="quick-brush-size-number">サイズ</label>
+                        <div class="quick-setting-controls">
+                                <input class="setting-range quick-range" id="quick-brush-size-range" type="range" min="1" max="200" value="18" data-number-id="quick-brush-size-number" data-sync-key="brush-size">
+                                <input class="quick-setting-number" id="quick-brush-size-number" type="number" min="1" value="18" data-range-id="quick-brush-size-range" data-sync-key="brush-size" aria-label="ブラシサイズの数値">
+                        </div>
+                        <p class="quick-setting-hint">数値入力でスライダー上限を拡張できます</p>
+                    </div>
+                    <div class="quick-setting">
+                        <label class="quick-setting-label" for="quick-brush-hardness-number">硬さ</label>
+                        <div class="quick-setting-controls">
+                            <input class="setting-range quick-range" id="quick-brush-hardness-range" type="range" min="0" max="100" value="72" data-number-id="quick-brush-hardness-number" data-sync-key="brush-hardness">
+                            <input class="quick-setting-number" id="quick-brush-hardness-number" type="number" min="0" value="72" data-range-id="quick-brush-hardness-range" data-sync-key="brush-hardness" aria-label="ブラシの硬さの数値">
+                        </div>
+                    </div>
+                </div>
+                <div class="quick-tool-settings" data-quick-settings="eraser" hidden>
+                    <div class="quick-setting">
+                        <label class="quick-setting-label" for="quick-eraser-size-number">消しゴムサイズ</label>
+                        <div class="quick-setting-controls">
+                            <input class="setting-range quick-range" id="quick-eraser-size-range" type="range" min="1" max="200" value="32" data-number-id="quick-eraser-size-number" data-sync-key="eraser-size">
+                            <input class="quick-setting-number" id="quick-eraser-size-number" type="number" min="1" value="32" data-range-id="quick-eraser-size-range" data-sync-key="eraser-size" aria-label="消しゴムサイズの数値">
+                        </div>
+                        <p class="quick-setting-hint">数値入力でスライダー上限を拡張できます</p>
+                    </div>
+                    <div class="quick-setting">
+                        <label class="quick-setting-label" for="quick-eraser-hardness-number">硬さ</label>
+                        <div class="quick-setting-controls">
+                            <input class="setting-range quick-range" id="quick-eraser-hardness-range" type="range" min="0" max="100" value="85" data-number-id="quick-eraser-hardness-number" data-sync-key="eraser-hardness">
+                            <input class="quick-setting-number" id="quick-eraser-hardness-number" type="number" min="0" value="85" data-range-id="quick-eraser-hardness-range" data-sync-key="eraser-hardness" aria-label="消しゴムの硬さの数値">
+                        </div>
+                    </div>
+                </div>
+                <div class="quick-tool-settings" data-quick-settings="lasso" hidden>
+                    <span class="quick-setting-label">選択方法</span>
+                    <div class="setting-mode-grid" role="radiogroup" aria-label="選択方法">
+                        <label class="setting-option"><input type="radio" name="quick-selection-mode" value="free" checked><span><i data-lucide="lasso-select" aria-hidden="true"></i>自由</span></label>
+                        <label class="setting-option"><input type="radio" name="quick-selection-mode" value="rectangle"><span><i data-lucide="square-dashed" aria-hidden="true"></i>四角形</span></label>
+                        <label class="setting-option"><input type="radio" name="quick-selection-mode" value="polygon"><span><i data-lucide="waypoints" aria-hidden="true"></i>頂点式</span></label>
+                        <label class="setting-option"><input type="radio" name="quick-selection-mode" value="smart"><span><i data-lucide="scan-search" aria-hidden="true"></i>スマート</span></label>
+                    </div>
+                    <div class="quick-setting">
+                        <label class="quick-setting-label" for="quick-lasso-tolerance-number">境界の認識</label>
+                        <div class="quick-setting-controls">
+                            <input class="setting-range quick-range" id="quick-lasso-tolerance-range" type="range" min="0" max="100" value="55" data-number-id="quick-lasso-tolerance-number">
+                            <input class="quick-setting-number" id="quick-lasso-tolerance-number" type="number" min="0" value="55" data-range-id="quick-lasso-tolerance-range" aria-label="境界認識の数値">
+                        </div>
+                    </div>
+                </div>
+                <div class="quick-tool-settings" data-quick-settings="eyedropper" hidden>
+                    <label class="quick-setting-label" for="quick-eyedropper-zoom">スポイトズーム</label>
+                    <select class="quick-setting-select" id="quick-eyedropper-zoom"><option>4×</option><option selected>8×</option><option>12×</option><option>16×</option></select>
+                    <p class="quick-setting-hint">最近使った色はスポイト設定に記録されます</p>
+                </div>
+                <div class="quick-tool-settings" data-quick-settings="text" hidden>
+                    <label class="quick-setting-label" for="quick-text-font">フォント</label>
+                    <select class="quick-setting-select" id="quick-text-font"><option>Noto Sans JP</option><option>Google Fonts...</option><option>デバイス内のフォント...</option></select>
+                    <div class="quick-setting">
+                        <label class="quick-setting-label" for="quick-text-size-number">サイズ</label>
+                        <div class="quick-setting-controls">
+                            <input class="setting-range quick-range" id="quick-text-size-range" type="range" min="8" max="160" value="32" data-number-id="quick-text-size-number" data-sync-key="text-size">
+                            <input class="quick-setting-number" id="quick-text-size-number" type="number" min="1" value="32" data-range-id="quick-text-size-range" data-sync-key="text-size" aria-label="テキストサイズの数値">
+                        </div>
+                        <p class="quick-setting-hint">数値入力でスライダー上限を拡張できます</p>
+                    </div>
+                </div>
+                <div class="quick-tool-settings" data-quick-settings="shapes" hidden>
+                    <p class="quick-setting-label">図形</p>
+                    <div class="quick-shape-grid" aria-label="図形を選択">
+                        <button class="quick-shape" type="button" data-shape="line" data-icon="minus" aria-label="直線" aria-pressed="false"><i class="tool-icon" data-lucide="minus" aria-hidden="true"></i></button>
+                        <button class="quick-shape" type="button" data-shape="rectangle" data-icon="square" aria-label="四角形" aria-pressed="true"><i class="tool-icon" data-lucide="square" aria-hidden="true"></i></button>
+                        <button class="quick-shape" type="button" data-shape="ellipse" data-icon="circle" aria-label="楕円" aria-pressed="false"><i class="tool-icon" data-lucide="circle" aria-hidden="true"></i></button>
+                        <button class="quick-shape" type="button" data-shape="polygon" data-icon="hexagon" aria-label="多角形" aria-pressed="false"><i class="tool-icon" data-lucide="hexagon" aria-hidden="true"></i></button>
+                        <button class="quick-shape" type="button" data-shape="star" data-icon="star" aria-label="星" aria-pressed="false"><i class="tool-icon" data-lucide="star" aria-hidden="true"></i></button>
+                    </div>
+                    <div class="quick-setting" data-shape-only="polygon" hidden>
+                        <label class="quick-setting-label" for="quick-polygon-sides-number">頂点数</label>
+                        <div class="quick-setting-controls">
+                            <input class="setting-range quick-range" id="quick-polygon-sides-range" type="range" min="3" max="24" value="5" data-number-id="quick-polygon-sides-number" data-sync-key="polygon-sides">
+                            <input class="quick-setting-number" id="quick-polygon-sides-number" type="number" min="3" value="5" data-range-id="quick-polygon-sides-range" data-sync-key="polygon-sides" aria-label="多角形の頂点数">
+                        </div>
+                    </div>
+                    <output class="quick-setting-hint" id="selected-shape-label">四角形を選択中</output>
+                </div>
+                <div class="quick-tool-settings" data-quick-settings="bucket" hidden>
+                    <div class="quick-setting">
+                        <label class="quick-setting-label" for="quick-bucket-tolerance-number">境界の許容度</label>
+                        <div class="quick-setting-controls">
+                            <input class="setting-range quick-range" id="quick-bucket-tolerance-range" type="range" min="0" max="100" value="32" data-number-id="quick-bucket-tolerance-number" data-sync-key="bucket-tolerance">
+                            <input class="quick-setting-number" id="quick-bucket-tolerance-number" type="number" min="0" value="32" data-range-id="quick-bucket-tolerance-range" data-sync-key="bucket-tolerance" aria-label="境界の許容度">
+                        </div>
+                    </div>
+                </div>
+                <div class="quick-tool-settings" data-quick-settings="hand" hidden>
+                    <div class="setting-row"><span class="setting-row-label">カメラ移動</span><kbd class="shortcut-key">Space</kbd></div>
+                </div>
+            </section>
+
+            <section class="palette-section" id="swatch-palette-section" aria-labelledby="swatch-palette-heading">
+                <h2 class="palette-heading" id="swatch-palette-heading">スウォッチパレット</h2>
+                <div class="swatch-grid" id="swatch-grid" role="group" aria-label="色見本">
+                    <button class="swatch" type="button" style="--swatch-color: #111827" data-color="#111827" aria-label="濃紺" aria-pressed="false"></button>
+                    <button class="swatch" type="button" style="--swatch-color: #ffffff" data-color="#ffffff" aria-label="白" aria-pressed="false"></button>
+                    <button class="swatch" type="button" style="--swatch-color: #ef4444" data-color="#ef4444" aria-label="赤" aria-pressed="false"></button>
+                    <button class="swatch" type="button" style="--swatch-color: #f97316" data-color="#f97316" aria-label="オレンジ" aria-pressed="false"></button>
+                    <button class="swatch" type="button" style="--swatch-color: #facc15" data-color="#facc15" aria-label="黄色" aria-pressed="false"></button>
+                    <button class="swatch" type="button" style="--swatch-color: #22c55e" data-color="#22c55e" aria-label="緑" aria-pressed="false"></button>
+                    <button class="swatch" type="button" style="--swatch-color: #06b6d4" data-color="#06b6d4" aria-label="シアン" aria-pressed="false"></button>
+                    <button class="swatch" type="button" style="--swatch-color: #3b82f6" data-color="#3b82f6" aria-label="青" aria-pressed="false"></button>
+                    <button class="swatch" type="button" style="--swatch-color: #8b5cf6" data-color="#8b5cf6" aria-label="紫" aria-pressed="false"></button>
+                    <button class="swatch" type="button" style="--swatch-color: #ec4899" data-color="#ec4899" aria-label="ピンク" aria-pressed="false"></button>
+                    <button class="swatch" type="button" style="--swatch-color: #a16207" data-color="#a16207" aria-label="茶色" aria-pressed="false"></button>
+                    <button class="swatch" type="button" style="--swatch-color: #9ca3af" data-color="#9ca3af" aria-label="グレー" aria-pressed="false"></button>
+                </div>
+            </section>
+        </aside>
+        <div class="canvas" id="canvas">
+
+        </div>
+        <aside class="tools" id="tools">
+            <button class="panel-grip panel-grip--tools" type="button" data-panel-grip="tools" aria-label="ツールパネルをドラッグ">
+                <span></span><span></span><span></span><span></span><span></span><span></span>
+            </button>
+            <div class="tool-list" role="toolbar" aria-label="描画ツール" aria-orientation="vertical">
+                <button class="tool-button" type="button" data-tool="cursor" aria-label="カーソル" aria-pressed="true">
+                    <i class="tool-icon" data-lucide="mouse-pointer-2" aria-hidden="true"></i>
+                </button>
+                <button class="tool-button" type="button" data-tool="brush" aria-label="ペン" aria-pressed="false">
+                    <i class="tool-icon tool-icon--filled" data-lucide="pen" aria-hidden="true"></i>
+                </button>
+                <button class="tool-button" type="button" data-tool="eraser" aria-label="消しゴム" aria-pressed="false">
+                    <i class="tool-icon" data-lucide="eraser" aria-hidden="true"></i>
+                </button>
+                <button class="tool-button" type="button" data-tool="lasso" aria-label="輪投げ選択" aria-pressed="false">
+                    <i class="tool-icon" data-lucide="lasso" aria-hidden="true"></i>
+                </button>
+                <button class="tool-button" type="button" data-tool="eyedropper" aria-label="スポイト" aria-pressed="false">
+                    <i class="tool-icon" data-lucide="pipette" aria-hidden="true"></i>
+                </button>
+                <button class="tool-button" type="button" data-tool="text" aria-label="テキスト" aria-pressed="false">
+                    <i class="tool-icon" data-lucide="type" aria-hidden="true"></i>
+                </button>
+                <button class="tool-button" type="button" data-tool="shapes" aria-label="図形" aria-pressed="false">
+                    <i class="tool-icon" data-lucide="shapes" aria-hidden="true"></i>
+                </button>
+                <button class="tool-button" type="button" data-tool="bucket" aria-label="バケツ" aria-pressed="false">
+                    <i class="tool-icon" data-lucide="paint-bucket" aria-hidden="true"></i>
+                </button>
+                <span class="tool-divider" role="separator"></span>
+                <button class="tool-button" type="button" data-tool="hand" aria-label="手のひら・カメラ移動" aria-pressed="false">
+                    <i class="tool-icon" data-lucide="hand" aria-hidden="true"></i>
+                </button>
+            </div>
+
+            <section class="tool-settings" id="tool-settings" aria-label="ツール設定" hidden>
+                <header class="tool-settings-header">
+                    <div>
+                        <h2 class="tool-settings-title" id="tool-settings-title">カーソル</h2>
+                    </div>
+                    <div class="tool-settings-header-actions">
+                        <button class="panel-grip" type="button" data-panel-grip="tool-settings" aria-label="ツール設定カードをドラッグ">
+                            <span></span><span></span><span></span><span></span><span></span><span></span>
+                        </button>
+                        <button class="tool-settings-close" type="button" aria-label="設定カードを閉じる">×</button>
+                    </div>
+                </header>
+
+                <div class="tool-settings-content" data-settings-for="cursor" hidden>
+                    <p class="tool-settings-description">オブジェクトの選択・配置とキャンバスの操作を切り替えます。</p>
+                    <div class="setting-segments three-columns" role="radiogroup" aria-label="カーソルモード">
+                        <label class="setting-option"><input type="radio" name="cursor-mode" value="select" checked><span><i data-lucide="mouse-pointer-2" aria-hidden="true"></i>選択</span></label>
+                        <label class="setting-option"><input type="radio" name="cursor-mode" value="move"><span><i data-lucide="move" aria-hidden="true"></i>移動</span></label>
+                        <label class="setting-option"><input type="radio" name="cursor-mode" value="transform"><span><i data-lucide="maximize-2" aria-hidden="true"></i>変形</span></label>
+                    </div>
+                    <div class="setting-group setting-row">
+                        <label class="setting-check"><input type="checkbox" checked>複数選択を許可</label>
+                        <span class="setting-help">Shift</span>
+                    </div>
+                    <div class="setting-divider"></div>
+                    <div class="setting-row">
+                        <span class="setting-row-label">カメラ移動</span>
+                        <kbd class="shortcut-key">Space</kbd>
+                    </div>
+                    <p class="setting-help" style="margin-top: 7px;">Spaceを押しながらドラッグ</p>
+                    <div class="setting-group">
+                        <div class="setting-label-row"><label class="setting-label" for="cursor-sensitivity">移動感度</label><output class="setting-value">標準</output></div>
+                        <input class="setting-range" id="cursor-sensitivity" type="range" min="1" max="100" value="50">
+                    </div>
+                </div>
+
+                <div class="tool-settings-content" data-settings-for="brush" hidden>
+                    <p class="tool-settings-description">描画方式と筆圧・ストロークの補正を調整します。</p>
+                    <div class="brush-picker" aria-label="ブラシプリセット">
+                        <div class="brush-preset-list-column">
+                            <div class="brush-preset-list" id="brush-preset-list" role="group" aria-label="ブラシ一覧">
+                                <button class="brush-preset" type="button" data-brush-preset="soft-round" data-name="やわらか丸筆" data-description="境界をぼかす" data-color="#22c55e" aria-pressed="true"><span class="brush-preset-mark"></span>やわらか丸筆</button>
+                                <button class="brush-preset" type="button" data-brush-preset="hard-round" data-name="くっきり丸筆" data-description="輪郭をくっきり" data-color="#e8ba72" aria-pressed="false"><span class="brush-preset-mark" style="--preset-color: #e8ba72"></span>くっきり丸筆</button>
+                                <button class="brush-preset" type="button" data-brush-preset="ink" data-name="インクペン" data-description="均一で鋭い線" data-color="#86c9bd" aria-pressed="false"><span class="brush-preset-mark" style="--preset-color: #86c9bd"></span>インクペン</button>
+                            </div>
+                            <output class="list-load-status" id="brush-load-status" aria-live="polite">スクロールで追加</output>
+                        </div>
+                        <div class="brush-preview-panel" id="brush-preview-panel" data-preset="soft-round" aria-live="polite">
+                            <svg class="brush-preview-image" viewBox="0 0 40 48" aria-hidden="true">
+                                <path d="M27 3 37 13 18 32 8 35 11 25Z"></path>
+                                <path class="brush-preview-detail" d="m23 7 10 10M11 25l10 10M8 35l-3 8 8-3"></path>
+                            </svg>
+                            <div class="brush-preview-copy">
+                                <strong class="brush-preview-name" id="brush-preview-name">やわらか丸筆</strong>
+                                <span class="brush-preview-description" id="brush-preview-description">境界をぼかす</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="setting-segments" role="radiogroup" aria-label="ブラシ形式">
+                        <label class="setting-option"><input type="radio" name="brush-type" value="raster" checked><span><i data-lucide="image" aria-hidden="true"></i>ラスター</span></label>
+                        <label class="setting-option"><input type="radio" name="brush-type" value="vector"><span><i data-lucide="pen-tool" aria-hidden="true"></i>ベクター</span></label>
+                    </div>
+                    <div class="setting-group">
+                        <div class="setting-label-row"><label class="setting-label" for="brush-size">サイズ</label><output class="setting-value" data-sync-output="brush-size" data-unit=" px">18 px</output></div>
+                        <input class="setting-range" id="brush-size" type="range" min="1" max="200" value="18" data-sync-key="brush-size">
+                    </div>
+                    <div class="setting-group">
+                        <div class="setting-label-row"><label class="setting-label" for="brush-hardness">硬さ</label><output class="setting-value" data-sync-output="brush-hardness" data-unit="%">72%</output></div>
+                        <input class="setting-range" id="brush-hardness" type="range" min="0" max="100" value="72" data-sync-key="brush-hardness">
+                    </div>
+                    <div class="setting-group">
+                        <div class="setting-label-row"><label class="setting-label" for="brush-smoothing">手ブレ補正</label><output class="setting-value">38%</output></div>
+                        <input class="setting-range" id="brush-smoothing" type="range" min="0" max="100" value="38">
+                    </div>
+                    <div class="setting-group"><label class="setting-check"><input type="checkbox" checked>筆圧でサイズを変える</label></div>
+                </div>
+
+                <div class="tool-settings-content" data-settings-for="eraser" hidden>
+                    <p class="tool-settings-description">消去ブラシの大きさと輪郭のなめらかさを設定します。</p>
+                    <div class="setting-group">
+                        <div class="setting-label-row"><label class="setting-label" for="eraser-size">サイズ</label><output class="setting-value" data-sync-output="eraser-size" data-unit=" px">32 px</output></div>
+                        <input class="setting-range" id="eraser-size" type="range" min="1" max="200" value="32" data-sync-key="eraser-size">
+                    </div>
+                    <div class="setting-group">
+                        <div class="setting-label-row"><label class="setting-label" for="eraser-hardness">硬さ</label><output class="setting-value" data-sync-output="eraser-hardness" data-unit="%">85%</output></div>
+                        <input class="setting-range" id="eraser-hardness" type="range" min="0" max="100" value="85" data-sync-key="eraser-hardness">
+                    </div>
+                    <div class="setting-group">
+                        <div class="setting-label-row"><label class="setting-label" for="eraser-opacity">不透明度</label><output class="setting-value">100%</output></div>
+                        <input class="setting-range" id="eraser-opacity" type="range" min="1" max="100" value="100">
+                    </div>
+                    <div class="setting-group"><label class="setting-check"><input type="checkbox" checked>筆圧で強さを変える</label></div>
+                </div>
+
+                <div class="tool-settings-content" data-settings-for="lasso" hidden>
+                    <p class="tool-settings-description">自由選択・図形選択・スマート選択を切り替えます。</p>
+                    <div class="setting-mode-grid" role="radiogroup" aria-label="選択範囲の種類">
+                        <label class="setting-option"><input type="radio" name="selection-mode" value="free" checked><span><i data-lucide="lasso-select" aria-hidden="true"></i>自由</span></label>
+                        <label class="setting-option"><input type="radio" name="selection-mode" value="rectangle"><span><i data-lucide="square-dashed" aria-hidden="true"></i>四角形</span></label>
+                        <label class="setting-option"><input type="radio" name="selection-mode" value="polygon"><span><i data-lucide="waypoints" aria-hidden="true"></i>頂点式</span></label>
+                        <label class="setting-option"><input type="radio" name="selection-mode" value="smart"><span><i data-lucide="scan-search" aria-hidden="true"></i>スマート</span></label>
+                    </div>
+                    <div class="setting-group">
+                        <div class="setting-label-row"><label class="setting-label" for="selection-tolerance">境界の認識</label><output class="setting-value">中</output></div>
+                        <input class="setting-range" id="selection-tolerance" type="range" min="1" max="100" value="55">
+                    </div>
+                    <div class="setting-group"><label class="setting-check"><input type="checkbox" checked>エッジを滑らかにする</label></div>
+                </div>
+
+                <div class="tool-settings-content" data-settings-for="eyedropper" hidden>
+                    <p class="tool-settings-description">拡大表示で狙ったピクセルを確認し、使用色を記録します。</p>
+                    <div class="setting-row"><span class="setting-row-label">スポイトズーム</span><span class="setting-value">8×</span></div>
+                    <div class="magnifier-preview" aria-label="スポイトの拡大プレビュー"></div>
+                    <div class="setting-group">
+                        <div class="setting-label-row"><label class="setting-label" for="eyedropper-zoom">拡大率</label><output class="setting-value">8×</output></div>
+                        <input class="setting-range" id="eyedropper-zoom" type="range" min="2" max="16" value="8">
+                    </div>
+                    <div class="setting-divider"></div>
+                    <div class="setting-row"><span class="setting-row-label">最近使った色</span><span class="setting-help">使用頻度順</span></div>
+                    <div class="recent-colors" aria-label="最近使った色">
+                        <button class="recent-color" type="button" style="--recent-color: #22c55e" data-color="#22c55e" aria-label="グリーン #22C55E"></button>
+                        <button class="recent-color" type="button" style="--recent-color: #f97316" data-color="#f97316" aria-label="オレンジ #F97316"></button>
+                        <button class="recent-color" type="button" style="--recent-color: #3b82f6" data-color="#3b82f6" aria-label="ブルー #3B82F6"></button>
+                        <button class="recent-color" type="button" style="--recent-color: #ef4444" data-color="#ef4444" aria-label="レッド #EF4444"></button>
+                    </div>
+                </div>
+
+                <div class="tool-settings-content" data-settings-for="text" hidden>
+                    <p class="tool-settings-description">Google Fontsやデバイス内のフォントから選べます。</p>
+                    <div class="setting-label-row">
+                        <span class="setting-label">フォントライブラリ</span>
+                        <output class="setting-value" id="font-source-name">Google Fonts</output>
+                    </div>
+                    <div class="setting-segments font-source-options" role="radiogroup" aria-label="フォントライブラリ">
+                        <label class="setting-option"><input type="radio" name="font-source" value="google" checked><span><i data-lucide="globe" aria-hidden="true"></i>Google Fonts</span></label>
+                        <label class="setting-option"><input type="radio" name="font-source" value="device"><span><i data-lucide="monitor" aria-hidden="true"></i>このデバイス</span></label>
+                    </div>
+                    <label class="setting-label" for="font-search" style="display: block; margin-top: 11px;">フォントを検索</label>
+                    <input class="setting-input" id="font-search" type="search" placeholder="名前で絞り込み">
+                    <div class="font-list" id="font-list" role="listbox" aria-label="フォント一覧">
+                        <button class="font-choice" type="button" role="option" data-font="Noto Sans JP" aria-selected="true" tabindex="0">
+                            <span>Noto Sans JP</span><span class="font-choice-source">Google</span>
+                        </button>
+                        <button class="font-choice" type="button" role="option" data-font="M PLUS 1p" aria-selected="false" tabindex="-1">
+                            <span>M PLUS 1p</span><span class="font-choice-source">Google</span>
+                        </button>
+                        <button class="font-choice" type="button" role="option" data-font="Zen Kaku Gothic New" aria-selected="false" tabindex="-1">
+                            <span>Zen Kaku Gothic New</span><span class="font-choice-source">Google</span>
+                        </button>
+                        <button class="font-choice" type="button" role="option" data-font="BIZ UDPGothic" aria-selected="false" tabindex="-1">
+                            <span>BIZ UDPGothic</span><span class="font-choice-source">Google</span>
+                        </button>
+                        <button class="font-choice" type="button" role="option" data-font="Noto Serif JP" aria-selected="false" tabindex="-1">
+                            <span>Noto Serif JP</span><span class="font-choice-source">Google</span>
+                        </button>
+                    </div>
+                    <output class="font-load-status" id="font-load-status" aria-live="polite">スクロールで追加</output>
+                    <div class="font-preview-card">
+                        <span class="font-preview-name" id="font-selected-name">Noto Sans JP</span>
+                        <span class="font-preview-sample" id="font-preview-sample">Aa あ</span>
+                    </div>
+                    <div class="setting-group">
+                        <div class="setting-label-row"><label class="setting-label" for="text-size">サイズ</label><output class="setting-value" data-sync-output="text-size" data-unit=" px">32 px</output></div>
+                        <input class="setting-range" id="text-size" type="range" min="1" max="160" value="32" data-sync-key="text-size">
+                    </div>
+                    <div class="setting-group">
+                        <div class="setting-label-row"><label class="setting-label" for="text-weight">太さ</label><output class="setting-value">Medium</output></div>
+                        <input class="setting-range" id="text-weight" type="range" min="100" max="900" step="100" value="500">
+                    </div>
+                    <div class="setting-group"><label class="setting-check"><input type="checkbox">斜体</label></div>
+                </div>
+
+                <div class="tool-settings-content" data-settings-for="shapes" hidden>
+                    <p class="tool-settings-description">基本図形から多角形まで、形状ごとの属性を設定します。</p>
+                    <div class="setting-row">
+                        <span class="setting-row-label">選択中の図形</span>
+                        <output class="setting-value" id="selected-shape-output">四角形</output>
+                    </div>
+                    <div class="setting-group" data-shape-only="polygon" hidden>
+                        <div class="setting-label-row"><label class="setting-label" for="polygon-sides">多角形の頂点</label><output class="setting-value" data-sync-output="polygon-sides">5</output></div>
+                        <input class="setting-range" id="polygon-sides" type="range" min="3" max="24" value="5" data-sync-key="polygon-sides">
+                    </div>
+                    <div class="setting-group">
+                        <div class="setting-label-row"><label class="setting-label" for="shape-rounding">角の丸み</label><output class="setting-value">8%</output></div>
+                        <input class="setting-range" id="shape-rounding" type="range" min="0" max="100" value="8">
+                    </div>
+                    <div class="setting-group"><label class="setting-check"><input type="checkbox" checked>塗りつぶし</label></div>
+                    <label class="setting-label" for="shape-outline" style="display: block; margin-top: 11px;">輪郭線</label>
+                    <select class="setting-select" id="shape-outline"><option>ブラシ設定を使用</option><option>輪郭線なし</option></select>
+                </div>
+
+                <div class="tool-settings-content" data-settings-for="bucket" hidden>
+                    <p class="tool-settings-description">塗りつぶし範囲と境界ピクセルの許容度を調整します。</p>
+                    <div class="setting-group">
+                        <div class="setting-label-row"><label class="setting-label" for="bucket-tolerance">境界の許容度</label><output class="setting-value" data-sync-output="bucket-tolerance">32</output></div>
+                        <input class="setting-range" id="bucket-tolerance" type="range" min="0" max="100" value="32" data-sync-key="bucket-tolerance">
+                    </div>
+                    <div class="setting-group">
+                        <div class="setting-label-row"><label class="setting-label" for="bucket-gap">隙間を閉じる</label><output class="setting-value">8 px</output></div>
+                        <input class="setting-range" id="bucket-gap" type="range" min="0" max="32" value="8">
+                    </div>
+                    <div class="setting-group">
+                        <label class="setting-label" for="bucket-scope">塗りつぶし範囲</label>
+                        <select class="setting-select" id="bucket-scope"><option>連続領域のみ</option><option>レイヤー全体</option><option>すべてのレイヤー</option></select>
+                    </div>
+                    <div class="setting-group"><label class="setting-check"><input type="checkbox" checked>アンチエイリアス</label></div>
+                    <div class="setting-group"><label class="setting-check"><input type="checkbox">透明ピクセルを保護</label></div>
+                </div>
+
+                <div class="tool-settings-content" data-settings-for="hand" hidden>
+                    <p class="tool-settings-description">キャンバスをつかんで表示位置を移動します。</p>
+                    <div class="setting-row"><span class="setting-row-label">一時切り替え</span><kbd class="shortcut-key">Space</kbd></div>
+                    <div class="setting-group">
+                        <div class="setting-label-row"><label class="setting-label" for="pan-speed">カメラ移動速度</label><output class="setting-value">標準</output></div>
+                        <input class="setting-range" id="pan-speed" type="range" min="1" max="100" value="50">
+                    </div>
+                    <div class="setting-group"><label class="setting-check"><input type="checkbox" checked>慣性スクロール</label></div>
+                </div>
+            </section>
+            <div class="tool-label-tooltip" id="tool-label-tooltip" data-mode="cursor" role="tooltip" hidden>
+                <div class="tool-tooltip-heading">
+                    <span class="tool-tooltip-icon" id="tool-tooltip-icon">
+                        <i class="tool-icon" data-lucide="settings-2" aria-hidden="true"></i>
+                    </span>
+                    <span class="tool-tooltip-copy">
+                        <strong class="tool-tooltip-title" id="tool-tooltip-title"></strong>
+                        <span class="tool-tooltip-description" id="tool-tooltip-description"></span>
+                    </span>
+                </div>
+                <div class="tool-tooltip-preview">
+                    <span class="tool-tooltip-preview-art">
+                        <svg viewBox="0 0 72 28" aria-hidden="true">
+                            <path class="tool-tooltip-preview-stroke" id="tool-tooltip-stroke" d="M5 19 C17 18 17 7 28 10 S43 23 54 15 S64 8 68 10"></path>
+                        </svg>
+                    </span>
+                    <span class="tool-tooltip-preview-copy">
+                        <span class="tool-tooltip-preview-label" id="tool-tooltip-preview-label">プレビュー</span>
+                        <output class="tool-tooltip-preview-value" id="tool-tooltip-preview-value"></output>
+                    </span>
+                </div>
+                <p class="tool-tooltip-book-note" id="tool-tooltip-book-note"></p>
+            </div>
+        </aside>
+    </main>
+    <dialog class="settings-dialog" id="settings-dialog" aria-labelledby="settings-modal-title">
+        <header class="settings-modal-header">
+            <h2 class="settings-modal-title" id="settings-modal-title">設定</h2>
+            <button class="settings-modal-close" id="settings-close" type="button" aria-label="設定を閉じる">×</button>
+        </header>
+        <div class="settings-modal-content">
+            <section class="settings-modal-section" aria-labelledby="hint-settings-title">
+                <h3 id="hint-settings-title">ヒントの表示</h3>
+                <p class="settings-modal-description">カーソルの近くに操作の説明とプレビューを表示します。</p>
+                <div class="hint-mode-grid" role="radiogroup" aria-label="ヒントの表示形式">
+                    <label class="hint-mode-choice">
+                        <input type="radio" name="tooltip-mode" value="cursor" checked>
+                        <span><i data-lucide="mouse-pointer-2" aria-hidden="true"></i><strong>カーソル表示</strong><small>説明とプレビュー</small></span>
+                    </label>
+                    <label class="hint-mode-choice">
+                        <input type="radio" name="tooltip-mode" value="none">
+                        <span><i data-lucide="eye-off" aria-hidden="true"></i><strong>なし</strong><small>ヒントを隠す</small></span>
+                    </label>
+                    <label class="hint-mode-choice">
+                        <input type="radio" name="tooltip-mode" value="compact">
+                        <span><i data-lucide="minimize-2" aria-hidden="true"></i><strong>コンパクト</strong><small>ラベルだけ表示</small></span>
+                    </label>
+                    <label class="hint-mode-choice">
+                        <input type="radio" name="tooltip-mode" value="book">
+                        <span><i data-lucide="book-open" aria-hidden="true"></i><strong>ブック</strong><small>詳しい説明と見本</small></span>
+                    </label>
+                </div>
+            </section>
+            <section class="settings-modal-section" aria-labelledby="panel-settings-title">
+                <h3 id="panel-settings-title">パネル配置</h3>
+                <p class="settings-modal-description">右上の6点グリップで移動、右下の境界でサイズを調整できます。</p>
+                <label class="setting-label" for="panel-snap-grid">スナップ間隔</label>
+                <select class="setting-select" id="panel-snap-grid">
+                    <option value="8" selected>8 px · 細かく</option>
+                    <option value="12">12 px · 標準</option>
+                    <option value="16">16 px · 大きく</option>
+                </select>
+                <button class="settings-reset" id="panel-layout-reset" type="button">パネル配置をリセット</button>
+            </section>
+        </div>
+        <footer class="settings-modal-footer">
+            <button class="settings-done" id="settings-done" type="button">完了</button>
+        </footer>
+    </dialog>
+    <script src="https://unpkg.com/lucide@1.73.0/dist/umd/lucide.min.js"></script>
+    <script>
+        if (window.lucide) {
+            window.lucide.createIcons();
+        } else {
+            console.error("Lucide icons failed to load; tool icons are unavailable.");
+        }
+
+        const propertiesPane = document.querySelector("#properties");
+        propertiesPane.querySelector("#swatch-palette-section").after(
+            propertiesPane.querySelector("#tool-context-section")
+        );
+
+        const mainNavigation = document.querySelector(".main-navigation");
+        const navigationToggle = mainNavigation.querySelector(".navigation-toggle");
+        const navigationMenu = mainNavigation.querySelector(".navigation-menu");
+        const getMenuItems = (menu) => Array.from(
+            menu.querySelectorAll(":scope > li > details > summary, :scope > li > a, :scope > li > button:not(:disabled)")
+        );
+
+        document.addEventListener("keydown", (event) => {
+            if (event.key === "Alt" && !event.repeat) {
+                event.preventDefault();
+                mainNavigation.open = !mainNavigation.open;
+                if (mainNavigation.open) {
+                    getMenuItems(navigationMenu)[0]?.focus();
+                } else {
+                    navigationToggle.focus();
+                }
+                return;
+            }
+
+            if (
+                !mainNavigation.open
+                || !(event.target instanceof Element)
+                || !mainNavigation.contains(event.target)
+            ) {
+                return;
+            }
+
+            const submenu = event.target.closest(".navigation-submenu");
+
+            if (event.key === "Escape") {
+                event.preventDefault();
+                if (submenu?.open) {
+                    submenu.open = false;
+                    submenu.querySelector(".submenu-toggle").focus();
+                } else {
+                    mainNavigation.open = false;
+                    navigationToggle.focus();
+                }
+                return;
+            }
+
+            if (event.target === navigationToggle && ["ArrowDown", "ArrowUp"].includes(event.key)) {
+                event.preventDefault();
+                const items = getMenuItems(navigationMenu);
+                items[event.key === "ArrowDown" ? 0 : items.length - 1]?.focus();
+                return;
+            }
+
+            if (event.key === "ArrowRight" && submenu && event.target.matches(".submenu-toggle")) {
+                event.preventDefault();
+                submenu.open = true;
+                getMenuItems(submenu.querySelector(".submenu-menu"))[0]?.focus();
+                return;
+            }
+
+            if (event.key === "ArrowLeft") {
+                if (submenu) {
+                    event.preventDefault();
+                    submenu.open = false;
+                    submenu.querySelector(".submenu-toggle").focus();
+                } else {
+                    event.preventDefault();
+                    mainNavigation.open = false;
+                    navigationToggle.focus();
+                }
+                return;
+            }
+
+            if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+                const activeSubmenuMenu = event.target.closest(".submenu-menu");
+                let menu = activeSubmenuMenu || (submenu?.open
+                    ? submenu.querySelector(".submenu-menu")
+                    : navigationMenu);
+                let items = getMenuItems(menu);
+
+                if (!items.length && menu !== navigationMenu) {
+                    menu = navigationMenu;
+                    items = getMenuItems(menu);
+                }
+
+                const currentIndex = items.indexOf(document.activeElement);
+                const direction = event.key === "ArrowDown" ? 1 : -1;
+                const nextIndex = currentIndex === -1
+                    ? (direction > 0 ? 0 : items.length - 1)
+                    : (currentIndex + direction + items.length) % items.length;
+
+                if (items.length) {
+                    event.preventDefault();
+                    items[nextIndex].focus();
+                }
+            }
+        });
+
+        document.addEventListener("click", (event) => {
+            if (event.target instanceof Node && !mainNavigation.contains(event.target)) {
+                mainNavigation.open = false;
+            }
+        });
+
+        mainNavigation.addEventListener("toggle", () => {
+            if (!mainNavigation.open) {
+                mainNavigation.querySelectorAll(".navigation-submenu").forEach((submenu) => {
+                    submenu.open = false;
+                });
+            }
+        });
+
+        if (window.matchMedia("(hover: hover) and (pointer: fine)").matches) {
+            mainNavigation.querySelectorAll(".navigation-submenu").forEach((submenu) => {
+                submenu.addEventListener("pointerenter", () => {
+                    submenu.open = true;
+                });
+                submenu.addEventListener("pointerleave", () => {
+                    submenu.open = false;
+                });
+            });
+        }
+
+        mainNavigation.querySelectorAll(".navigation-menu a").forEach((link) => {
+            link.addEventListener("click", () => {
+                mainNavigation.open = false;
+            });
+        });
+
+        mainNavigation.querySelector(".exit-command").addEventListener("click", () => {
+            mainNavigation.open = false;
+            window.close();
+            if (!window.closed) {
+                window.alert("ブラウザーの仕様により自動で閉じられません。タブを閉じてください。");
+            }
+        });
+
+        const toolsAside = document.querySelector("#tools");
+        const toolButtons = toolsAside.querySelectorAll(".tool-button");
+        const toolSettings = toolsAside.querySelector("#tool-settings");
+        const toolSettingsTitle = toolsAside.querySelector("#tool-settings-title");
+        const toolTooltip = toolsAside.querySelector("#tool-label-tooltip");
+        const toolTooltipIcon = document.querySelector("#tool-tooltip-icon");
+        const toolTooltipTitle = document.querySelector("#tool-tooltip-title");
+        const toolTooltipDescription = document.querySelector("#tool-tooltip-description");
+        const toolTooltipStroke = document.querySelector("#tool-tooltip-stroke");
+        const toolTooltipPreviewLabel = document.querySelector("#tool-tooltip-preview-label");
+        const toolTooltipPreviewValue = document.querySelector("#tool-tooltip-preview-value");
+        const toolTooltipBookNote = document.querySelector("#tool-tooltip-book-note");
+        const settingsDialog = document.querySelector("#settings-dialog");
+        const settingsOpenButton = document.querySelector("#settings-open");
+        let tooltipDisplayMode = document.querySelector('input[name="tooltip-mode"]:checked').value;
+        let panelSnapStep = Number(document.querySelector("#panel-snap-grid").value);
+        let activeHintTarget = null;
+        let lastPointerPosition = { x: 16, y: 16 };
+        const activeToolName = document.querySelector("#active-tool-name");
+        const activeToolIconContainer = document.querySelector(".tool-context-heading");
+        const toolPreviewStage = document.querySelector("#tool-preview-stage");
+        const toolPreviewName = document.querySelector("#tool-preview-name");
+        const toolPreviewMark = document.querySelector("#tool-preview-mark");
+        const toolPreviewStroke = document.querySelector("#tool-preview-stroke");
+        const shapeTool = toolsAside.querySelector('[data-tool="shapes"]');
+        const quickSettings = document.querySelectorAll(".quick-tool-settings");
+        const shapeNames = {
+            line: "直線",
+            rectangle: "四角形",
+            ellipse: "楕円",
+            polygon: "多角形",
+            star: "星"
+        };
+        const toolIcons = {
+            cursor: "mouse-pointer-2",
+            brush: "pen",
+            eraser: "eraser",
+            lasso: "lasso",
+            eyedropper: "pipette",
+            text: "type",
+            shapes: "shapes",
+            bucket: "paint-bucket",
+            hand: "hand"
+        };
+        let toolSettingsPinned = false;
+        let suppressToolFocus = false;
+        let longPressTimer;
+        let lastSettingsTool;
+
+        function replaceLucideIcon(container, iconName, className = "tool-icon") {
+            const icon = document.createElement("i");
+            icon.className = className;
+            icon.dataset.lucide = iconName;
+            icon.setAttribute("aria-hidden", "true");
+            container.querySelector(".tool-icon")?.replaceWith(icon);
+            if (!container.querySelector(".tool-icon")) {
+                container.append(icon);
+            }
+            if (window.lucide) {
+                window.lucide.createIcons({ root: container });
+            }
+        }
+
+        function constrainFloatingPanel(panel) {
+            if (!panel.classList.contains("panel-floating")) {
+                return;
+            }
+            const rect = panel.getBoundingClientRect();
+            const margin = 8;
+            const minTop = panel.id === "tool-settings"
+                ? margin
+                : document.querySelector("header").offsetHeight + margin;
+            const left = Math.min(Math.max(margin, rect.left), Math.max(margin, window.innerWidth - rect.width - margin));
+            const top = Math.min(Math.max(minTop, rect.top), Math.max(minTop, window.innerHeight - rect.height - margin));
+            if (panel.style.left !== `${left}px`) {
+                panel.style.left = `${left}px`;
+            }
+            if (panel.style.top !== `${top}px`) {
+                panel.style.top = `${top}px`;
+            }
+        }
+
+        function positionToolSettings(tool) {
+            if (toolSettings.hidden) {
+                return;
+            }
+            if (toolSettings.classList.contains("panel-floating")) {
+                constrainFloatingPanel(toolSettings);
+                return;
+            }
+
+            const toolRect = tool.getBoundingClientRect();
+            const panelRect = toolSettings.getBoundingClientRect();
+            const margin = 12;
+            const maxTop = Math.max(margin, window.innerHeight - panelRect.height - margin);
+            const top = Math.min(Math.max(margin, toolRect.top), maxTop);
+            const pointerY = Math.min(
+                Math.max(toolRect.top + toolRect.height / 2 - top, 14),
+                Math.max(14, panelRect.height - 14)
+            );
+            const maxLeft = Math.max(margin, window.innerWidth - panelRect.width - margin);
+            const left = Math.min(Math.max(margin, toolRect.left - panelRect.width - margin), maxLeft);
+            toolSettings.style.top = `${top}px`;
+            toolSettings.style.left = `${left}px`;
+            toolSettings.style.right = "auto";
+            toolSettings.style.setProperty("--pointer-y", `${pointerY}px`);
+        }
+
+        function getControlHint(target) {
+            if (target.matches(".swatch, .recent-color")) {
+                return `${target.getAttribute("aria-label")} · ${target.dataset.color.toUpperCase()}`;
+            }
+            if (target.id === "palette-color") {
+                return `選択色 · ${target.value.toUpperCase()}`;
+            }
+            if (target.matches(".font-choice")) {
+                return target.dataset.font;
+            }
+            if (target.matches(".brush-preset")) {
+                return target.dataset.name;
+            }
+
+            const option = target.closest(".setting-option");
+            const label = target.labels?.[0]?.textContent.trim();
+            const setting = target.closest(".setting-group, .quick-setting");
+            const settingLabel = setting?.querySelector(".setting-label, .quick-setting-label")?.textContent.trim();
+            if (target.matches('input[type="range"], input[type="number"]')) {
+                const value = setting?.querySelector(".setting-value")?.textContent.trim()
+                    || setting?.querySelector(".quick-setting-number")?.value
+                    || target.value;
+                return `${label || settingLabel || "設定"}: ${value}`;
+            }
+            if (target.matches("select")) {
+                const value = target.selectedOptions[0]?.textContent.trim();
+                return `${label || settingLabel || "選択"}${value ? `: ${value}` : ""}`;
+            }
+            return target.dataset.hint
+                || target.getAttribute("aria-label")
+                || target.getAttribute("title")
+                || option?.querySelector("span")?.textContent.trim()
+                || label
+                || target.textContent.trim();
+        }
+
+        function getTooltipIconName(target) {
+            const tool = target.closest(".tool-button");
+            if (tool) {
+                return toolIcons[tool.dataset.tool] || "settings-2";
+            }
+            if (target.matches(".swatch, .recent-color") || target.id === "palette-color") {
+                return "palette";
+            }
+            if (target.matches(".brush-preset")) {
+                return "brush";
+            }
+            if (target.matches(".font-choice")) {
+                return "type";
+            }
+            if (target.matches(".panel-grip")) {
+                return "grip";
+            }
+            if (target.matches(".color-copy")) {
+                return "copy";
+            }
+            if (target.matches('input[type="range"], input[type="number"]')) {
+                return "sliders-horizontal";
+            }
+            if (target.matches("select")) {
+                return "list-filter";
+            }
+            return "settings-2";
+        }
+
+        function getTooltipDescription(target) {
+            if (target.matches(".swatch, .recent-color")) {
+                return "クリックして選択色に適用";
+            }
+            if (target.matches(".panel-grip")) {
+                return `ドラッグして移動 · ${panelSnapStep}px グリッドにスナップ`;
+            }
+            if (target.matches(".brush-preset")) {
+                return target.dataset.description;
+            }
+            if (target.matches(".font-choice")) {
+                return "クリックしてフォントを選択";
+            }
+            if (target.matches(".tool-button")) {
+                return "クリックしてツールを選択 · カードで設定";
+            }
+            if (target.matches('input[type="range"], input[type="number"]')) {
+                return "ドラッグまたは数値入力で調整";
+            }
+            if (target.matches(".color-copy")) {
+                return "クリックしてカラーコードをコピー";
+            }
+            if (target.matches("select")) {
+                return "クリックして選択肢を切り替え";
+            }
+            return target.dataset.hint || "クリックまたはドラッグで操作";
+        }
+
+        function getTooltipPreview(target) {
+            if (target.matches(".swatch, .recent-color")) {
+                return { label: "選択色 · HEX", value: target.dataset.color.toUpperCase() };
+            }
+            if (target.id === "palette-color") {
+                return { label: "選択色 · HEX", value: target.value.toUpperCase() };
+            }
+            if (target.matches(".brush-preset")) {
+                return { label: "ブラシ", value: target.dataset.name };
+            }
+            if (target.matches(".font-choice")) {
+                return { label: "フォント", value: target.dataset.font };
+            }
+            if (target.matches('input[type="range"], input[type="number"]')) {
+                const setting = target.closest(".setting-group, .quick-setting");
+                const label = setting?.querySelector(".setting-label, .quick-setting-label")?.textContent.trim() || "現在値";
+                const value = setting?.querySelector(".setting-value")?.textContent.trim()
+                    || setting?.querySelector(".quick-setting-number")?.value
+                    || target.value;
+                return { label, value };
+            }
+            if (target.matches("select")) {
+                return {
+                    label: "選択中",
+                    value: target.selectedOptions[0]?.textContent.trim() || ""
+                };
+            }
+            return { label: "VERSEPAINT", value: "プレビュー" };
+        }
+
+        function positionToolTooltip(x, y) {
+            const margin = 8;
+            const gap = 14;
+            const rect = toolTooltip.getBoundingClientRect();
+            let left = x + gap;
+            let top = y + gap;
+
+            if (left + rect.width > window.innerWidth - margin) {
+                left = x - rect.width - gap;
+            }
+            if (top + rect.height > window.innerHeight - margin) {
+                top = y - rect.height - gap;
+            }
+
+            const maxLeft = Math.max(margin, window.innerWidth - rect.width - margin);
+            const maxTop = Math.max(margin, window.innerHeight - rect.height - margin);
+            toolTooltip.style.left = `${Math.min(Math.max(margin, left), maxLeft)}px`;
+            toolTooltip.style.top = `${Math.min(Math.max(margin, top), maxTop)}px`;
+        }
+
+        function showToolTooltip(target) {
+            activeHintTarget = target;
+            if (tooltipDisplayMode === "none") {
+                toolTooltip.hidden = true;
+                return;
+            }
+
+            const title = getControlHint(target);
+            const description = getTooltipDescription(target);
+            const preview = getTooltipPreview(target);
+            const color = target.matches(".swatch, .recent-color")
+                ? target.dataset.color
+                : target.id === "palette-color"
+                    ? target.value
+                    : document.querySelector("#palette-color").value;
+
+            toolTooltip.dataset.mode = tooltipDisplayMode;
+            toolTooltipTitle.textContent = title;
+            toolTooltipDescription.textContent = description;
+            toolTooltipPreviewLabel.textContent = preview.label;
+            toolTooltipPreviewValue.textContent = preview.value;
+            toolTooltipBookNote.textContent = `${description}。現在の設定を見ながら操作できます。`;
+            toolTooltip.style.setProperty("--tooltip-preview-color", color);
+            if (target.matches(".swatch, .recent-color")) {
+                toolTooltipIcon.dataset.color = "";
+                toolTooltipIcon.style.setProperty("--tooltip-swatch-color", color);
+            } else {
+                delete toolTooltipIcon.dataset.color;
+                toolTooltipIcon.style.removeProperty("--tooltip-swatch-color");
+            }
+            replaceLucideIcon(toolTooltipIcon, getTooltipIconName(target));
+            const icon = toolTooltipIcon.querySelector("svg");
+            if (icon) {
+                icon.hidden = target.matches(".swatch, .recent-color");
+            }
+
+            toolTooltip.hidden = false;
+            requestAnimationFrame(() => positionToolTooltip(lastPointerPosition.x, lastPointerPosition.y));
+        }
+
+        function updateToolPreview(tool = toolsAside.querySelector('.tool-button[aria-pressed="true"]')) {
+            if (!tool) {
+                return;
+            }
+
+            const toolName = tool.getAttribute("aria-label");
+            toolPreviewStage.dataset.tool = tool.dataset.tool;
+            toolPreviewName.textContent = toolName;
+            toolPreviewStage.style.setProperty("--preview-color", document.querySelector("#palette-color").value);
+
+            let previewMark = toolName;
+            if (tool.dataset.tool === "cursor") {
+                previewMark = document.querySelector('input[name="cursor-mode"]:checked')
+                    ?.closest(".setting-option").querySelector("span").textContent.trim() || "選択";
+            } else if (tool.dataset.tool === "brush") {
+                const brushName = document.querySelector("#brush-preview-name").textContent;
+                const brushType = document.querySelector('input[name="brush-type"]:checked')?.value;
+                previewMark = `${brushName} · ${brushType === "vector" ? "ベクター" : "ラスター"}`;
+            } else if (tool.dataset.tool === "lasso") {
+                const selection = document.querySelector('input[name="selection-mode"]:checked')
+                    ?.closest(".setting-option").querySelector("span").textContent.trim();
+                previewMark = selection || "自由";
+            } else if (tool.dataset.tool === "shapes") {
+                previewMark = document.querySelector("#selected-shape-label").textContent.replace("を選択中", "");
+            }
+
+            toolPreviewMark.textContent = previewMark;
+            const sizeInput = tool.dataset.tool === "brush"
+                ? document.querySelector("#quick-brush-size-number")
+                : tool.dataset.tool === "eraser"
+                    ? document.querySelector("#quick-eraser-size-number")
+                    : null;
+            const size = sizeInput ? Number(sizeInput.value) : 18;
+            toolPreviewStroke.style.strokeWidth = `${Math.max(3, Math.min(20, size / 3))}px`;
+        }
+
+        function showToolSettings(tool, pin = false) {
+            const settings = toolsAside.querySelector(`[data-settings-for="${tool.dataset.tool}"]`);
+            if (!settings) {
+                return;
+            }
+
+            toolsAside.querySelectorAll(".tool-settings-content").forEach((content) => {
+                content.hidden = content !== settings;
+            });
+            toolSettingsTitle.textContent = tool.getAttribute("aria-label");
+            toolSettings.hidden = false;
+            toolSettingsPinned ||= pin;
+            lastSettingsTool = tool;
+            requestAnimationFrame(() => positionToolSettings(tool));
+        }
+
+        function setActiveTool(tool) {
+            toolButtons.forEach((button) => {
+                button.setAttribute("aria-pressed", String(button === tool));
+            });
+            quickSettings.forEach((settings) => {
+                settings.hidden = settings.dataset.quickSettings !== tool.dataset.tool;
+            });
+            activeToolName.textContent = tool.getAttribute("aria-label");
+            const iconName = tool.dataset.tool === "shapes"
+                ? document.querySelector(".quick-shape[aria-pressed='true']").dataset.icon
+                : toolIcons[tool.dataset.tool];
+            const iconClass = tool.dataset.tool === "brush"
+                ? "tool-icon tool-icon--filled"
+                : "tool-icon";
+            replaceLucideIcon(tool, iconName, iconClass);
+            replaceLucideIcon(activeToolIconContainer, iconName);
+            updateToolPreview(tool);
+        }
+
+        function hideToolSettings() {
+            toolSettings.hidden = true;
+            toolSettingsPinned = false;
+            lastSettingsTool = null;
+        }
+
+        function focusSelectedTool() {
+            suppressToolFocus = true;
+            toolsAside.querySelector('.tool-button[aria-pressed="true"]')?.focus();
+            hideToolSettings();
+            requestAnimationFrame(() => {
+                suppressToolFocus = false;
+            });
+        }
+
+        const panelNodes = {
+            properties: propertiesPane,
+            tools: toolsAside,
+            "tool-settings": toolSettings
+        };
+        const panelResizeObserver = new ResizeObserver((entries) => {
+            entries.forEach(({ target }) => constrainFloatingPanel(target));
+        });
+        Object.values(panelNodes).forEach((panel) => panelResizeObserver.observe(panel));
+
+        function resetPanelLayout() {
+            Object.values(panelNodes).forEach((panel) => {
+                panel.classList.remove("panel-floating", "panel-dragging");
+                ["position", "left", "top", "right", "bottom", "width", "height", "margin"].forEach((property) => {
+                    panel.style.removeProperty(property);
+                });
+            });
+            if (lastSettingsTool && !toolSettings.hidden) {
+                positionToolSettings(lastSettingsTool);
+            }
+        }
+
+        function enablePanelDragging(handle) {
+            const panel = panelNodes[handle.dataset.panelGrip];
+            if (!panel) {
+                return;
+            }
+
+            handle.addEventListener("pointerdown", (event) => {
+                if (event.button !== 0 || event.target.closest("button:not(.panel-grip)")) {
+                    return;
+                }
+
+                event.preventDefault();
+                const rect = panel.getBoundingClientRect();
+                const startX = event.clientX;
+                const startY = event.clientY;
+                const offsetX = startX - rect.left;
+                const offsetY = startY - rect.top;
+                const initialStyle = panel.getAttribute("style");
+                const wasFloating = panel.classList.contains("panel-floating");
+                let started = false;
+
+                const startDragging = () => {
+                    if (started) {
+                        return;
+                    }
+                    started = true;
+                    if (panel === toolSettings) {
+                        toolSettingsPinned = true;
+                    }
+                    panel.classList.add("panel-floating");
+                    panel.style.position = "fixed";
+                    panel.style.left = `${rect.left}px`;
+                    panel.style.top = `${rect.top}px`;
+                    panel.style.right = "auto";
+                    panel.style.bottom = "auto";
+                    panel.style.width = `${rect.width}px`;
+                    panel.style.height = `${rect.height}px`;
+                    panel.style.margin = "0";
+                };
+
+                const movePanel = (moveEvent) => {
+                    if (!started && Math.hypot(moveEvent.clientX - startX, moveEvent.clientY - startY) < 4) {
+                        return;
+                    }
+                    startDragging();
+                    const width = panel.getBoundingClientRect().width;
+                    const height = panel.getBoundingClientRect().height;
+                    const minLeft = 8;
+                    const maxLeft = Math.max(minLeft, window.innerWidth - width - 8);
+                    const minTop = panel.id === "tool-settings" ? 8 : document.querySelector("header").offsetHeight + 8;
+                    const maxTop = Math.max(minTop, window.innerHeight - height - 8);
+                    const left = Math.round((moveEvent.clientX - offsetX) / panelSnapStep) * panelSnapStep;
+                    const top = Math.round((moveEvent.clientY - offsetY) / panelSnapStep) * panelSnapStep;
+                    panel.style.left = `${Math.min(Math.max(minLeft, left), maxLeft)}px`;
+                    panel.style.top = `${Math.min(Math.max(minTop, top), maxTop)}px`;
+                };
+
+                const cleanup = () => {
+                    handle.removeEventListener("pointermove", movePanel);
+                    handle.removeEventListener("pointerup", finishDrag);
+                    handle.removeEventListener("pointercancel", cancelDrag);
+                    handle.removeEventListener("keydown", cancelOnEscape);
+                    if (handle.hasPointerCapture(event.pointerId)) {
+                        handle.releasePointerCapture(event.pointerId);
+                    }
+                };
+
+                const finishDrag = (finishEvent) => {
+                    if (started) {
+                        movePanel(finishEvent);
+                    }
+                    cleanup();
+                };
+
+                const cancelDrag = () => {
+                    cleanup();
+                    if (!started) {
+                        return;
+                    }
+                    if (initialStyle === null) {
+                        panel.removeAttribute("style");
+                    } else {
+                        panel.setAttribute("style", initialStyle);
+                    }
+                    panel.classList.toggle("panel-floating", wasFloating);
+                };
+
+                const cancelOnEscape = (keyEvent) => {
+                    if (keyEvent.key === "Escape") {
+                        keyEvent.preventDefault();
+                        cancelDrag();
+                    }
+                };
+
+                handle.setPointerCapture(event.pointerId);
+                handle.addEventListener("pointermove", movePanel);
+                handle.addEventListener("pointerup", finishDrag);
+                handle.addEventListener("pointercancel", cancelDrag);
+                handle.addEventListener("keydown", cancelOnEscape);
+            });
+        }
+
+        document.querySelectorAll("[data-panel-grip]").forEach(enablePanelDragging);
+
+        settingsOpenButton.addEventListener("click", () => settingsDialog.showModal());
+        document.querySelector("#settings-close").addEventListener("click", () => settingsDialog.close());
+        document.querySelector("#settings-done").addEventListener("click", () => settingsDialog.close());
+        settingsDialog.addEventListener("click", (event) => {
+            if (event.target === settingsDialog) {
+                settingsDialog.close();
+            }
+        });
+        settingsDialog.addEventListener("close", () => settingsOpenButton.focus());
+        document.querySelectorAll('input[name="tooltip-mode"]').forEach((radio) => {
+            radio.addEventListener("change", () => {
+                if (!radio.checked) {
+                    return;
+                }
+                tooltipDisplayMode = radio.value;
+                if (tooltipDisplayMode === "none") {
+                    toolTooltip.hidden = true;
+                } else if (activeHintTarget) {
+                    showToolTooltip(activeHintTarget);
+                }
+            });
+        });
+        document.querySelector("#panel-snap-grid").addEventListener("change", (event) => {
+            panelSnapStep = Number(event.target.value);
+        });
+        document.querySelector("#panel-layout-reset").addEventListener("click", resetPanelLayout);
+
+        toolButtons.forEach((tool) => {
+            tool.addEventListener("pointerenter", () => {
+                showToolSettings(tool);
+            });
+            tool.addEventListener("focus", () => {
+                if (!suppressToolFocus) {
+                    showToolSettings(tool);
+                }
+            });
+            tool.addEventListener("pointerdown", (event) => {
+                if (event.pointerType === "touch") {
+                    longPressTimer = window.setTimeout(() => showToolSettings(tool, true), 500);
+                }
+            });
+            ["pointerup", "pointercancel", "pointerleave"].forEach((eventName) => {
+                tool.addEventListener(eventName, () => window.clearTimeout(longPressTimer));
+            });
+            tool.addEventListener("click", () => {
+                setActiveTool(tool);
+                showToolSettings(tool, true);
+            });
+        });
+
+        const brushPicker = document.querySelector(".brush-picker");
+        const brushPresetList = document.querySelector("#brush-preset-list");
+        const brushLoadStatus = document.querySelector("#brush-load-status");
+        const brushPreviewPanel = document.querySelector("#brush-preview-panel");
+        const brushPreviewName = document.querySelector("#brush-preview-name");
+        const brushPreviewDescription = document.querySelector("#brush-preview-description");
+        const brushCatalog = [
+            { id: "soft-round", name: "やわらか丸筆", description: "境界をぼかす", color: "#22c55e" },
+            { id: "hard-round", name: "くっきり丸筆", description: "輪郭をくっきり", color: "#e8ba72" },
+            { id: "ink", name: "インクペン", description: "均一で鋭い線", color: "#86c9bd" },
+            { id: "pencil", name: "鉛筆", description: "ざらついた細線", color: "#a9b5c3" },
+            { id: "watercolor", name: "水彩", description: "にじみを含む柔らかい線", color: "#82aaff" },
+            { id: "charcoal", name: "木炭", description: "粒子感のある濃い線", color: "#c5a58a" },
+            { id: "marker", name: "マーカー", description: "均一な太線", color: "#f08c76" },
+            { id: "spray", name: "スプレー", description: "粒子状に広がる線", color: "#c1a6f6" },
+            { id: "calligraphy", name: "カリグラフィ", description: "筆圧で抑揚をつける", color: "#dbb76b" },
+            { id: "crayon", name: "クレヨン", description: "かすれた手描き線", color: "#e784a4" },
+            { id: "flat-wash", name: "平筆", description: "幅のある均一な塗り", color: "#6bb7b3" },
+            { id: "grain", name: "粒子ブラシ", description: "細かなテクスチャ", color: "#a4bf73" }
+        ];
+        let loadedBrushCount = brushPresetList.querySelectorAll(".brush-preset").length;
+        const selectedBrushPreset = () => brushPresetList.querySelector(".brush-preset[aria-pressed='true']");
+
+        function createBrushPreset(preset) {
+            const button = document.createElement("button");
+            button.className = "brush-preset";
+            button.type = "button";
+            button.dataset.brushPreset = preset.id;
+            button.dataset.name = preset.name;
+            button.dataset.description = preset.description;
+            button.dataset.color = preset.color;
+            button.setAttribute("aria-pressed", "false");
+
+            const mark = document.createElement("span");
+            mark.className = "brush-preset-mark";
+            mark.style.setProperty("--preset-color", preset.color);
+            button.append(mark, document.createTextNode(preset.name));
+            return button;
+        }
+
+        function loadMoreBrushes() {
+            const nextCount = Math.min(brushCatalog.length, loadedBrushCount + 4);
+            for (let index = loadedBrushCount; index < nextCount; index += 1) {
+                brushPresetList.append(createBrushPreset(brushCatalog[index]));
+            }
+            loadedBrushCount = nextCount;
+            brushLoadStatus.textContent = loadedBrushCount < brushCatalog.length
+                ? "スクロールで追加"
+                : "すべて読み込み済み";
+        }
+
+        function showBrushPreset(preset) {
+            if (brushPreviewPanel.dataset.preset !== preset.dataset.brushPreset) {
+                brushPreviewPanel.classList.remove("is-peeking");
+                brushPreviewPanel.dataset.preset = preset.dataset.brushPreset;
+                void brushPreviewPanel.offsetWidth;
+                brushPreviewPanel.classList.add("is-peeking");
+            }
+            brushPreviewName.textContent = preset.dataset.name;
+            brushPreviewDescription.textContent = preset.dataset.description;
+            brushPreviewPanel.style.setProperty("--brush-preview-color", preset.dataset.color);
+            updateToolPreview();
+        }
+
+        brushPresetList.addEventListener("scroll", () => {
+            if (brushPresetList.scrollTop + brushPresetList.clientHeight >= brushPresetList.scrollHeight - 18) {
+                loadMoreBrushes();
+            }
+        });
+        brushPicker.addEventListener("pointerover", (event) => {
+            if (event.pointerType === "touch" || !(event.target instanceof Element)) {
+                return;
+            }
+            const preset = event.target.closest(".brush-preset");
+            if (preset) {
+                showBrushPreset(preset);
+            }
+        });
+        brushPicker.addEventListener("focusin", (event) => {
+            if (event.target instanceof Element) {
+                const preset = event.target.closest(".brush-preset");
+                if (preset) {
+                    showBrushPreset(preset);
+                }
+            }
+        });
+        brushPicker.addEventListener("click", (event) => {
+            if (!(event.target instanceof Element)) {
+                return;
+            }
+            const preset = event.target.closest(".brush-preset");
+            if (preset) {
+                brushPresetList.querySelectorAll(".brush-preset").forEach((button) => {
+                    button.setAttribute("aria-pressed", String(button === preset));
+                });
+                showBrushPreset(preset);
+            }
+        });
+        brushPicker.addEventListener("pointerleave", () => showBrushPreset(selectedBrushPreset()));
+        brushPicker.addEventListener("focusout", () => {
+            requestAnimationFrame(() => {
+                if (!brushPicker.contains(document.activeElement)) {
+                    showBrushPreset(selectedBrushPreset());
+                }
+            });
+        });
+
+        const fontList = document.querySelector("#font-list");
+        const fontSearch = document.querySelector("#font-search");
+        const fontLoadStatus = document.querySelector("#font-load-status");
+        const fontSourceName = document.querySelector("#font-source-name");
+        const fontSelectedName = document.querySelector("#font-selected-name");
+        const fontPreviewSample = document.querySelector("#font-preview-sample");
+        const fontCatalogs = {
+            google: [
+                "Noto Sans JP", "M PLUS 1p", "Zen Kaku Gothic New", "BIZ UDPGothic", "Noto Serif JP",
+                "Zen Old Mincho", "Kosugi Maru", "Sawarabi Gothic", "Source Han Sans JP", "Mochiy Pop One",
+                "Kaisei Decol", "Yusei Magic", "Dela Gothic One", "DotGothic16", "M PLUS Rounded 1c",
+                "Shippori Mincho", "Klee One", "Hina Mincho"
+            ],
+            device: [
+                "Yu Gothic", "Meiryo", "MS Gothic", "MS Mincho", "BIZ UDPGothic",
+                "Noto Sans JP", "Arial", "Georgia", "Consolas", "Times New Roman",
+                "Verdana", "Trebuchet MS", "Courier New", "Yu Mincho", "Segoe UI"
+            ]
+        };
+        let fontSource = document.querySelector('input[name="font-source"]:checked').value;
+        let loadedFontCount = fontList.querySelectorAll(".font-choice").length;
+        let selectedFontName = "Noto Sans JP";
+
+        function createFontChoice(name, source) {
+            const button = document.createElement("button");
+            button.className = "font-choice";
+            button.type = "button";
+            button.setAttribute("role", "option");
+            button.dataset.font = name;
+            button.setAttribute("aria-selected", "false");
+            button.tabIndex = -1;
+
+            const fontName = document.createElement("span");
+            fontName.textContent = name;
+            const sourceName = document.createElement("span");
+            sourceName.className = "font-choice-source";
+            sourceName.textContent = source === "google" ? "Google" : "デバイス";
+            button.append(fontName, sourceName);
+            return button;
+        }
+
+        function updateFontSearch() {
+            const query = fontSearch.value.trim().toLocaleLowerCase();
+            const hasMatchingFont = () => Array.from(fontList.querySelectorAll(".font-choice"))
+                .some((option) => option.dataset.font.toLocaleLowerCase().includes(query));
+            while (!hasMatchingFont() && loadedFontCount < fontCatalogs[fontSource].length) {
+                loadMoreFonts();
+            }
+            fontList.querySelectorAll(".font-choice").forEach((option) => {
+                option.hidden = !option.dataset.font.toLocaleLowerCase().includes(query);
+            });
+            if (query && !hasMatchingFont()) {
+                fontLoadStatus.textContent = "一致するフォントがありません";
+            } else if (loadedFontCount >= fontCatalogs[fontSource].length) {
+                fontLoadStatus.textContent = "すべて読み込み済み";
+            } else {
+                fontLoadStatus.textContent = "スクロールで追加";
+            }
+        }
+
+        function loadMoreFonts() {
+            const catalog = fontCatalogs[fontSource];
+            const nextCount = Math.min(catalog.length, loadedFontCount + 5);
+            for (let index = loadedFontCount; index < nextCount; index += 1) {
+                fontList.append(createFontChoice(catalog[index], fontSource));
+            }
+            loadedFontCount = nextCount;
+            fontLoadStatus.textContent = loadedFontCount < catalog.length
+                ? "スクロールで追加"
+                : "すべて読み込み済み";
+        }
+
+        function selectFont(option) {
+            selectedFontName = option.dataset.font;
+            fontList.querySelectorAll(".font-choice").forEach((button) => {
+                const selected = button === option;
+                button.setAttribute("aria-selected", String(selected));
+                button.tabIndex = selected ? 0 : -1;
+            });
+            fontSelectedName.textContent = selectedFontName;
+            fontPreviewSample.style.fontFamily = `"${selectedFontName}", sans-serif`;
+        }
+
+        function resetFontList(source) {
+            fontSource = source;
+            fontSourceName.textContent = source === "google" ? "Google Fonts" : "このデバイス";
+            fontList.replaceChildren();
+            loadedFontCount = 0;
+            fontSearch.value = "";
+            selectedFontName = fontCatalogs[source][0];
+            loadMoreFonts();
+            selectFont(fontList.querySelector(".font-choice"));
+        }
+
+        fontList.addEventListener("scroll", () => {
+            if (fontList.scrollTop + fontList.clientHeight >= fontList.scrollHeight - 22) {
+                loadMoreFonts();
+                updateFontSearch();
+            }
+        });
+        fontList.addEventListener("click", (event) => {
+            if (event.target instanceof Element) {
+                const option = event.target.closest(".font-choice");
+                if (option) {
+                    selectFont(option);
+                }
+            }
+        });
+        fontList.addEventListener("keydown", (event) => {
+            if (!["ArrowDown", "ArrowUp"].includes(event.key)) {
+                return;
+            }
+            event.preventDefault();
+            let options = Array.from(fontList.querySelectorAll(".font-choice:not([hidden])"));
+            const currentIndex = options.indexOf(document.activeElement);
+            const direction = event.key === "ArrowDown" ? 1 : -1;
+            if (direction > 0 && currentIndex === options.length - 1 && loadedFontCount < fontCatalogs[fontSource].length) {
+                loadMoreFonts();
+                updateFontSearch();
+                options = Array.from(fontList.querySelectorAll(".font-choice:not([hidden])"));
+            }
+            const nextIndex = Math.min(options.length - 1, Math.max(0, currentIndex + direction));
+            options[nextIndex]?.focus();
+        });
+        fontSearch.addEventListener("input", updateFontSearch);
+        document.querySelectorAll('input[name="font-source"]').forEach((radio) => {
+            radio.addEventListener("change", () => {
+                if (radio.checked) {
+                    resetFontList(radio.value);
+                }
+            });
+        });
+
+        const hintTargetSelector = "button, input, select, summary, label, [role='button']";
+        document.addEventListener("pointerover", (event) => {
+            if (event.pointerType === "touch" || !(event.target instanceof Element)) {
+                return;
+            }
+            lastPointerPosition = { x: event.clientX, y: event.clientY };
+            const target = event.target.closest(hintTargetSelector);
+            if (target) {
+                showToolTooltip(target);
+            }
+        });
+        document.addEventListener("pointermove", (event) => {
+            if (event.pointerType === "touch") {
+                return;
+            }
+            lastPointerPosition = { x: event.clientX, y: event.clientY };
+            if (!toolTooltip.hidden && activeHintTarget?.matches(":hover")) {
+                positionToolTooltip(event.clientX, event.clientY);
+            }
+        });
+        document.addEventListener("pointerout", (event) => {
+            if (!(event.target instanceof Element)) {
+                return;
+            }
+            const target = event.target.closest(hintTargetSelector);
+            const nextTarget = event.relatedTarget instanceof Element
+                ? event.relatedTarget.closest(hintTargetSelector)
+                : null;
+            if (target && target !== nextTarget) {
+                toolTooltip.hidden = true;
+            }
+        });
+        document.addEventListener("focusin", (event) => {
+            if (event.target instanceof Element) {
+                const target = event.target.closest(hintTargetSelector);
+                if (target) {
+                    showToolTooltip(target);
+                }
+            }
+        });
+        document.addEventListener("focusout", (event) => {
+            if (event.target instanceof Element) {
+                const target = event.target.closest(hintTargetSelector);
+                const nextTarget = event.relatedTarget instanceof Element
+                    ? event.relatedTarget.closest(hintTargetSelector)
+                    : null;
+                if (target && target !== nextTarget) {
+                    toolTooltip.hidden = true;
+                }
+            }
+        });
+
+        document.querySelectorAll(".quick-shape").forEach((shape) => {
+            shape.addEventListener("click", () => {
+                document.querySelectorAll(".quick-shape").forEach((button) => {
+                    button.setAttribute("aria-pressed", String(button === shape));
+                });
+                const shapeName = shapeNames[shape.dataset.shape];
+                const iconName = shape.dataset.icon;
+                const shapeLabel = `図形: ${shapeName}`;
+                shapeTool.setAttribute("aria-label", shapeLabel);
+                document.querySelector("#selected-shape-label").textContent = `${shapeName}を選択中`;
+                document.querySelector("#selected-shape-output").textContent = shapeName;
+                document.querySelectorAll('[data-shape-only="polygon"]').forEach((control) => {
+                    control.hidden = shape.dataset.shape !== "polygon";
+                });
+                replaceLucideIcon(shapeTool, iconName);
+                if (toolsAside.querySelector('.tool-button[aria-pressed="true"]') === shapeTool) {
+                    activeToolName.textContent = shapeLabel;
+                    replaceLucideIcon(activeToolIconContainer, iconName);
+                    updateToolPreview(shapeTool);
+                    if (toolSettings.querySelector('.tool-settings-content[data-settings-for="shapes"]:not([hidden])')) {
+                        toolSettingsTitle.textContent = shapeLabel;
+                    }
+                }
+                showToolSettings(shapeTool, true);
+            });
+        });
+
+        toolsAside.addEventListener("pointerleave", () => {
+            toolTooltip.hidden = true;
+            if (!toolSettingsPinned && !toolsAside.contains(document.activeElement)) {
+                hideToolSettings();
+            }
+        });
+
+        toolsAside.addEventListener("focusout", () => {
+            requestAnimationFrame(() => {
+                if (
+                    !toolSettingsPinned
+                    && !toolsAside.matches(":hover")
+                    && !toolsAside.contains(document.activeElement)
+                ) {
+                    hideToolSettings();
+                }
+            });
+        });
+
+        toolsAside.addEventListener("keydown", (event) => {
+            if (event.key === "Escape" && !toolSettings.hidden) {
+                event.preventDefault();
+                focusSelectedTool();
+                return;
+            }
+
+            if (
+                event.target.matches(".tool-button")
+                && ["ArrowUp", "ArrowDown"].includes(event.key)
+            ) {
+                event.preventDefault();
+                const buttons = Array.from(toolButtons);
+                const currentIndex = buttons.indexOf(event.target);
+                const direction = event.key === "ArrowDown" ? 1 : -1;
+                buttons[(currentIndex + direction + buttons.length) % buttons.length].focus();
+            }
+        });
+
+        window.addEventListener("resize", () => {
+            if (lastSettingsTool) {
+                positionToolSettings(lastSettingsTool);
+            }
+        });
+
+        document.querySelectorAll("[data-sync-key]").forEach((control) => {
+            control.addEventListener("input", () => {
+                const enteredValue = Number(control.value);
+                if (!Number.isFinite(enteredValue) || control.value === "") {
+                    return;
+                }
+                const value = Math.max(Number(control.min) || 0, enteredValue);
+                document.querySelectorAll(`[data-sync-key="${control.dataset.syncKey}"]`).forEach((peer) => {
+                    if (peer.type === "range") {
+                        peer.max = String(Math.max(Number(peer.max), value));
+                        peer.value = String(Math.max(Number(peer.min), value));
+                    } else {
+                        peer.value = String(value);
+                    }
+                });
+                document.querySelectorAll(`[data-sync-output="${control.dataset.syncKey}"]`).forEach((output) => {
+                    output.value = `${value}${output.dataset.unit || ""}`;
+                });
+                updateToolPreview();
+            });
+        });
+
+        function connectRadioGroups(firstName, secondName) {
+            const groups = [
+                document.querySelectorAll(`input[name="${firstName}"]`),
+                document.querySelectorAll(`input[name="${secondName}"]`)
+            ];
+            groups.forEach((group, groupIndex) => {
+                group.forEach((radio) => {
+                    radio.addEventListener("change", () => {
+                        if (!radio.checked) {
+                            return;
+                        }
+                        groups[1 - groupIndex].forEach((peer) => {
+                            peer.checked = peer.value === radio.value;
+                        });
+                        updateToolPreview();
+                    });
+                });
+            });
+        }
+
+        connectRadioGroups("cursor-mode", "quick-cursor-mode");
+        connectRadioGroups("brush-type", "quick-brush-type");
+        connectRadioGroups("selection-mode", "quick-selection-mode");
+
+        toolsAside.querySelector(".tool-settings-close").addEventListener("click", focusSelectedTool);
+
+        const paletteDesign = document.querySelector("#palette-design");
+        const paletteStage = document.querySelector("#palette-stage");
+        const paletteColor = document.querySelector("#palette-color");
+        const currentColorSample = document.querySelector("#current-color-toggle");
+        const colorFormatMenu = document.querySelector("#color-format-menu");
+        const copyStatus = document.querySelector("#copy-status");
+        const swatches = document.querySelectorAll(".swatch");
+        const recentColors = document.querySelectorAll(".recent-color");
+
+        paletteDesign.addEventListener("change", () => {
+            paletteStage.dataset.design = paletteDesign.value;
+        });
+
+        function getColorFormats(hex) {
+            const red = parseInt(hex.slice(1, 3), 16);
+            const green = parseInt(hex.slice(3, 5), 16);
+            const blue = parseInt(hex.slice(5, 7), 16);
+            const r = red / 255;
+            const g = green / 255;
+            const b = blue / 255;
+            const max = Math.max(r, g, b);
+            const min = Math.min(r, g, b);
+            const delta = max - min;
+            let hue = 0;
+
+            if (delta) {
+                if (max === r) {
+                    hue = ((g - b) / delta) % 6;
+                } else if (max === g) {
+                    hue = (b - r) / delta + 2;
+                } else {
+                    hue = (r - g) / delta + 4;
+                }
+                hue = (hue * 60 + 360) % 360;
+            }
+
+            const lightness = (max + min) / 2;
+            const hslSaturation = delta
+                ? delta / (1 - Math.abs(2 * lightness - 1))
+                : 0;
+            const hsbSaturation = max ? delta / max : 0;
+            const black = 1 - max;
+            const cmykCyan = max ? (1 - r - black) / max : 0;
+            const cmykMagenta = max ? (1 - g - black) / max : 0;
+            const cmykYellow = max ? (1 - b - black) / max : 0;
+            const linearize = (value) => value <= 0.04045
+                ? value / 12.92
+                : ((value + 0.055) / 1.055) ** 2.4;
+            const linearR = linearize(r);
+            const linearG = linearize(g);
+            const linearB = linearize(b);
+            const l = Math.cbrt(0.4122214708 * linearR + 0.5363325363 * linearG + 0.0514459929 * linearB);
+            const m = Math.cbrt(0.2119034982 * linearR + 0.6806995451 * linearG + 0.1073969566 * linearB);
+            const s = Math.cbrt(0.0883024619 * linearR + 0.2817188376 * linearG + 0.6299787005 * linearB);
+            const oklabL = 0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s;
+            const oklabA = 1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s;
+            const oklabB = 0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s;
+            const chroma = Math.sqrt(oklabA ** 2 + oklabB ** 2);
+            const oklchHue = (Math.atan2(oklabB, oklabA) * 180 / Math.PI + 360) % 360;
+
+            return {
+                hex,
+                rgb: `rgb(${red}, ${green}, ${blue})`,
+                cmyk: `${Math.round(cmykCyan * 100)}%, ${Math.round(cmykMagenta * 100)}%, ${Math.round(cmykYellow * 100)}%, ${Math.round(black * 100)}%`,
+                hsl: `${Math.round(hue)}°, ${Math.round(hslSaturation * 100)}%, ${Math.round(lightness * 100)}%`,
+                hsb: `${Math.round(hue)}°, ${Math.round(hsbSaturation * 100)}%, ${Math.round(max * 100)}%`,
+                oklch: `oklch(${(oklabL * 100).toFixed(1)}% ${chroma.toFixed(3)} ${Math.round(oklchHue)}°)`
+            };
+        }
+
+        function updateColorDisplays() {
+            const hex = paletteColor.value.toUpperCase();
+            const formats = getColorFormats(hex);
+            currentColorSample.style.setProperty("--current-color", hex);
+            document.querySelectorAll("[data-color-value]").forEach((value) => {
+                value.textContent = formats[value.dataset.colorValue];
+            });
+            swatches.forEach((swatch) => {
+                swatch.setAttribute("aria-pressed", String(swatch.dataset.color.toUpperCase() === hex));
+            });
+            updateToolPreview();
+        }
+
+        paletteColor.addEventListener("input", updateColorDisplays);
+        currentColorSample.addEventListener("click", () => {
+            colorFormatMenu.open = !colorFormatMenu.open;
+        });
+
+        document.querySelectorAll("[data-format-toggle]").forEach((toggle) => {
+            toggle.addEventListener("change", () => {
+                document.querySelector(`[data-color-format="${toggle.dataset.formatToggle}"]`).hidden = !toggle.checked;
+            });
+        });
+
+        document.addEventListener("click", (event) => {
+            if (!event.target.closest(".current-color")) {
+                colorFormatMenu.open = false;
+            }
+        });
+
+        document.querySelectorAll(".color-copy").forEach((button) => {
+            button.addEventListener("click", async () => {
+                const format = button.dataset.copyFormat;
+                const value = document.querySelector(`[data-color-value="${format}"]`).textContent;
+                let temporaryInput;
+                try {
+                    if (navigator.clipboard?.writeText) {
+                        await navigator.clipboard.writeText(value);
+                    } else {
+                        temporaryInput = document.createElement("textarea");
+                        temporaryInput.value = value;
+                        temporaryInput.style.position = "fixed";
+                        temporaryInput.style.opacity = "0";
+                        document.body.append(temporaryInput);
+                        temporaryInput.select();
+                        const copied = document.execCommand("copy");
+                        if (!copied) {
+                            throw new Error("Clipboard copy was rejected.");
+                        }
+                    }
+                    copyStatus.textContent = `${format.toUpperCase()}をコピーしました`;
+                } catch (error) {
+                    console.error(`Could not copy ${format.toUpperCase()} color value.`, error);
+                    copyStatus.textContent = "コピーできませんでした";
+                } finally {
+                    temporaryInput?.remove();
+                }
+            });
+        });
+
+        swatches.forEach((swatch) => {
+            swatch.addEventListener("click", () => {
+                paletteColor.value = swatch.dataset.color;
+                paletteColor.dispatchEvent(new Event("input", { bubbles: true }));
+            });
+        });
+
+        recentColors.forEach((color) => {
+            color.addEventListener("click", () => {
+                paletteColor.value = color.dataset.color;
+                paletteColor.dispatchEvent(new Event("input", { bubbles: true }));
+            });
+        });
+
+        updateColorDisplays();
+    </script>
+</body>
+</html>
