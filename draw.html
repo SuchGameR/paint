@@ -5,84 +5,55 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>VersePaint</title>
   <style>
-    html, body { margin:0; height:100%; background:#0b0b0b; color:#fff; font-family: Arial, sans-serif; }
-    #boot { display:grid; place-items:center; height:100%; color:#aaa; font-size:14px; }
+    html, body { margin:0; height:100%; background:#0b0b0b; color:#bbb; font-family: system-ui, sans-serif; }
+    #boot { display:grid; place-items:center; height:100%; font-size:14px; }
   </style>
 </head>
 <body>
-  <div id="boot">新UIを読み込み中…</div>
+  <div id="boot">UI を準備しています…</div>
   <script>
   (function () {
-    function fail(msg) {
-      document.getElementById('boot').textContent = msg || '読み込みに失敗しました';
+    function fail(m) {
+      var b = document.getElementById('boot');
+      if (b) b.textContent = m || '読み込みに失敗しました';
     }
 
-    var bridge = function () {
-      function frame() { return document.getElementById('engine-frame'); }
-      function send(msg) {
-        var f = frame();
-        if (f && f.contentWindow) {
-          f.contentWindow.postMessage(Object.assign({ source: 'verse-new-ui' }, msg), '*');
-        }
+    function improveMenus(html) {
+      html = html.replace(/class="menu-command" type="button" disabled/g, 'class="menu-command" type="button"');
+      html = html.replace(/class="menu-command" type="button" disabled=""/g, 'class="menu-command" type="button"');
+      return html;
+    }
+
+    function injectEngine(html) {
+      var note = '<!-- lite engine mounts here -->';
+      if (/<div class="canvas" id="canvas">\s*<\/div>/.test(html)) {
+        html = html.replace(/<div class="canvas" id="canvas">\s*<\/div>/,
+          '<div class="canvas" id="canvas">' + note + '</div>');
       }
-      document.querySelectorAll('.tool-button[data-tool]').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-          document.querySelectorAll('.tool-button[data-tool]').forEach(function (b) {
-            b.setAttribute('aria-pressed', b === btn ? 'true' : 'false');
-          });
-          send({ type: 'tool', tool: btn.getAttribute('data-tool') });
-        });
-      });
-      document.addEventListener('click', function (e) {
-        var sw = e.target.closest('.swatch, [data-color]');
-        if (sw) {
-          var c = sw.getAttribute('data-color') || getComputedStyle(sw).backgroundColor;
-          if (c) send({ type: 'color', color: c });
-        }
-      });
-      ['quick-brush-size-range', 'brush-size', 'quick-eraser-size-range'].forEach(function (id) {
-        var el = document.getElementById(id);
-        if (!el) return;
-        el.addEventListener('input', function () { send({ type: 'brushSize', size: el.value }); });
-      });
-      document.querySelectorAll('.menu-command, .exit-command').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-          var text = (btn.textContent || '').trim();
-          if (btn.classList.contains('exit-command') || /終了|QUIT/i.test(text)) {
-            location.href = './index.html';
-            return;
-          }
-          if (text.indexOf('元に戻す') >= 0) send({ type: 'menu', action: 'undo' });
-          if (text.indexOf('やり直し') >= 0) send({ type: 'menu', action: 'redo' });
-          if (text.indexOf('保存') >= 0) send({ type: 'menu', action: 'export' });
-          if (text.indexOf('開く') >= 0) send({ type: 'menu', action: 'open' });
-          if (text.indexOf('新規') >= 0) send({ type: 'menu', action: 'clear' });
-        });
-      });
-    };
+      var tag = '<script src="./js/draw-lite.js"><\/script>';
+      if (html.indexOf('</body>') >= 0) {
+        html = html.replace('</body>', tag + '\n</body>');
+      } else {
+        html += tag;
+      }
+      return html;
+    }
 
     fetch('./new-ui.html', { cache: 'no-store' })
-      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.text(); })
+      .then(function (r) {
+        if (!r.ok) throw new Error('new-ui.html HTTP ' + r.status);
+        return r.text();
+      })
       .then(function (html) {
-        var iframe = '<iframe id="engine-frame" src="./draw-engine.html" title="キャンバス" style="width:100%;height:100%;border:0;display:block;background:#3a3a3a;" allow="clipboard-read; clipboard-write"></iframe>';
-        if (/<div class="canvas" id="canvas">\s*<\/div>/.test(html)) {
-          html = html.replace(/<div class="canvas" id="canvas">\s*<\/div>/, '<div class="canvas" id="canvas">' + iframe + '</div>');
-        } else if (html.indexOf('id="canvas"') >= 0) {
-          html = html.replace(/(id="canvas"[^>]*>)/, '$1' + iframe);
-        } else {
-          throw new Error('canvas container not found in new-ui.html');
-        }
-
+        html = improveMenus(html);
+        html = injectEngine(html);
         document.open();
         document.write(html);
         document.close();
-
-        setTimeout(bridge, 0);
-        document.addEventListener('DOMContentLoaded', bridge);
       })
       .catch(function (err) {
         console.error(err);
-        fail('new-ui.html を読めませんでした: ' + err.message);
+        fail(String(err.message || err));
       });
   })();
   </script>

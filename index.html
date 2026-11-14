@@ -20,24 +20,23 @@
   </style>
 </head>
 <body class="bg-black text-gray-100 min-h-screen">
-  <div class="fixed inset-0 z-[200] flex items-center justify-center p-4" style="background:#0a0a0a">
-    <div class="rounded-2xl p-6 w-[min(480px,96vw)] flex flex-col gap-5 border border-white/10 shadow-2xl" style="background:#111">
+  <div class="fixed inset-0 flex items-center justify-center p-4" style="background:#0a0a0a">
+    <div class="rounded-2xl p-6 w-[min(480px,96vw)] flex flex-col gap-5 border border-white/10" style="background:#111">
       <div class="text-center">
         <h1 class="text-xl font-semibold tracking-tight">VersePaint</h1>
         <p class="text-[12px] text-geist-400 mt-1">作業環境を選んで開始</p>
       </div>
       <div class="grid grid-cols-2 gap-3">
-        <button type="button" id="start-go-draw" class="ws-card start-workspace active rounded-xl border border-white/20 p-4 text-left" data-ws="draw">
+        <button type="button" class="ws-card start-workspace active rounded-xl border border-white/20 p-4 text-left" data-ws="draw" id="start-go-draw">
           <div class="text-[13px] font-medium mb-1"><i class="fa-solid fa-pen-nib mr-1.5"></i>イラスト</div>
-          <div class="text-[11px] text-geist-500">新UI · 既存機能そのまま</div>
+          <div class="text-[11px] text-geist-500">新UI · 軽量エンジン</div>
         </button>
-        <button type="button" id="start-go-motion" class="ws-card start-workspace rounded-xl border border-white/15 p-4 text-left" data-ws="motion">
+        <button type="button" class="ws-card start-workspace rounded-xl border border-white/15 p-4 text-left" data-ws="motion" id="start-go-motion">
           <div class="text-[13px] font-medium mb-1"><i class="fa-solid fa-film mr-1.5"></i>モーション</div>
           <div class="text-[11px] text-geist-500">キーフレーム・セル・オニオン</div>
         </button>
       </div>
       <div id="start-draw-options" class="flex flex-col gap-3">
-        <p class="text-[11px] text-geist-500">new-ui の見た目 + フル描画エンジンです。</p>
         <button id="btn-start-create" type="button" class="w-full py-3.5 rounded-xl bg-white text-black font-medium text-[14px]">イラストを開始</button>
       </div>
       <div id="start-motion-options" style="display:none" class="flex-col gap-3">
@@ -66,8 +65,7 @@
     setWs('draw');
     $('btn-start-create').onclick = function () { location.href = './draw.html'; };
     $('btn-start-motion').onclick = function () {
-      var w = $('motion-w').value || 1920, h = $('motion-h').value || 1080, fps = $('motion-fps').value || 24;
-      location.href = './motion.html?w=' + encodeURIComponent(w) + '&h=' + encodeURIComponent(h) + '&fps=' + encodeURIComponent(fps);
+      location.href = './motion.html?w=' + ($('motion-w').value||1920) + '&h=' + ($('motion-h').value||1080) + '&fps=' + ($('motion-fps').value||24);
     };
   })();
   </script>
