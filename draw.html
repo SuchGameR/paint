@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>VersePaint</title>
+  <link rel="stylesheet" href="./js/vp-chrome.css">
   <style>
     html, body { margin:0; height:100%; background:#0b0b0b; color:#aaa; font-family: system-ui, -apple-system, Segoe UI, sans-serif; }
     #boot { display:grid; place-items:center; height:100%; gap:8px; font-size:14px; }
@@ -21,14 +22,12 @@
       var b = document.getElementById('boot');
       if (b) b.innerHTML = '<div style="color:#f88">' + (msg || '読み込み失敗') + '</div>';
     }
-
     function send(msg) {
       var f = document.getElementById('engine-frame');
       if (f && f.contentWindow) {
         f.contentWindow.postMessage(Object.assign({ source: 'verse-new-ui' }, msg), '*');
       }
     }
-
     function wireUi() {
       document.querySelectorAll('.tool-button[data-tool]').forEach(function (btn) {
         btn.addEventListener('click', function () {
@@ -38,20 +37,17 @@
           send({ type: 'tool', tool: btn.getAttribute('data-tool') });
         });
       });
-
       document.addEventListener('click', function (e) {
         var sw = e.target.closest('.swatch, [data-color], .recent-color');
         if (!sw) return;
         var c = sw.getAttribute('data-color') || sw.getAttribute('data-swatch') || getComputedStyle(sw).backgroundColor;
         if (c && c !== 'transparent' && c !== 'rgba(0, 0, 0, 0)') send({ type: 'color', color: c });
       });
-
       ['quick-brush-size-range', 'quick-brush-size-number', 'quick-eraser-size-range', 'brush-size'].forEach(function (id) {
         var el = document.getElementById(id);
         if (!el) return;
         el.addEventListener('input', function () { send({ type: 'brushSize', size: el.value }); });
       });
-
       window.addEventListener('message', function (ev) {
         if (ev.data && ev.data.source === 'verse-engine' && (ev.data.type === 'ready' || ev.data.type === 'pong')) {
           send({ type: 'tool', tool: 'brush' });
@@ -59,9 +55,12 @@
       });
       setTimeout(function () { send({ type: 'ping' }); }, 1200);
     }
-
     function loadScripts() {
       wireUi();
+      var link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = './js/vp-chrome.css';
+      document.head.appendChild(link);
       var a = document.createElement('script');
       a.src = './js/draw-ui-integrate.js';
       document.body.appendChild(a);
@@ -69,7 +68,6 @@
       b.src = './js/draw-panels.js';
       document.body.appendChild(b);
     }
-
     fetch('./new-ui.html', { cache: 'no-store' })
       .then(function (r) {
         if (!r.ok) throw new Error('new-ui.html HTTP ' + r.status);
@@ -78,38 +76,30 @@
       .then(function (html) {
         var iframe =
           '<iframe id="engine-frame" src="./draw-engine.html" title="キャンバス" ' +
-          'style="width:100%;height:100%;border:0;display:block;background:#3a3a3a;border-radius:inherit;touch-action:none;" ' +
-          'allow="clipboard-read; clipboard-write"></iframe>';
-
+          'style="width:100%;height:100%;border:0;display:block;background:#3a3a3a;border-radius:inherit;touch-action:none;"></iframe>';
         if (/<div class="canvas" id="canvas">\s*<\/div>/.test(html)) {
           html = html.replace(
             /<div class="canvas" id="canvas">\s*<\/div>/,
-            '<div class="canvas" id="canvas" style="position:relative;overflow:hidden;">' + iframe + '</div>'
+            '<div class="canvas" id="canvas" style="position:relative;overflow:hidden;z-index:1;">' + iframe + '</div>'
           );
         } else if (html.indexOf('id="canvas"') >= 0) {
           html = html.replace(/(id="canvas"[^>]*>)/, '$1' + iframe);
         } else {
           throw new Error('new-ui.html に #canvas がありません');
         }
-
         var parsed = new DOMParser().parseFromString(html, 'text/html');
         document.head.innerHTML = parsed.head.innerHTML;
         document.body.innerHTML = parsed.body.innerHTML;
-
-        if (!document.querySelector('meta[name="viewport"]')) {
-          var m = document.createElement('meta');
-          m.name = 'viewport';
-          m.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover';
-          document.head.appendChild(m);
-        }
-
+        var link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = './js/vp-chrome.css';
+        document.head.appendChild(link);
         Array.prototype.slice.call(document.body.querySelectorAll('script')).forEach(function (old) {
           var neu = document.createElement('script');
           if (old.src) neu.src = old.src;
           else neu.textContent = old.textContent;
           old.parentNode.replaceChild(neu, old);
         });
-
         setTimeout(loadScripts, 0);
       })
       .catch(function (err) {

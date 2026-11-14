@@ -1,0 +1,83 @@
+/* Keep main nav above dock panels; flyout submenus visible */
+header, .top-bar, .main-navigation, nav {
+  position: relative;
+  z-index: 100 !important;
+}
+.navigation-menu,
+.submenu-menu {
+  z-index: 120 !important;
+  overflow: visible !important;
+}
+details.navigation-submenu {
+  position: relative;
+}
+details.navigation-submenu > .submenu-menu {
+  display: none;
+  position: absolute;
+  top: 0;
+  left: calc(100% - 4px);
+  min-width: 200px;
+  max-height: min(70vh, 480px);
+  overflow-y: auto;
+  z-index: 130 !important;
+  background: #171717;
+  border-radius: 0 10px 10px 10px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  padding: 6px;
+  list-style: none;
+  margin: 0;
+}
+details.navigation-submenu[open] > .submenu-menu {
+  display: block;
+}
+details.nav-nested {
+  position: relative;
+}
+details.nav-nested > summary {
+  list-style: none;
+  cursor: pointer;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 11px;
+  border-radius: 5px;
+  color: #e8e8e8;
+  font-size: 13px;
+}
+details.nav-nested > summary::-webkit-details-marker {
+  display: none;
+}
+details.nav-nested > summary:hover {
+  background: #292929;
+}
+details.nav-nested > ul {
+  display: none;
+  position: absolute;
+  top: 0;
+  left: calc(100% - 2px);
+  min-width: 180px;
+  background: #171717;
+  border-radius: 0 10px 10px 10px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  padding: 6px;
+  list-style: none;
+  margin: 0;
+  z-index: 140 !important;
+}
+details.nav-nested[open] > ul {
+  display: block;
+}
+#vp-dock-root {
+  z-index: 20 !important;
+  pointer-events: none;
+}
+#vp-dock-root .vp-panel {
+  pointer-events: auto;
+}
+.canvas,
+#canvas,
+#engine-frame {
+  position: relative;
+  z-index: 1;
+}
