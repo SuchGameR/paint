@@ -67,6 +67,9 @@
       var b = document.createElement('script');
       b.src = './js/draw-panels.js';
       document.body.appendChild(b);
+      var c = document.createElement('script');
+      c.src = './js/draw-menu-nest.js';
+      document.body.appendChild(c);
     }
     fetch('./new-ui.html', { cache: 'no-store' })
       .then(function (r) {
