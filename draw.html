@@ -48,9 +48,17 @@
         if (!el) return;
         el.addEventListener('input', function () { send({ type: 'brushSize', size: el.value }); });
       });
+      function pushAppearance() {
+        var pal = document.getElementById('palette-color');
+        send({ type: 'tool', tool: 'brush' });
+        send({ type: 'color', color: (pal && pal.value) || '#ff6600' });
+        send({ type: 'brushSize', size: 16 });
+      }
+      var palIn = document.getElementById('palette-color');
+      if (palIn) palIn.addEventListener('input', function () { send({ type: 'color', color: palIn.value }); });
       window.addEventListener('message', function (ev) {
         if (ev.data && ev.data.source === 'verse-engine' && (ev.data.type === 'ready' || ev.data.type === 'pong')) {
-          send({ type: 'tool', tool: 'brush' });
+          pushAppearance();
         }
       });
       setTimeout(function () { send({ type: 'ping' }); }, 1200);

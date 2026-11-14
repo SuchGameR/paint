@@ -28,7 +28,7 @@
     [
       'start-screen', 'app-menubar', 'top-bar', 'left-toolbar', 'left-paint-panel',
       'compact-tools', 'anim-bar', 'status-bar', 'mode-anim-btn', 'hud-coords',
-      'mobile-dock', 'props-panel'
+      'mobile-dock', 'props-panel', 'minimap-wrap'
     ].forEach(function (id) {
       var el = $(id);
       if (el) { el.style.display = 'none'; el.style.pointerEvents = 'none'; el.style.visibility = 'hidden'; }
@@ -62,18 +62,43 @@
     });
   }
 
-  function ensureInfiniteAndStart() {
+  function centerBoard() {
+    var st = getState();
+    if (!st) return;
+    st.infiniteCanvas = false;
+    if (!st.canvasBg || st.canvasBg === 'transparent') st.canvasBg = '#ffffff';
+    st.canvasWidth = st.canvasWidth || 1920;
+    st.canvasHeight = st.canvasHeight || 1080;
+    var w = Math.max(window.innerWidth || 0, 320);
+    var h = Math.max(window.innerHeight || 0, 240);
+    var z = Math.min(w / st.canvasWidth, h / st.canvasHeight) * 0.82;
+    st.zoom = Math.max(0.05, Math.min(4, z));
+    st.panX = (w - st.canvasWidth * st.zoom) / 2;
+    st.panY = (h - st.canvasHeight * st.zoom) / 2;
+    if (!st.color || st.color === '#171717') st.color = '#ff6600';
+    redraw();
+  }
+
+  function ensureBoardAndStart() {
     var inf = $('start-infinite');
     if (inf) {
-      inf.checked = true;
+      inf.checked = false;
       inf.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    var fields = $('start-size-fields');
+    if (fields) {
+      fields.style.opacity = '1';
+      fields.style.pointerEvents = 'auto';
     }
     var btn = $('btn-start-create');
     if (btn) btn.click();
     var ss = $('start-screen');
-    if (ss) ss.style.display = 'none';
+    if (ss) { ss.style.display = 'none'; ss.classList.add('hidden'); }
+    var mm = $('minimap-wrap');
+    if (mm) mm.style.display = 'none';
     hideChrome();
     enablePressure();
+    centerBoard();
   }
 
   var active = new Map();
@@ -180,7 +205,7 @@
   function setColor(hex) {
     if (!hex) return;
     if (String(hex).indexOf('rgb') === 0) {
-      var m = String(hex).match(/\d+/g);
+      var m = String(hex).match(/\\d+/g);
       if (m) hex = '#' + m.slice(0, 3).map(function (n) {
         return Number(n).toString(16).padStart(2, '0');
       }).join('');
@@ -269,7 +294,7 @@
 
   function boot() {
     hideChrome();
-    ensureInfiniteAndStart();
+    ensureBoardAndStart();
     enablePressure();
     installGestures();
     setTimeout(hideChrome, 600);
@@ -278,6 +303,7 @@
       enablePressure();
       installGestures();
       setTool('brush');
+      centerBoard();
       postState();
       if (window.parent && window.parent !== window) {
         window.parent.postMessage({ source: 'verse-engine', type: 'ready' }, '*');
