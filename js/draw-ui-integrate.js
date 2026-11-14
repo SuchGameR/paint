@@ -1,6 +1,5 @@
 /**
  * Expand new-ui menus with full engine feature surface (non-destructive).
- * Sends { source:'verse-new-ui', type:'menu', action } to engine iframe.
  */
 (function () {
   'use strict';
@@ -110,11 +109,12 @@
           <details class="navigation-submenu">
             <summary class="submenu-toggle">パネル<span class="submenu-chevron" aria-hidden="true"></span></summary>
             <ul class="submenu-menu">
-              <li><button class="menu-command" type="button" data-act="panel-brush">ブラシパネル</button></li>
-              <li><button class="menu-command" type="button" data-act="panel-props">プロパティ</button></li>
+              <li><button class="menu-command" type="button" data-act="panel-color">カラーパレット</button></li>
               <li><button class="menu-command" type="button" data-act="panel-layers">レイヤー</button></li>
-              <li><button class="menu-command" type="button" data-act="add-layer">レイヤー追加</button></li>
+              <li><button class="menu-command" type="button" data-act="panel-regions">リージョン</button></li>
+              <li><button class="menu-command" type="button" data-act="panel-props">プロパティ</button></li>
               <li class="menu-divider"></li>
+              <li><button class="menu-command" type="button" data-act="add-layer">レイヤー追加</button></li>
               <li><button class="menu-command" type="button" data-act="pressure-on">筆圧オン</button></li>
               <li><button class="menu-command" type="button" data-act="settings">設定</button></li>
               <li><button class="menu-command" type="button" data-act="region-save">リージョン保存</button></li>
@@ -148,20 +148,20 @@
 
   function handleAct(act) {
     if (!act) return;
-    if (act === 'quit') {
-      location.href = './index.html';
-      return;
-    }
+    if (act === 'quit') { location.href = './index.html'; return; }
     if (act === 'to-motion') {
       send({ type: 'menu', action: 'export-png-session' });
-      setTimeout(function () {
-        location.href = './motion.html?w=1920&h=1080&fps=24';
-      }, 200);
+      setTimeout(function () { location.href = './motion.html?w=1920&h=1080&fps=24'; }, 200);
       return;
     }
     if (act.indexOf('tool-') === 0) {
       var tool = act.slice(5);
       send({ type: 'tool', tool: tool === 'fill' ? 'bucket' : tool });
+      return;
+    }
+    if (act === 'panel-color' || act === 'panel-layers' || act === 'panel-regions' || act === 'panel-props') {
+      var pid = act.replace('panel-', '');
+      if (window.VersePanels) window.VersePanels.toggle(pid);
       return;
     }
     if (act === 'zoom-in') { send({ type: 'zoom', dir: 'in' }); return; }
@@ -172,9 +172,7 @@
 
   function integrate() {
     var nav = document.querySelector('.navigation-menu');
-    if (nav) {
-      nav.innerHTML = MENU_HTML;
-    }
+    if (nav) nav.innerHTML = MENU_HTML;
 
     $all('.menu-command, .exit-command').forEach(function (btn) {
       btn.disabled = false;
@@ -196,9 +194,8 @@
     });
   }
 
-  if (document.querySelector('.navigation-menu')) {
-    integrate();
-  } else {
+  if (document.querySelector('.navigation-menu')) integrate();
+  else {
     document.addEventListener('DOMContentLoaded', integrate);
     setTimeout(integrate, 0);
     setTimeout(integrate, 100);
