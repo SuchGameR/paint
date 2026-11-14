@@ -20,26 +20,24 @@
   </style>
 </head>
 <body class="bg-black text-gray-100 min-h-screen">
-  <div id="start-screen" class="fixed inset-0 z-[200] flex items-center justify-center p-4" style="background:#0a0a0a">
-    <div class="rounded-2xl p-6 w-[min(480px,96vw)] flex flex-col gap-5 border border-white/10 shadow-2xl" style="background:#111">
+  <div class="fixed inset-0 flex items-center justify-center p-4" style="background:#0a0a0a">
+    <div class="rounded-2xl p-6 w-[min(480px,96vw)] flex flex-col gap-5 border border-white/10" style="background:#111">
       <div class="text-center">
         <h1 class="text-xl font-semibold tracking-tight">VersePaint</h1>
         <p class="text-[12px] text-geist-400 mt-1">作業環境を選んで開始</p>
       </div>
       <div class="grid grid-cols-2 gap-3">
-        <button type="button" id="start-go-draw" class="ws-card start-workspace active rounded-xl border border-white/20 p-4 text-left" data-ws="draw">
+        <button type="button" class="ws-card start-workspace active rounded-xl border border-white/20 p-4 text-left" data-ws="draw" id="start-go-draw">
           <div class="text-[13px] font-medium mb-1"><i class="fa-solid fa-pen-nib mr-1.5"></i>イラスト</div>
-          <div class="text-[11px] text-geist-500">全機能そのまま・UI整理版</div>
+          <div class="text-[11px] text-geist-500">新UI · フル機能 · 無限キャンバス</div>
         </button>
-        <button type="button" id="start-go-motion" class="ws-card start-workspace rounded-xl border border-white/15 p-4 text-left" data-ws="motion">
+        <button type="button" class="ws-card start-workspace rounded-xl border border-white/15 p-4 text-left" data-ws="motion" id="start-go-motion">
           <div class="text-[13px] font-medium mb-1"><i class="fa-solid fa-film mr-1.5"></i>モーション</div>
           <div class="text-[11px] text-geist-500">キーフレーム・セル・オニオン</div>
         </button>
       </div>
       <div id="start-draw-options" class="flex flex-col gap-3">
-        <p class="text-[11px] text-geist-500">ベクター＋ラスターなど既存機能はそのまま。見た目だけスケッチ寄りにしています。</p>
         <button id="btn-start-create" type="button" class="w-full py-3.5 rounded-xl bg-white text-black font-medium text-[14px]">イラストを開始</button>
-        <p id="draw-status" class="text-[11px] text-geist-500 text-center hidden"></p>
       </div>
       <div id="start-motion-options" style="display:none" class="flex-col gap-3">
         <div class="grid grid-cols-3 gap-2">
@@ -65,70 +63,9 @@
       b.addEventListener('click', function () { setWs(b.dataset.ws || 'draw'); });
     });
     setWs('draw');
-
+    $('btn-start-create').onclick = function () { location.href = './draw.html'; };
     $('btn-start-motion').onclick = function () {
-      var w = $('motion-w').value || 1920, h = $('motion-h').value || 1080, fps = $('motion-fps').value || 24;
-      location.href = './motion.html?w=' + encodeURIComponent(w) + '&h=' + encodeURIComponent(h) + '&fps=' + encodeURIComponent(fps);
-    };
-
-    $('btn-start-create').onclick = function () {
-      if (window.__VP_LOADING) return;
-      window.__VP_LOADING = true;
-      var btn = $('btn-start-create');
-      var st = $('draw-status');
-      btn.disabled = true;
-      btn.textContent = '読み込み中…';
-      st.classList.remove('hidden');
-      st.textContent = 'フル機能エンジンを読み込んでいます…';
-
-      var commit = 'b75c9d3f0edba50ede086bf80eb23ef35a83199e';
-      var base = 'https://cdn.jsdelivr.net/gh/SuchGameR/paint@' + commit + '/';
-      var urls = [
-        base + 'index.html',
-        'https://raw.githubusercontent.com/SuchGameR/paint/' + commit + '/index.html'
-      ];
-
-      function fail(msg) {
-        window.__VP_LOADING = false;
-        btn.disabled = false;
-        btn.textContent = 'イラストを開始';
-        st.textContent = msg || '読み込みに失敗しました';
-      }
-
-      function rewrite(html) {
-        html = html.split('href="./').join('href="' + base);
-        html = html.split('src="./').join('src="' + base);
-        html = html.split('href="css/').join('href="' + base + 'css/');
-        html = html.split('src="js/').join('src="' + base + 'js/');
-        var a = html.indexOf('id="mode-anim-btn"');
-        if (a >= 0) {
-          var b0 = html.lastIndexOf('<button', a);
-          var b1 = html.indexOf('</button>', a);
-          if (b0 >= 0 && b1 >= 0) html = html.slice(0, b0) + html.slice(b1 + 9);
-        }
-        html = html.split('id="anim-bar"').join('id="anim-bar" style="display:none!important"');
-        var skinLink = '<link rel="stylesheet" href="./css/draw-skin.css">';
-        var skinJs = '<script src="./js/draw-skin.js"><\\/script>';
-        if (html.indexOf('</head>') >= 0) html = html.replace('</head>', skinLink + '\n</head>');
-        if (html.indexOf('</body>') >= 0) html = html.replace('</body>', skinJs + '\n</body>');
-        return html;
-      }
-
-      function tryLoad(i) {
-        if (i >= urls.length) return fail('エンジンを取得できませんでした');
-        fetch(urls[i], { cache: 'no-store' })
-          .then(function (r) { if (!r.ok) throw new Error(r.status); return r.text(); })
-          .then(function (html) {
-            document.open();
-            document.write(rewrite(html));
-            document.close();
-          })
-          .catch(function (err) {
-            console.warn(urls[i], err);
-            tryLoad(i + 1);
-          });
-      }
-      tryLoad(0);
+      location.href = './motion.html?w=' + ($('motion-w').value||1920) + '&h=' + ($('motion-h').value||1080) + '&fps=' + ($('motion-fps').value||24);
     };
   })();
   </script>

@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="ja" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>VersePaint Engine</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            geist: {
+              200: '#e5e5e5', 300: '#d4d4d4', 400: '#a3a3a3', 500: '#737373',
+              600: '#525252', 700: '#404040', 800: '#262626', 900: '#171717'
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    html, body {
+      margin: 0; padding: 0; width: 100%; height: 100%;
+      overflow: hidden; background: #2b2b2b;
+      touch-action: none; overscroll-behavior: none;
+    }
+    body.engine-embedded #start-screen,
+    body.engine-embedded #app-menubar,
+    body.engine-embedded #top-bar,
+    body.engine-embedded #left-toolbar,
+    body.engine-embedded #left-paint-panel,
+    body.engine-embedded #compact-tools,
+    body.engine-embedded #anim-bar,
+    body.engine-embedded #status-bar,
+    body.engine-embedded .skip-link,
+    body.engine-embedded #mode-anim-btn,
+    body.engine-embedded #hud-coords,
+    body.engine-embedded #mobile-dock,
+    body.engine-embedded #props-panel,
+    body.engine-embedded #side-tabs,
+    body.engine-embedded [id*="right-panel"],
+    body.engine-embedded .side-panel {
+      display: none !important;
+      pointer-events: none !important;
+      visibility: hidden !important;
+    }
+    body.engine-embedded #ctx-menu { z-index: 200 !important; }
+    body.engine-embedded #canvas-container {
+      position: fixed !important;
+      inset: 0 !important;
+      width: 100% !important;
+      height: 100% !important;
+      margin: 0 !important;
+      border: none !important;
+      touch-action: none !important;
+      z-index: 1 !important;
+    }
+    body.engine-embedded #export-region-modal,
+    body.engine-embedded #effect-more-sheet,
+    body.engine-embedded #settings-modal,
+    body.engine-embedded #help-modal,
+    body.engine-embedded #timeline-settings-modal {
+      z-index: 300 !important;
+    }
+    body.engine-embedded #export-region-modal.hidden,
+    body.engine-embedded #effect-more-sheet.hidden,
+    body.engine-embedded #settings-modal.hidden,
+    body.engine-embedded #help-modal.hidden,
+    body.engine-embedded #timeline-settings-modal.hidden,
+    body.engine-embedded #ctx-menu.hidden {
+      display: none !important;
+    }
+  </style>
+</head>
+<body class="engine-embedded">
+<script>
+(function () {
+  if (window.__VP_ENGINE_BOOT) return;
+  window.__VP_ENGINE_BOOT = true;
+
+  var COMMIT = 'b75c9d3f0edba50ede086bf80eb23ef35a83199e';
+  var base = 'https://cdn.jsdelivr.net/gh/SuchGameR/paint@' + COMMIT + '/';
+
+  window.GridManager = window.GridManager || function GridManager(opts) {
+    opts = opts || {};
+    this.gridSize = opts.gridSize || 20;
+    this.enabled = opts.enabled !== false;
+    this.snapToGrid = !!opts.snapToGrid;
+    this.setEnabled = function (v) { this.enabled = !!v; };
+    this.setSnap = function (v) { this.snapToGrid = !!v; };
+  };
+  window.VectorPath = window.VectorPath || function VectorPath() { this.paths = []; };
+  window.PaletteStore = window.PaletteStore || function PaletteStore() {
+    this.presets = []; this.favorites = [];
+    this.getFavorites = function () { return this.favorites.slice(0, 6); };
+  };
+
+  var MODULES = [
+    'js/modules/app-state.js', 'js/modules/color-palettes.js', 'js/modules/palette-store.js',
+    'js/modules/brush-store.js', 'js/modules/brush-panel.js', 'js/modules/ui-layout.js',
+    'js/modules/statusbar.js', 'js/modules/timeline-enhance.js', 'js/modules/menu-bar.js',
+    'js/modules/minimap.js'
+  ];
+
+  function loadScript(src) {
+    return new Promise(function (resolve) {
+      var s = document.createElement('script');
+      s.src = src; s.async = false;
+      s.onload = function () { resolve(); };
+      s.onerror = function () { console.warn('fail', src); resolve(); };
+      document.head.appendChild(s);
+    });
+  }
+
+  function patchMain(js) {
+    js = js.replace(
+      'const state = window.VersePaintState.createInitialState(window.devicePixelRatio);',
+      'const state = window.__VP_STATE = window.VersePaintState.createInitialState(window.devicePixelRatio);' +
+      'if(state){state.pressureEnabled=true;if(state.pressureMin==null)state.pressureMin=0.2;' +
+      'var mob=/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)||Math.min(screen.width,screen.height)<900;' +
+      'if(mob){state.dpr=Math.min(state.dpr||1,1.25);if(state.maxHistory>40)state.maxHistory=40;}}'
+    );
+    js = js.replace('function render() {', 'function render() { window.__VP_RENDER = render;');
+    js = js.split('Math.min(16, Math.max(0.08, state.zoom').join('Math.min(256, Math.max(0.02, state.zoom');
+    js = js.split('Math.min(16, state.zoom *').join('Math.min(256, state.zoom *');
+    js = js.split('Math.max(0.08, state.zoom /').join('Math.max(0.02, state.zoom /');
+    js = js.replace(
+      'const gridManager = new window.GridManager({',
+      'const gridManager = new (window.GridManager || function(o){this.gridSize=20;this.enabled=true;})( {'
+    );
+    return js;
+  }
+
+  function fetchShell() {
+    return fetch(base + 'index.html', { cache: 'force-cache' })
+      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.text(); })
+      .catch(function () {
+        return fetch('https://raw.githubusercontent.com/SuchGameR/paint/' + COMMIT + '/index.html', { cache: 'no-store' })
+          .then(function (r) { return r.text(); });
+      });
+  }
+
+  function mountShell(html) {
+    html = html.split('href="./').join('href="' + base);
+    html = html.split('src="./').join('src="' + base);
+    html = html.split('href="css/').join('href="' + base + 'css/');
+    html = html.split('src="js/').join('src="' + base + 'js/');
+    html = html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '');
+    var parsed = new DOMParser().parseFromString(html, 'text/html');
+    var appCss = document.createElement('link');
+    appCss.rel = 'stylesheet';
+    appCss.href = base + 'css/app.css';
+    document.head.appendChild(appCss);
+    document.body.className = ((parsed.body.className || '') + ' engine-embedded dark').trim();
+    Array.prototype.slice.call(parsed.body.childNodes).forEach(function (n) {
+      if (n.nodeName === 'SCRIPT') return;
+      document.body.appendChild(document.importNode(n, true));
+    });
+    ['export-region-modal', 'effect-more-sheet', 'settings-modal', 'help-modal',
+     'timeline-settings-modal', 'ctx-menu', 'start-screen'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      el.classList.add('hidden');
+      el.style.display = 'none';
+    });
+  }
+
+  function forceHideChrome() {
+    document.body.classList.add('engine-embedded');
+    [
+      'start-screen', 'app-menubar', 'top-bar', 'left-toolbar', 'left-paint-panel',
+      'compact-tools', 'anim-bar', 'status-bar', 'mode-anim-btn', 'hud-coords',
+      'mobile-dock', 'props-panel'
+    ].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      el.style.display = 'none';
+      el.style.visibility = 'hidden';
+      el.style.pointerEvents = 'none';
+    });
+    var cc = document.getElementById('canvas-container');
+    if (cc) {
+      cc.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;margin:0;border:none;touch-action:none;z-index:1;';
+    }
+  }
+
+  function boot() {
+    fetchShell()
+      .then(mountShell)
+      .then(function () {
+        forceHideChrome();
+        var chain = Promise.resolve();
+        MODULES.forEach(function (path) {
+          chain = chain.then(function () { return loadScript(base + path); });
+        });
+        return chain;
+      })
+      .then(function () {
+        if (window.__VP_MAIN_LOADED) return;
+        return fetch(base + 'js/main.js', { cache: 'force-cache' })
+          .then(function (r) { return r.text(); })
+          .then(function (js) {
+            if (window.__VP_MAIN_LOADED) return;
+            window.__VP_MAIN_LOADED = true;
+            var el = document.createElement('script');
+            el.textContent = patchMain(js);
+            document.body.appendChild(el);
+          });
+      })
+      .then(function () {
+        forceHideChrome();
+        return loadScript('./js/draw-engine-bridge.js')
+          .then(function () { return loadScript('./js/draw-engine-actions.js'); });
+      })
+      .then(function () {
+        forceHideChrome();
+        setTimeout(forceHideChrome, 400);
+        setTimeout(forceHideChrome, 1200);
+      })
+      .catch(function (e) {
+        console.error(e);
+        document.body.insertAdjacentHTML('beforeend',
+          '<p style="color:#f88;padding:16px;font:13px system-ui">エンジン読込エラー: ' + String(e.message || e) + '</p>');
+      });
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+})();
+</script>
+</body>
+</html>
