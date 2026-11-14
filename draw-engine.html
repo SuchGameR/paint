@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>VersePaint Engine</title>
   <style>
-    html, body { margin:0; padding:0; width:100%; height:100%; overflow:hidden; background:#2a2a2a; }
+    html, body { margin:0; padding:0; width:100%; height:100%; overflow:hidden; background:#2b2b2b; }
+    body.engine-embedded #start-screen,
     body.engine-embedded #app-menubar,
     body.engine-embedded #top-bar,
     body.engine-embedded #left-toolbar,
@@ -14,35 +15,43 @@
     body.engine-embedded #anim-bar,
     body.engine-embedded #status-bar,
     body.engine-embedded .skip-link,
-    body.engine-embedded #start-screen {
+    body.engine-embedded #mode-anim-btn,
+    body.engine-embedded #hud-coords {
+      display: none !important;
+      pointer-events: none !important;
+    }
+    body.engine-embedded [id*="right-panel"],
+    body.engine-embedded .side-panel,
+    body.engine-embedded #props-drawer,
+    body.engine-embedded #side-tabs {
       display: none !important;
     }
     body.engine-embedded #canvas-container {
       position: fixed !important;
       inset: 0 !important;
-      left: 0 !important;
-      top: 0 !important;
-      right: 0 !important;
-      bottom: 0 !important;
-      width: 100% !important;
-      height: 100% !important;
+      left: 0 !important; top: 0 !important; right: 0 !important; bottom: 0 !important;
+      width: 100% !important; height: 100% !important;
+      margin: 0 !important; border: none !important;
     }
   </style>
 </head>
 <body>
 <script>
 (function () {
-  var commit = 'b75c9d3f0edba50ede086bf80eb23ef35a83199e';
-  var base = 'https://cdn.jsdelivr.net/gh/SuchGameR/paint@' + commit + '/';
-  var urls = [base + 'index.html', 'https://raw.githubusercontent.com/SuchGameR/paint/' + commit + '/index.html'];
+  var COMMIT = 'b75c9d3f0edba50ede086bf80eb23ef35a83199e';
+  var base = 'https://cdn.jsdelivr.net/gh/SuchGameR/paint@' + COMMIT + '/';
+  var urls = [
+    base + 'index.html',
+    'https://raw.githubusercontent.com/SuchGameR/paint/' + COMMIT + '/index.html'
+  ];
 
   function rewrite(html) {
     html = html.split('href="./').join('href="' + base);
     html = html.split('src="./').join('src="' + base);
     html = html.split('href="css/').join('href="' + base + 'css/');
     html = html.split('src="js/').join('src="' + base + 'js/');
-    html = html.replace('id="start-screen"', 'id="start-screen" style="display:none!important"');
     html = html.replace('<body', '<body class="engine-embedded"');
+    html = html.replace('id="start-screen"', 'id="start-screen" style="display:none!important"');
     var a = html.indexOf('id="mode-anim-btn"');
     if (a >= 0) {
       var b0 = html.lastIndexOf('<button', a);
@@ -56,7 +65,7 @@
 
   function tryLoad(i) {
     if (i >= urls.length) {
-      document.body.innerHTML = '<p style="color:#f88;padding:20px">エンジンの読み込みに失敗しました</p>';
+      document.body.innerHTML = '<p style="color:#f88;padding:24px;font:14px system-ui">描画エンジンの読み込みに失敗しました。再読み込みしてください。</p>';
       return;
     }
     fetch(urls[i], { cache: 'no-store' })
@@ -65,15 +74,11 @@
         document.open();
         document.write(rewrite(html));
         document.close();
-        setTimeout(function () {
-          document.body.classList.add('engine-embedded');
-          var btn = document.getElementById('btn-start-create');
-          if (btn) btn.click();
-          var ss = document.getElementById('start-screen');
-          if (ss) ss.style.display = 'none';
-        }, 400);
       })
-      .catch(function (e) { console.warn(urls[i], e); tryLoad(i + 1); });
+      .catch(function (e) {
+        console.warn(urls[i], e);
+        tryLoad(i + 1);
+      });
   }
   tryLoad(0);
 })();
