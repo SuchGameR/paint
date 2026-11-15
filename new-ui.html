@@ -2824,6 +2824,11 @@
             clearTimeout(submenuCloseTimer);
             submenuCloseTimer = setTimeout(() => closeSubmenus(null), 180);
         });
+        mainNavigation.addEventListener("click", (event) => {
+            if (event.target instanceof Element && event.target.closest(".submenu-toggle")) {
+                clearTimeout(submenuOpenTimer);
+            }
+        });
 
         mainNavigation.querySelectorAll(".navigation-menu a").forEach((link) => {
             link.addEventListener("click", () => {
