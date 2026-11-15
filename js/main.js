@@ -2376,6 +2376,9 @@ return null;
                             state._rotateCenter = { x: b.x + b.w / 2, y: b.y + b.h / 2 };
                             state._rotateStartAngle = Math.atan2(world.y - state._rotateCenter.y, world.x - state._rotateCenter.x);
                             state._rotateStartRot = sel.rotation || 0;
+                            state._transformPreviewIds = new Set([sel.id]);
+                            invalidateScene();
+                            invalidateObjectIndex();
                             return;
                         }
                         const rh = hitResizeHandle(sel, world.x, world.y);
@@ -2391,8 +2394,9 @@ return null;
                             state._resizeAnchor = resizeAnchorLocal(rb, rh);
                             state._resizeOrig = JSON.parse(JSON.stringify(sel));
                             state._dragStart = world;
-                            state._origPositions = {};
-                            state._origPositions[sel.id] = JSON.parse(JSON.stringify(sel));
+                            state._transformPreviewIds = new Set([sel.id]);
+                            invalidateScene();
+                            invalidateObjectIndex();
                             return;
                         }
                     }
@@ -2418,12 +2422,11 @@ return null;
                     state.isDrawing = true;
                     state._dragMove = true;
                     state._dragStart = world;
+                    state._dragApplied = { dx: 0, dy: 0 };
                     state._origPositions = {};
-                    state.objects.forEach(o => {
-                        if (state.selectedIds.has(o.id)) {
-                            state._origPositions[o.id] = JSON.parse(JSON.stringify(o));
-                        }
-                    });
+                    state._transformPreviewIds = new Set(state.selectedIds);
+                    invalidateScene();
+                    invalidateObjectIndex();
                 } else {
                     if (!e.shiftKey) state.selectedIds.clear();
                     state.isMarquee = true;
@@ -2673,17 +2676,19 @@ return null;
                 }
             }
 
-            if (state._dragMove && state._origPositions) {
+            if (state._dragMove) {
                 const dx = world.x - state._dragStart.x;
                 const dy = world.y - state._dragStart.y;
-                state.objects.forEach(o => {
-                    if (!state.selectedIds.has(o.id)) return;
-                    const orig = state._origPositions[o.id];
-                    if (!orig) return;
-                    const copy = JSON.parse(JSON.stringify(orig));
-                    translateGeometry(copy, dx, dy);
-                    for (const key in copy) o[key] = copy[key];
-                });
+                const applied = state._dragApplied || { dx: 0, dy: 0 };
+                const stepX = dx - applied.dx;
+                const stepY = dy - applied.dy;
+                if (stepX || stepY) {
+                    state.objects.forEach(o => {
+                        if (!state.selectedIds.has(o.id)) return;
+                        translateGeometry(o, stepX, stepY);
+                    });
+                    state._dragApplied = { dx, dy };
+                }
                 render();
                 return;
             }
@@ -2834,12 +2839,18 @@ return null;
                 }
             }
 
+            if (state._transformPreviewIds) {
+                state._transformPreviewIds = null;
+                invalidateScene();
+                invalidateObjectIndex();
+            }
             state.isDrawing = false;
             const committedVector = !!state.currentObj;
             state.currentObj = null;
             state.activeStrokeCanvas = null;
             state._dragMove = false;
             state._origPositions = null;
+            state._dragApplied = null;
             state._erased = false;
             state._penDragging = false;
             state._editBezier = null;
@@ -7168,6 +7179,7 @@ return null;
             }
             queryObjectsInBounds(state._vp).forEach(({ obj }) => {
                 if (obj === state.currentObj || obj === state._penObj) return;
+                if (state._transformPreviewIds && state._transformPreviewIds.has(obj.id)) return;
                 try { __drawObjectTo(sctx, obj); } catch (e) {
                     console.error('Object render failed', e);
                 }
@@ -7266,6 +7278,14 @@ return null;
             ctx.translate(state.panX, state.panY);
             ctx.scale(state.zoom, state.zoom);
             drawPaintLayer(ctx, worldViewport());
+            if (state._transformPreviewIds && state._transformPreviewIds.size) {
+                const vp = worldViewport();
+                state.objects.forEach((obj) => {
+                    if (!state._transformPreviewIds.has(obj.id)) return;
+                    const b = getBounds(obj);
+                    if (b && boundsIntersect(b, vp)) __drawObjectTo(ctx, obj);
+                });
+            }
             if (state.activeStrokeCanvas) {
                 ctx.setTransform(1, 0, 0, 1, 0, 0);
                 ctx.drawImage(state.activeStrokeCanvas, 0, 0);
@@ -7278,14 +7298,15 @@ return null;
             if (state._penObj) __drawObjectTo(ctx, state._penObj);
             // selection handles only (on top)
             state._vp = worldViewport();
-            queryObjectsInBounds(state._vp).forEach(({ obj }) => {
-                if (state.selectedIds.has(obj.id)) {
-                    ctx.save();
-                    applyObjectRotation(ctx, obj);
-                    ctx.filter = 'none';
-                    drawEditHandles(ctx, obj);
-                    ctx.restore();
-                }
+            state.objects.forEach((obj) => {
+                if (!state.selectedIds.has(obj.id)) return;
+                const b = getBounds(obj);
+                if (!b || !boundsIntersect(b, state._vp)) return;
+                ctx.save();
+                applyObjectRotation(ctx, obj);
+                ctx.filter = 'none';
+                drawEditHandles(ctx, obj);
+                ctx.restore();
             });
             // pen rubber band
             if (state._penObj && state._penObj.anchors && state.lastWorld) {
@@ -7329,7 +7350,7 @@ return null;
                     invalidateScene();
                     invalidateObjectIndex();
                 }
-                if (state.isDrawing && !state.currentObj && !state._paintStroke) {
+                if (state.isDrawing && !state.currentObj && !state._paintStroke && !state._transformPreviewIds) {
                     invalidateScene();
                     invalidateObjectIndex();
                 }
