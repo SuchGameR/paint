@@ -676,7 +676,16 @@
                 const fs = obj.fontSize || 22;
                 ctx.font = `${fw} ${fs}px ${ff}, system-ui, sans-serif`;
                 ctx.textBaseline = 'alphabetic';
-                ctx.fillText(obj.text, obj.x, obj.y);
+                const textScaleX = obj.scaleX || 1;
+                if (textScaleX !== 1) {
+                    ctx.save();
+                    ctx.translate(obj.x, obj.y);
+                    ctx.scale(textScaleX, 1);
+                    ctx.fillText(obj.text, 0, 0);
+                    ctx.restore();
+                } else {
+                    ctx.fillText(obj.text, obj.x, obj.y);
+                }
             }
 
             if (selected) {
@@ -697,8 +706,7 @@
                     minX = Math.min(minX, p.x); minY = Math.min(minY, p.y);
                     maxX = Math.max(maxX, p.x); maxY = Math.max(maxY, p.y);
                 });
-                const pad = (obj.strokeWidth || 4) / 2;
-                return { x: minX - pad, y: minY - pad, w: maxX - minX + pad * 2, h: maxY - minY + pad * 2 };
+                return { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
             }
             if (['rect','roundrect','triangle','star','hexagon'].includes(obj.type)) {
                 const x = Math.min(obj.x, obj.x + (obj.w||0));
@@ -715,10 +723,16 @@
                 return { x, y, w: Math.abs(obj.x2 - obj.x1) || 1, h: Math.abs(obj.y2 - obj.y1) || 1 };
             }
             if (obj.type === 'text') {
-                return { x: obj.x, y: obj.y - (obj.fontSize || 22), w: Math.max(40, (obj.text || '').length * (obj.fontSize || 22) * 0.55), h: obj.fontSize || 22 };
+                const fs = obj.fontSize || 22;
+                const scaleX = obj.scaleX || 1;
+                const baseW = Math.max(40, (obj.text || '').length * fs * 0.55);
+                const tw = baseW * scaleX;
+                return { x: Math.min(obj.x, obj.x + tw), y: obj.y - fs, w: Math.abs(tw), h: fs };
             }
             if (obj.type === 'image') {
-                return { x: obj.x, y: obj.y, w: obj.w || 0, h: obj.h || 0 };
+                const x = Math.min(obj.x, obj.x + (obj.w || 0));
+                const y = Math.min(obj.y, obj.y + (obj.h || 0));
+                return { x, y, w: Math.abs(obj.w || 0), h: Math.abs(obj.h || 0) };
             }
             if (obj.type === 'bezier' && obj.anchors && obj.anchors.length) {
                 let minx = Infinity, miny = Infinity, maxx = -Infinity, maxy = -Infinity;
@@ -735,8 +749,7 @@
                 });
                 return { x: minx, y: miny, w: maxx - minx, h: maxy - miny };
             }
-                        if (obj.type === 'group') {
-                if (obj.w != null && obj.h != null) return { x: obj.x||0, y: obj.y||0, w: Math.abs(obj.w), h: Math.abs(obj.h) };
+            if (obj.type === 'group') {
                 let minx=Infinity,miny=Infinity,maxx=-Infinity,maxy=-Infinity;
                 (obj.children||[]).forEach(ch => {
                     const b = getBounds(ch);
@@ -744,7 +757,10 @@
                     minx=Math.min(minx,b.x); miny=Math.min(miny,b.y);
                     maxx=Math.max(maxx,b.x+b.w); maxy=Math.max(maxy,b.y+b.h);
                 });
-                if (!isFinite(minx)) return { x:0,y:0,w:0,h:0 };
+                if (!isFinite(minx)) {
+                    if (obj.w != null && obj.h != null) return { x: obj.x||0, y: obj.y||0, w: Math.abs(obj.w), h: Math.abs(obj.h) };
+                    return { x:0,y:0,w:0,h:0 };
+                }
                 return { x:minx,y:miny,w:maxx-minx,h:maxy-miny };
             }
 return null;
@@ -960,6 +976,11 @@ return null;
             }
 
             if (obj.type === 'group' && obj.children) {
+                if (obj.rotation) {
+                    const local = worldToObjectLocal(obj, x, y, getBounds(obj));
+                    x = local.x;
+                    y = local.y;
+                }
                 return obj.children.some(ch => hitTest(ch, x, y));
             }
             if (obj.type === 'path' && obj.points) {
@@ -1003,12 +1024,12 @@ return null;
                 return distToSegment(x, y, obj.x1, obj.y1, obj.x2, obj.y2) < tol;
             }
             if (obj.type === 'text') {
-                const w = (obj.text || '').length * (obj.fontSize || 24) * 0.55;
-                const h = obj.fontSize || 24;
-                return x >= obj.x && x <= obj.x + w && y >= obj.y - h && y <= obj.y + h * 0.3;
+                const b = getBounds(obj);
+                return x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h;
             }
             if (obj.type === 'image') {
-                return x >= obj.x && x <= obj.x + obj.w && y >= obj.y && y <= obj.y + obj.h;
+                const b = getBounds(obj);
+                return x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h;
             }
             return false;
         }
@@ -1559,18 +1580,53 @@ return null;
             });
             ctx.restore();
         }
+        function rotateAroundPoint(x, y, cx, cy, deg) {
+            if (!deg) return { x, y };
+            const rad = deg * Math.PI / 180;
+            const cos = Math.cos(rad), sin = Math.sin(rad);
+            const dx = x - cx, dy = y - cy;
+            return { x: cx + dx * cos - dy * sin, y: cy + dx * sin + dy * cos };
+        }
+
+        function objectPivot(obj, b) {
+            b = b || getBounds(obj);
+            return {
+                x: obj.pivotX != null ? obj.pivotX : b.x + b.w / 2,
+                y: obj.pivotY != null ? obj.pivotY : b.y + b.h / 2
+            };
+        }
+
+        function worldToObjectLocal(obj, wx, wy, bOverride, centerOverride, rotationOverride) {
+            const b = bOverride || getBounds(obj);
+            const rot = rotationOverride != null ? rotationOverride : (obj.rotation || 0);
+            if (!rot) return { x: wx, y: wy };
+            const c = centerOverride || objectPivot(obj, b);
+            return rotateAroundPoint(wx, wy, c.x, c.y, -rot);
+        }
+
+        function resizeAnchorLocal(b, handle) {
+            return {
+                x: handle.includes('w') ? b.x + b.w : handle.includes('e') ? b.x : b.x + b.w / 2,
+                y: handle.includes('n') ? b.y + b.h : handle.includes('s') ? b.y : b.y + b.h / 2
+            };
+        }
+
         function hitRotateHandle(obj, wx, wy) {
             const b = getBounds(obj);
             if (!b) return false;
+            const local = worldToObjectLocal(obj, wx, wy, b);
             const rx = b.x + b.w / 2;
             const ry = b.y - 28 / state.zoom;
-            return Math.hypot(wx - rx, wy - ry) < 12 / state.zoom;
+            return Math.hypot(local.x - rx, local.y - ry) < 12 / state.zoom;
         }
 
 
         function hitResizeHandle(obj, wx, wy) {
             const b = getBounds(obj);
             if (!b) return null;
+            const local = worldToObjectLocal(obj, wx, wy, b);
+            wx = local.x;
+            wy = local.y;
             const tol = 10 / state.zoom;
             const pts = [
                 { id: 'nw', x: b.x, y: b.y },
@@ -1602,51 +1658,257 @@ return null;
             return null;
         }
 
-        function applyResize(obj, handle, startBounds, wx, wy) {
-            const b = startBounds;
-            let x = b.x, y = b.y, w = b.w, h = b.h;
-            if (handle.includes('e')) w = wx - b.x;
-            if (handle.includes('s')) h = wy - b.y;
-            if (handle.includes('w')) { w = b.x + b.w - wx; x = wx; }
-            if (handle.includes('n')) { h = b.y + b.h - wy; y = wy; }
-            // min size
-            if (Math.abs(w) < 2) w = w < 0 ? -2 : 2;
-            if (Math.abs(h) < 2) h = h < 0 ? -2 : 2;
-            const sx = w / (b.w || 1);
-            const sy = h / (b.h || 1);
-            if (obj.type === 'rect' || obj.type === 'image') {
-                obj.x = x; obj.y = y; obj.w = w; obj.h = h;
-            } else if (obj.type === 'circle') {
-                obj.x = x + w / 2; obj.y = y + h / 2;
-                obj.w = w / 2; obj.h = h / 2;
-            } else if (obj.type === 'path' && obj.points) {
-                obj.points = obj.points.map(p => ({
-                    x: x + (p.x - b.x) * sx,
-                    y: y + (p.y - b.y) * sy
-                }));
-            } else if (obj.type === 'bezier' && obj.anchors) {
-                obj.anchors = obj.anchors.map(a => ({
+        function translateGeometry(target, dx, dy) {
+            if (!target) return;
+            if (target.type === 'group') {
+                target.x = (target.x || 0) + dx;
+                target.y = (target.y || 0) + dy;
+                (target.children || []).forEach((child) => translateGeometry(child, dx, dy));
+                return;
+            }
+            if (target.type === 'path' && target.points) {
+                target.points.forEach((p) => { p.x += dx; p.y += dy; });
+                return;
+            }
+            if (target.type === 'bezier' && target.anchors) {
+                target.anchors.forEach((a) => { a.x += dx; a.y += dy; });
+                return;
+            }
+            if (target.type === 'line' || target.type === 'arrow') {
+                target.x1 += dx; target.y1 += dy;
+                target.x2 += dx; target.y2 += dy;
+                return;
+            }
+            if (target.x != null) target.x += dx;
+            if (target.y != null) target.y += dy;
+        }
+
+        function scaleGeometryFromOriginal(target, src, origin, newX, newY, sx, sy) {
+            const mapX = (px) => newX + (px - origin.x) * sx;
+            const mapY = (py) => newY + (py - origin.y) * sy;
+            const signW = (src.w || 0) < 0 ? -1 : 1;
+            const signH = (src.h || 0) < 0 ? -1 : 1;
+            if (src.type === 'group') {
+                const childOrigin = getBounds(src) || origin;
+                target.x = newX + (childOrigin.x - origin.x) * sx;
+                target.y = newY + (childOrigin.y - origin.y) * sy;
+                target.w = Math.max(1, childOrigin.w * sx);
+                target.h = Math.max(1, childOrigin.h * sy);
+                target.children = (src.children || []).map((child) => {
+                    const copy = JSON.parse(JSON.stringify(child));
+                    scaleGeometryFromOriginal(copy, child, origin, newX, newY, sx, sy);
+                    return copy;
+                });
+                return;
+            }
+            if (src.type === 'path' && src.points) {
+                target.points = src.points.map((p) => ({ ...p, x: mapX(p.x), y: mapY(p.y) }));
+                return;
+            }
+            if (src.type === 'bezier' && src.anchors) {
+                target.anchors = src.anchors.map((a) => ({
                     ...a,
-                    x: x + (a.x - b.x) * sx,
-                    y: y + (a.y - b.y) * sy,
+                    x: mapX(a.x),
+                    y: mapY(a.y),
                     inX: (a.inX || 0) * sx,
                     inY: (a.inY || 0) * sy,
                     outX: (a.outX || 0) * sx,
                     outY: (a.outY || 0) * sy
                 }));
-            } else if (obj.type === 'line' || obj.type === 'arrow') {
-                // scale endpoints
-                const pts = [
-                    { x: x + (obj.x1 - b.x) * sx, y: y + (obj.y1 - b.y) * sy },
-                    { x: x + (obj.x2 - b.x) * sx, y: y + (obj.y2 - b.y) * sy }
-                ];
-                obj.x1 = pts[0].x; obj.y1 = pts[0].y;
-                obj.x2 = pts[1].x; obj.y2 = pts[1].y;
-            } else if (obj.type === 'text') {
-                obj.x = x;
-                obj.y = y + (obj.fontSize || 22);
-                obj.fontSize = Math.max(8, (obj.fontSize || 22) * Math.abs(sy));
+                return;
             }
+            if (src.type === 'line' || src.type === 'arrow') {
+                target.x1 = mapX(src.x1); target.y1 = mapY(src.y1);
+                target.x2 = mapX(src.x2); target.y2 = mapY(src.y2);
+                return;
+            }
+            if (src.type === 'text') {
+                const fs = src.fontSize || 22;
+                const srcScaleX = src.scaleX || 1;
+                const sign = srcScaleX < 0 ? -1 : 1;
+                const baseW = Math.max(40, (src.text || '').length * fs * 0.55);
+                const srcW = baseW * Math.abs(srcScaleX);
+                const left = sign < 0 ? src.x - srcW : src.x;
+                const newW = srcW * sx;
+                target.scaleX = sign * Math.max(0.01, Math.abs(srcScaleX) * sx);
+                target.x = mapX(left) + (sign < 0 ? newW : 0);
+                target.y = mapY(src.y);
+                target.fontSize = Math.max(8, fs * Math.abs(sy));
+                return;
+            }
+            if (['rect', 'roundrect', 'circle', 'triangle', 'star', 'hexagon', 'image'].includes(src.type)) {
+                const left = Math.min(src.x, src.x + (src.w || 0));
+                const top = Math.min(src.y, src.y + (src.h || 0));
+                const width = Math.abs(src.w || 0) * sx;
+                const height = Math.abs(src.h || 0) * sy;
+                target.w = signW * width;
+                target.h = signH * height;
+                target.x = mapX(left) + (signW < 0 ? width : 0);
+                target.y = mapY(top) + (signH < 0 ? height : 0);
+                return;
+            }
+            if (src.x != null) target.x = mapX(src.x);
+            if (src.y != null) target.y = mapY(src.y);
+            if (src.w != null) target.w = src.w * sx;
+            if (src.h != null) target.h = src.h * sy;
+        }
+
+        function applyResize(obj, handle, startBounds, wx, wy, shiftKey, original) {
+            const b = startBounds;
+            const src = original || obj;
+            const minSize = 2;
+            const west = handle.includes('w');
+            const east = handle.includes('e');
+            const north = handle.includes('n');
+            const south = handle.includes('s');
+            let left = b.x, top = b.y, right = b.x + b.w, bottom = b.y + b.h;
+            if (east) right = wx;
+            if (west) left = wx;
+            if (south) bottom = wy;
+            if (north) top = wy;
+            if (right - left < minSize) {
+                if (west) left = right - minSize;
+                else right = left + minSize;
+            }
+            if (bottom - top < minSize) {
+                if (north) top = bottom - minSize;
+                else bottom = top + minSize;
+            }
+            const corner = (east || west) && (north || south) && !(east && west) && !(north && south);
+            if (shiftKey && b.w > 0 && b.h > 0) {
+                const aspect = b.w / b.h;
+                if (corner) {
+                    const cw = right - left, ch = bottom - top;
+                    const scale = Math.abs(cw - b.w) >= Math.abs(ch - b.h) * aspect ? cw / b.w : ch / b.h;
+                    const nw = Math.max(minSize, b.w * scale);
+                    const nh = Math.max(minSize, b.h * scale);
+                    if (west) left = right - nw; else right = left + nw;
+                    if (north) top = bottom - nh; else bottom = top + nh;
+                } else if (east || west) {
+                    const nw = Math.max(minSize, right - left);
+                    const nh = Math.max(minSize, nw / aspect);
+                    const cy = b.y + b.h / 2;
+                    top = cy - nh / 2;
+                    bottom = cy + nh / 2;
+                } else if (north || south) {
+                    const nh = Math.max(minSize, bottom - top);
+                    const nw = Math.max(minSize, nh * aspect);
+                    const cx = b.x + b.w / 2;
+                    left = cx - nw / 2;
+                    right = cx + nw / 2;
+                }
+            }
+            const nw = Math.max(minSize, right - left);
+            const nh = Math.max(minSize, bottom - top);
+            const sx = nw / (b.w || 1);
+            const sy = nh / (b.h || 1);
+            if (obj.type === 'group' && src.children) {
+                obj.children = (src.children || []).map((child) => {
+                    const copy = JSON.parse(JSON.stringify(child));
+                    scaleGeometryFromOriginal(copy, child, b, left, top, sx, sy);
+                    return copy;
+                });
+                obj.x = left; obj.y = top;
+                obj.w = nw;
+                obj.h = nh;
+                return;
+            }
+            scaleGeometryFromOriginal(obj, src, b, left, top, sx, sy);
+        }
+
+        function reflectGeometry(obj, axis, center) {
+            if (!obj || !center) return;
+            if (obj.type === 'group') {
+                (obj.children || []).forEach((child) => reflectGeometry(child, axis, center));
+                obj.rotation = -(obj.rotation || 0);
+                const nb = getBounds(obj);
+                obj.x = nb.x; obj.y = nb.y; obj.w = nb.w; obj.h = nb.h;
+                return;
+            }
+            if (obj.type === 'path' && obj.points) {
+                obj.points.forEach((p) => {
+                    if (axis === 'h') p.x = 2 * center.x - p.x;
+                    else p.y = 2 * center.y - p.y;
+                });
+                obj.rotation = -(obj.rotation || 0);
+                return;
+            }
+            if (obj.type === 'bezier' && obj.anchors) {
+                obj.anchors.forEach((a) => {
+                    if (axis === 'h') {
+                        a.x = 2 * center.x - a.x;
+                        a.inX = -(a.inX || 0);
+                        a.outX = -(a.outX || 0);
+                    } else {
+                        a.y = 2 * center.y - a.y;
+                        a.inY = -(a.inY || 0);
+                        a.outY = -(a.outY || 0);
+                    }
+                });
+                obj.rotation = -(obj.rotation || 0);
+                return;
+            }
+            if (obj.type === 'line' || obj.type === 'arrow') {
+                if (axis === 'h') {
+                    obj.x1 = 2 * center.x - obj.x1;
+                    obj.x2 = 2 * center.x - obj.x2;
+                } else {
+                    obj.y1 = 2 * center.y - obj.y1;
+                    obj.y2 = 2 * center.y - obj.y2;
+                }
+                obj.rotation = -(obj.rotation || 0);
+                return;
+            }
+            if (obj.type === 'text') {
+                const b = getBounds(obj);
+                const scaleX = obj.scaleX || 1;
+                if (axis === 'h') {
+                    const left = 2 * center.x - (b.x + b.w);
+                    const sign = scaleX < 0 ? 1 : -1;
+                    obj.scaleX = sign * Math.abs(scaleX);
+                    obj.x = sign < 0 ? left + b.w : left;
+                } else {
+                    obj.y = 2 * center.y - b.y;
+                }
+                obj.rotation = -(obj.rotation || 0);
+                return;
+            }
+            if (obj.x != null && obj.w != null) {
+                if (axis === 'h') {
+                    obj.x = 2 * center.x - (obj.x + obj.w);
+                    obj.w = -obj.w;
+                } else if (obj.y != null && obj.h != null) {
+                    obj.y = 2 * center.y - (obj.y + obj.h);
+                    obj.h = -obj.h;
+                }
+                obj.rotation = -(obj.rotation || 0);
+                return;
+            }
+            if (axis === 'h' && obj.x != null) obj.x = 2 * center.x - obj.x;
+            if (axis === 'v' && obj.y != null) obj.y = 2 * center.y - obj.y;
+            obj.rotation = -(obj.rotation || 0);
+        }
+
+        function flipSelection(axis) {
+            const targets = selectedObjects();
+            if (!targets.length) return;
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            targets.forEach((o) => {
+                const b = getBounds(o);
+                if (!b) return;
+                minX = Math.min(minX, b.x);
+                minY = Math.min(minY, b.y);
+                maxX = Math.max(maxX, b.x + b.w);
+                maxY = Math.max(maxY, b.y + b.h);
+            });
+            if (!isFinite(minX)) return;
+            pushHistory();
+            const center = { x: (minX + maxX) / 2, y: (minY + maxY) / 2 };
+            targets.forEach((o) => reflectGeometry(o, axis, center));
+            if (typeof invalidateScene === 'function') invalidateScene();
+            if (typeof invalidateObjectIndex === 'function') invalidateObjectIndex();
+            if (typeof syncObjectPropsUI === 'function') syncObjectPropsUI();
+            render();
         }
 
                 // ===== FLOOD FILL (bucket) =====
@@ -2122,7 +2384,12 @@ return null;
                             state.isDrawing = true;
                             state._resizeHandle = rh;
                             state._resizeObjId = sel.id;
-                            state._resizeStartBounds = getBounds(sel);
+                            const rb = getBounds(sel);
+                            state._resizeStartBounds = rb;
+                            state._resizeRotation = sel.rotation || 0;
+                            state._resizeCenter0 = objectPivot(sel, rb);
+                            state._resizeAnchor = resizeAnchorLocal(rb, rh);
+                            state._resizeOrig = JSON.parse(JSON.stringify(sel));
                             state._dragStart = world;
                             state._origPositions = {};
                             state._origPositions[sel.id] = JSON.parse(JSON.stringify(sel));
@@ -2365,15 +2632,42 @@ return null;
             if (state._resizeHandle && state._resizeObjId && state._resizeStartBounds) {
                 const obj = state.objects.find(o => o.id === state._resizeObjId);
                 if (obj) {
-                    let wx = world.x, wy = world.y;
-                    if (e.shiftKey) {
-                        const b = state._resizeStartBounds;
-                        const cx = b.x + b.w / 2, cy = b.y + b.h / 2;
-                        const side = Math.max(Math.abs(wx - cx), Math.abs(wy - cy));
-                        wx = cx + (wx >= cx ? side : -side);
-                        wy = cy + (wy >= cy ? side : -side);
+                    const local = worldToObjectLocal(
+                        obj,
+                        world.x,
+                        world.y,
+                        state._resizeStartBounds,
+                        state._resizeCenter0,
+                        state._resizeRotation
+                    );
+                    applyResize(
+                        obj,
+                        state._resizeHandle,
+                        state._resizeStartBounds,
+                        local.x,
+                        local.y,
+                        e.shiftKey,
+                        state._resizeOrig
+                    );
+                    if (state._resizeRotation && state._resizeAnchor && state._resizeCenter0) {
+                        const nb = getBounds(obj);
+                        const c1 = objectPivot(obj, nb);
+                        const a0 = rotateAroundPoint(
+                            state._resizeAnchor.x,
+                            state._resizeAnchor.y,
+                            state._resizeCenter0.x,
+                            state._resizeCenter0.y,
+                            state._resizeRotation
+                        );
+                        const a1 = rotateAroundPoint(
+                            state._resizeAnchor.x,
+                            state._resizeAnchor.y,
+                            c1.x,
+                            c1.y,
+                            state._resizeRotation
+                        );
+                        translateGeometry(obj, a0.x - a1.x, a0.y - a1.y);
                     }
-                    applyResize(obj, state._resizeHandle, state._resizeStartBounds, wx, wy);
                     render();
                     return;
                 }
@@ -2386,22 +2680,9 @@ return null;
                     if (!state.selectedIds.has(o.id)) return;
                     const orig = state._origPositions[o.id];
                     if (!orig) return;
-                    if (o.type === 'path') {
-                        o.points = orig.points.map(p => ({ x: p.x + dx, y: p.y + dy }));
-                    } else if (o.type === 'rect' || o.type === 'circle') {
-                        o.x = orig.x + dx; o.y = orig.y + dy;
-                    } else if (o.type === 'line' || o.type === 'arrow') {
-                        o.x1 = orig.x1 + dx; o.y1 = orig.y1 + dy;
-                        o.x2 = orig.x2 + dx; o.y2 = orig.y2 + dy;
-                    } else if (o.type === 'text' || o.type === 'image') {
-                        o.x = orig.x + dx; o.y = orig.y + dy;
-                    } else if (o.type === 'bezier' && orig.anchors) {
-                        o.anchors = orig.anchors.map(a => ({
-                            ...a,
-                            x: a.x + dx,
-                            y: a.y + dy
-                        }));
-                    }
+                    const copy = JSON.parse(JSON.stringify(orig));
+                    translateGeometry(copy, dx, dy);
+                    for (const key in copy) o[key] = copy[key];
                 });
                 render();
                 return;
@@ -2565,6 +2846,10 @@ return null;
             state._resizeHandle = null;
             state._resizeObjId = null;
             state._resizeStartBounds = null;
+            state._resizeOrig = null;
+            state._resizeRotation = 0;
+            state._resizeCenter0 = null;
+            state._resizeAnchor = null;
             state._rotateObjId = null;
             state._rotateCenter = null;
             if (committedVector) {
@@ -3585,20 +3870,10 @@ return null;
             el.addEventListener('pointerdown', () => pushHistory());
         });
         document.getElementById('btn-flip-h') && (document.getElementById('btn-flip-h').onclick = () => {
-            applyToSelected(o => {
-                if (o.type === 'path' && o.points) {
-                    const b = getBounds(o); const cx = b.x + b.w / 2;
-                    o.points.forEach(p => { p.x = cx - (p.x - cx); });
-                } else if (o.w != null) o.w = -o.w;
-            });
+            flipSelection('h');
         });
         document.getElementById('btn-flip-v') && (document.getElementById('btn-flip-v').onclick = () => {
-            applyToSelected(o => {
-                if (o.type === 'path' && o.points) {
-                    const b = getBounds(o); const cy = b.y + b.h / 2;
-                    o.points.forEach(p => { p.y = cy - (p.y - cy); });
-                } else if (o.h != null) o.h = -o.h;
-            });
+            flipSelection('v');
         });
         document.getElementById('btn-use-mask') && (document.getElementById('btn-use-mask').onclick = () => {
             const targets = selectedObjects();
@@ -3851,15 +4126,7 @@ return null;
                 }
                 state.objects.forEach(o => {
                     if (!state.selectedIds.has(o.id)) return;
-                    if (o.type === 'path' && o.points) {
-                        o.points.forEach(p => { p.x += dx; p.y += dy; });
-                    } else if (o.type === 'bezier' && o.anchors) {
-                        o.anchors.forEach(a => { a.x += dx; a.y += dy; });
-                    } else if (o.type === 'line' || o.type === 'arrow') {
-                        o.x1 += dx; o.y1 += dy; o.x2 += dx; o.y2 += dy;
-                    } else if (o.x != null) {
-                        o.x += dx; o.y += dy;
-                    }
+                    translateGeometry(o, dx, dy);
                 });
                 render();
                 return;
@@ -4581,7 +4848,16 @@ return null;
             } else if (obj.type === 'text') {
                 target.font = `${obj.fontWeight || 400} ${obj.fontSize || 24}px ${obj.fontFamily || 'Inter'}`;
                 target.fillStyle = obj.color || '#000';
-                target.fillText(obj.text || '', obj.x, obj.y);
+                const textScaleX = obj.scaleX || 1;
+                if (textScaleX !== 1) {
+                    target.save();
+                    target.translate(obj.x, obj.y);
+                    target.scale(textScaleX, 1);
+                    target.fillText(obj.text || '', 0, 0);
+                    target.restore();
+                } else {
+                    target.fillText(obj.text || '', obj.x, obj.y);
+                }
             } else if (obj.type === 'path' && obj.points && obj.points.length) {
                 if (!obj.closed && !obj.fill) {
                     drawBrushStroke(target, obj);
@@ -5421,7 +5697,9 @@ return null;
             if (obj && obj.type === 'group' && obj.children) {
                 ctx.save();
                 if (obj.rotation) {
-                    const cx = obj.x + obj.w/2, cy = obj.y + obj.h/2;
+                    const b = getBounds(obj);
+                    const cx = obj.pivotX != null ? obj.pivotX : b.x + b.w/2;
+                    const cy = obj.pivotY != null ? obj.pivotY : b.y + b.h/2;
                     ctx.translate(cx, cy);
                     ctx.rotate((obj.rotation * Math.PI)/180);
                     ctx.translate(-cx, -cy);
@@ -5464,31 +5742,11 @@ return null;
                 if (changed === 'h') nw = nh * (b.w / b.h);
             }
             pushHistory();
-            const dx = nx - b.x, dy = ny - b.y;
             const sx = b.w ? nw / b.w : 1, sy = b.h ? nh / b.h : 1;
-            // move
-            if (o.type === 'path' && o.points) o.points.forEach(p => { p.x += dx; p.y += dy; });
-            else if (o.type === 'bezier' && o.anchors) o.anchors.forEach(a => { a.x += dx; a.y += dy; });
-            else if (o.type === 'line' || o.type === 'arrow') { o.x1 += dx; o.y1 += dy; o.x2 += dx; o.y2 += dy; }
-            else if (o.x != null) { o.x += dx; o.y += dy; }
-            // scale from top-left of bounds
-            const scalePt = (px, py) => ({
-                x: b.x + dx + (px - b.x) * sx,
-                y: b.y + dy + (py - b.y) * sy
-            });
-            if (Math.abs(sx-1) > 1e-6 || Math.abs(sy-1) > 1e-6) {
-                if (o.type === 'path' && o.points) o.points = o.points.map(p => scalePt(p.x - dx, p.y - dy)); // already moved
-                // re-get after move — simplify:
-                if (['rect','roundrect','circle','triangle','star','hexagon','image'].includes(o.type)) {
-                    o.w = (o.w >= 0 ? 1 : -1) * nw;
-                    o.h = (o.h >= 0 ? 1 : -1) * nh;
-                    o.x = nx; o.y = ny;
-                } else if (o.type === 'group') {
-                    o.x = nx; o.y = ny; o.w = nw; o.h = nh;
-                }
-            } else if (['rect','roundrect','circle','triangle','star','hexagon','image','group'].includes(o.type)) {
-                o.x = nx; o.y = ny;
-            }
+            const src = JSON.parse(JSON.stringify(o));
+            scaleGeometryFromOriginal(o, src, b, nx, ny, sx, sy);
+            if (typeof invalidateScene === 'function') invalidateScene();
+            if (typeof invalidateObjectIndex === 'function') invalidateObjectIndex();
             render();
             syncGeomProps();
         }
