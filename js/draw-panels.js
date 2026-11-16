@@ -19,10 +19,35 @@
     if (f && f.contentWindow) f.contentWindow.postMessage(Object.assign({ source: 'verse-new-ui' }, msg), '*');
   }
   function ensureStyles() {
-    if (document.getElementById('vp-panel-styles')) return;
-    var s = document.createElement('style');
-    s.id = 'vp-panel-styles';
+    if (!document.getElementById('vp-panel-styles')) {
+      var s = document.createElement('style');
+      s.id = 'vp-panel-styles';
     s.textContent = '#vp-dock-root{position:fixed;left:0;right:0;top:60px;bottom:0;z-index:20;pointer-events:none;display:grid;grid-template-columns:repeat(12,1fr);grid-template-rows:repeat(12,1fr);gap:8px;padding:8px;box-sizing:border-box}.vp-panel{pointer-events:auto;background:#171717;border:1px solid #2a2a2a;border-radius:12px;box-shadow:0 8px 28px rgba(0,0,0,.4);display:flex;flex-direction:column;min-width:0;min-height:0;overflow:hidden;color:#e8e8e8;font:12px/1.4 system-ui,sans-serif}.vp-panel[hidden]{display:none!important}.vp-panel.is-dragging{will-change:transform;opacity:.94}.vp-panel-hd{display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid #2a2a2a;cursor:grab;user-select:none;flex-shrink:0}.vp-panel.is-dragging .vp-panel-hd{cursor:grabbing}.vp-panel-title{font-weight:600;font-size:12px;flex:1}.vp-panel-x{border:0;background:transparent;color:#888;cursor:pointer;font-size:14px;padding:2px 6px;border-radius:6px}.vp-panel-bd{padding:10px;overflow:auto;flex:1}.vp-swatch-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}.vp-swatch{aspect-ratio:1;border-radius:6px;border:1px solid rgba(255,255,255,.12);cursor:pointer}.vp-layer-row,.vp-region-row{display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:8px;cursor:pointer}.vp-layer-row:hover{background:#222}.vp-layer-row.active{background:#292929}.vp-layer-select{flex:1;min-width:0;overflow:hidden;border:0;background:transparent;color:inherit;text-align:left;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}.vp-layer-action{min-width:24px;padding:4px!important}.vp-btn{border:0;background:#292929;color:#eee;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:11px}.vp-btn-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.vp-muted{color:#8a8a8a;font-size:11px}.vp-field{display:flex;flex-direction:column;gap:4px;margin-bottom:8px}.vp-field label{font-size:10px;color:#8a8a8a}.vp-field input[type=range]{width:100%}.vp-field input[type=color]{width:100%;height:32px;border:0;background:transparent;padding:0}';
+    document.head.appendChild(s);
+    }
+    ensureLayersSectionStyles();
+  }
+  function ensureLayersSectionStyles() {
+    if (document.getElementById('vp-layers-section-styles')) return;
+    var s = document.createElement('style');
+    s.id = 'vp-layers-section-styles';
+    s.textContent = [
+      '#layers-section{margin-bottom:12px;padding-bottom:11px;border-bottom:1px solid #292929;position:relative;}',
+      '.vp-layers-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;padding-right:26px;}',
+      '.vp-layers-title{font-size:12px;font-weight:600;color:#e8e8e8;letter-spacing:.02em;}',
+      '.vp-layers-add{width:22px;height:22px;border:1px solid #374138;border-radius:6px;background:#121613;color:#cfe8d8;cursor:pointer;font-size:13px;line-height:1;display:grid;place-items:center;}',
+      '.vp-layers-add:hover{border-color:#4d6253;background:#182019;}',
+      '.vp-layers-list{display:flex;flex-direction:column;gap:3px;max-height:240px;overflow:auto;padding-right:2px;}',
+      '.vp-side-layer{display:flex;align-items:center;gap:4px;padding:5px 6px;border-radius:7px;border:1px solid transparent;background:#151a16;color:#c9d3cc;font:11px/1.2 system-ui,sans-serif;cursor:grab;touch-action:none;user-select:none;}',
+      '.vp-side-layer:hover{background:#1b211c;border-color:#2c3a30;}',
+      '.vp-side-layer.is-active{border-color:#2f6b46;background:#1b2a20;color:#eafff1;}',
+      '.vp-side-layer.is-dragging{opacity:.55;cursor:grabbing;}',
+      '.vp-side-layer-vis,.vp-side-layer-lock{flex:0 0 auto;width:18px;height:18px;border:0;border-radius:5px;background:transparent;color:#9fb0a4;cursor:pointer;font-size:10px;display:grid;place-items:center;padding:0;}',
+      '.vp-side-layer-vis:hover,.vp-side-layer-lock:hover{background:#26312a;color:#eafff1;}',
+      '.vp-side-layer-name{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
+      '.vp-side-layer-count{flex:0 0 auto;font-size:9px;color:#7f8c83;background:#0e120f;border-radius:999px;padding:1px 5px;}',
+      '.vp-layers-empty{font-size:11px;color:#7f8c83;padding:6px 4px;}'
+    ].join('');
     document.head.appendChild(s);
   }
   function ensureRoot() {
@@ -281,8 +306,189 @@
       b.onclick = function () { send({ type: 'menu', action: b.getAttribute('data-act') }); };
     });
   }
+  var sidebarLayersList = null;
+  var sidebarLayerDragging = false;
+
+  function ensureLayersSection() {
+    var props = document.getElementById('properties');
+    if (!props) return null;
+    var section = document.getElementById('layers-section');
+    if (!section) {
+      section = document.createElement('section');
+      section.id = 'layers-section';
+      section.className = 'layers-section';
+      section.setAttribute('aria-label', 'レイヤー');
+      section.innerHTML =
+        '<div class="vp-layers-head">' +
+          '<span class="vp-layers-title">レイヤー</span>' +
+          '<button type="button" class="vp-layers-add" title="レイヤー追加" aria-label="レイヤー追加">＋</button>' +
+        '</div>' +
+        '<div class="vp-layers-list" id="vp-sidebar-layers" role="list"></div>';
+      props.insertBefore(section, props.firstChild);
+    }
+    var addBtn = section.querySelector('.vp-layers-add');
+    if (addBtn && !addBtn.__vpWired) {
+      addBtn.__vpWired = true;
+      addBtn.onclick = function () {
+        send({ type: 'api', method: 'addLayer' });
+        send({ type: 'ping' });
+      };
+    }
+    sidebarLayersList = section.querySelector('#vp-sidebar-layers');
+    return section;
+  }
+
+  function sidebarLayerButton(className, label, title, onClick) {
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = className;
+    b.textContent = label;
+    b.title = title;
+    b.setAttribute('aria-label', title);
+    b.onclick = function (event) {
+      event.stopPropagation();
+      onClick();
+    };
+    return b;
+  }
+
+  function wireSidebarLayerDrag(row) {
+    row.addEventListener('pointerdown', function (event) {
+      if (event.button !== 0) return;
+      if (event.target.closest('button')) return;
+      event.preventDefault();
+      var startY = event.clientY;
+      var lastY = startY;
+      var started = false;
+      var frame = null;
+      row.__vpJustDragged = false;
+
+      function applyPosition() {
+        frame = null;
+        if (!sidebarLayersList) return;
+        var rows = Array.prototype.slice.call(sidebarLayersList.children).filter(function (el) {
+          return el !== row && el.classList.contains('vp-side-layer');
+        });
+        var insertBefore = null;
+        for (var i = 0; i < rows.length; i++) {
+          var rect = rows[i].getBoundingClientRect();
+          if (lastY < rect.top + rect.height / 2) { insertBefore = rows[i]; break; }
+        }
+        if (insertBefore) sidebarLayersList.insertBefore(row, insertBefore);
+        else sidebarLayersList.appendChild(row);
+      }
+
+      function onMove(moveEvent) {
+        lastY = moveEvent.clientY;
+        if (!started && Math.abs(lastY - startY) < 4) return;
+        if (!started) {
+          started = true;
+          sidebarLayerDragging = true;
+          row.classList.add('is-dragging');
+        }
+        if (!frame) frame = requestAnimationFrame(applyPosition);
+      }
+
+      function cleanup() {
+        row.removeEventListener('pointermove', onMove);
+        row.removeEventListener('pointerup', onUp);
+        row.removeEventListener('pointercancel', onCancel);
+        if (frame) cancelAnimationFrame(frame);
+        frame = null;
+        try {
+          if (row.hasPointerCapture(event.pointerId)) row.releasePointerCapture(event.pointerId);
+        } catch (err) {}
+      }
+
+      function onUp() {
+        cleanup();
+        if (!started) return;
+        sidebarLayerDragging = false;
+        row.classList.remove('is-dragging');
+        row.__vpJustDragged = true;
+        var order = Array.prototype.slice.call(sidebarLayersList.children)
+          .map(function (el) { return el.dataset.layerId; })
+          .filter(Boolean)
+          .reverse(); // displayed top-first -> engine bottom-first
+        send({ type: 'api', method: 'setLayerOrder', order: order });
+        send({ type: 'ping' });
+      }
+
+      function onCancel() {
+        cleanup();
+        if (started) {
+          sidebarLayerDragging = false;
+          row.classList.remove('is-dragging');
+          renderSidebarLayers();
+        }
+      }
+
+      try { row.setPointerCapture(event.pointerId); } catch (err) {}
+      row.addEventListener('pointermove', onMove);
+      row.addEventListener('pointerup', onUp);
+      row.addEventListener('pointercancel', onCancel);
+    });
+  }
+
+  function renderSidebarLayers() {
+    ensureLayersSection();
+    if (!sidebarLayersList || sidebarLayerDragging) return;
+    var layers = engineState.layers || [];
+    var activeId = engineState.activeLayerId;
+    sidebarLayersList.replaceChildren();
+    if (!layers.length) {
+      var empty = document.createElement('p');
+      empty.className = 'vp-layers-empty';
+      empty.textContent = 'レイヤーなし';
+      sidebarLayersList.appendChild(empty);
+      return;
+    }
+    layers.slice().reverse().forEach(function (layer) {
+      var row = document.createElement('div');
+      row.className = 'vp-side-layer' + (layer.id === activeId ? ' is-active' : '');
+      row.dataset.layerId = layer.id;
+      row.setAttribute('role', 'listitem');
+      row.setAttribute('aria-pressed', String(layer.id === activeId));
+
+      var visibility = sidebarLayerButton(
+        'vp-side-layer-vis',
+        layer.visible === false ? '○' : '●',
+        layer.visible === false ? 'レイヤーを表示' : 'レイヤーを非表示',
+        function () { send({ type: 'api', method: 'toggleLayerVis', id: layer.id }); }
+      );
+      var lock = sidebarLayerButton(
+        'vp-side-layer-lock',
+        layer.locked ? '🔒' : '🔓',
+        layer.locked ? 'ロックを解除' : 'レイヤーをロック',
+        function () { send({ type: 'api', method: 'toggleLayerLock', id: layer.id }); }
+      );
+      var name = document.createElement('span');
+      name.className = 'vp-side-layer-name';
+      name.textContent = layer.name || layer.id;
+      name.ondblclick = function (event) {
+        event.stopPropagation();
+        var next = window.prompt('レイヤー名', layer.name || '');
+        if (next && next.trim()) {
+          send({ type: 'api', method: 'renameLayer', id: layer.id, name: next.trim() });
+        }
+      };
+      var count = document.createElement('span');
+      count.className = 'vp-side-layer-count';
+      count.textContent = layer.count != null ? String(layer.count) : '';
+
+      row.append(visibility, lock, name, count);
+      row.addEventListener('click', function () {
+        if (row.__vpJustDragged) { row.__vpJustDragged = false; return; }
+        send({ type: 'api', method: 'setActiveLayer', id: layer.id });
+      });
+      wireSidebarLayerDrag(row);
+      sidebarLayersList.appendChild(row);
+    });
+  }
+
   function init() {
     ensureStyles();
+    ensureLayersSection();
     if (!panels.color) createPanel('color', 'カラーパレット', 1, 1, 3, 5);
     if (!panels.layers) createPanel('layers', 'レイヤー', 1, 6, 3, 4);
     if (!panels.regions) createPanel('regions', 'リージョン', 1, 10, 3, 3);
@@ -292,12 +498,12 @@
       try { saved = localStorage.getItem('vp-panel-' + id); } catch (e) {}
       setPanel(id, saved === '1');
     });
-    renderColor(); renderLayers(); renderRegions(); renderProps();
+    renderColor(); renderLayers(); renderRegions(); renderProps(); renderSidebarLayers();
   }
   window.addEventListener('message', function (ev) {
     if (!ev.data || ev.data.source !== 'verse-engine' || ev.data.type !== 'state') return;
     engineState = Object.assign(engineState, ev.data);
-    renderLayers(); renderRegions(); renderProps();
+    renderLayers(); renderRegions(); renderProps(); renderSidebarLayers();
   });
   window.VersePanels = { toggle: togglePanel, show: function (id) { setPanel(id, true); }, hide: function (id) { setPanel(id, false); }, init: init };
   if (document.body) init(); else document.addEventListener('DOMContentLoaded', init);

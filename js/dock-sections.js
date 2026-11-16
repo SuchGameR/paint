@@ -3,6 +3,7 @@
 
   var STORAGE_KEY = "verse.section-dock.v2";
   var SECTION_IDS = [
+    "layers-section",
     "tool-preview-section",
     "color-palette-section",
     "tool-context-section",
@@ -40,7 +41,8 @@
     ".vp-dock-zone::before{position:absolute;top:8px;left:50%;padding:3px 8px;border-radius:999px;background:#07120acc;color:#bff7d2;font:600 10px/1.2 system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;transform:translateX(-50%);content:attr(data-label);}",
     ".vp-dock-zone[data-edge=left]::before,.vp-dock-zone[data-edge=right]::before{top:50%;left:8px;transform:translateY(-50%) rotate(-90deg);transform-origin:left center;}",
     "@keyframes vp-dock-pulse{from{opacity:.55}to{opacity:1}}",
-    "body.vp-section-dragging,body.vp-section-dragging *{cursor:grabbing!important;user-select:none!important;}",
+    "body.vp-section-dragging{user-select:none!important;cursor:grabbing!important;}",
+    ".vp-section-floating.is-dragging{pointer-events:none!important;contain:layout paint;box-shadow:0 10px 22px #0009!important;}",
     "details.nav-nested[open]>summary{background:#292929;color:var(--accent-color,#22c55e);}"
   ].join("");
   document.head.appendChild(style);
@@ -365,6 +367,7 @@
           document.body.classList.add("vp-section-dragging");
           if (rec.mode !== "float") floatSection(rec, startLeft, startTop, dragWidth, dragHeight);
           rec.el.style.transform = "none";
+          rec.el.classList.add("is-dragging");
           dragGeometry = {
             zones: zoneRects(canvasRect()),
             home: (rec.homeParent || properties).getBoundingClientRect()
@@ -385,6 +388,11 @@
           tx = clamp(tx, minLeft, maxLeft);
           ty = clamp(ty, minTopDelta, maxTopDelta);
           rec.el.style.transform = "translate3d(" + Math.round(tx) + "px," + Math.round(ty) + "px,0)";
+          var nextTarget = findTarget(rec, lastPoint.x, lastPoint.y, dragGeometry);
+          if (nextTarget !== target) {
+            target = nextTarget;
+            showZones(rec, target, dragGeometry);
+          }
         }
 
         function onMove(moveEvent) {
@@ -392,11 +400,6 @@
           startDrag();
           lastPoint.x = moveEvent.clientX;
           lastPoint.y = moveEvent.clientY;
-          var nextTarget = findTarget(rec, lastPoint.x, lastPoint.y, dragGeometry);
-          if (nextTarget !== target) {
-            target = nextTarget;
-            showZones(rec, target, dragGeometry);
-          }
           if (!frame) frame = requestAnimationFrame(applyMove);
         }
 
@@ -408,6 +411,7 @@
           frame = null;
           if (grip.hasPointerCapture(event.pointerId)) grip.releasePointerCapture(event.pointerId);
           document.body.classList.remove("vp-section-dragging");
+          rec.el.classList.remove("is-dragging");
           hideZones(rec);
         }
 
@@ -454,23 +458,27 @@
       });
     }
 
-    SECTION_IDS.forEach(function (id) {
-      var el = document.getElementById(id);
-      if (!el || el.dataset.sectionDockReady === "1") return;
-      el.dataset.sectionDockReady = "1";
-      el.classList.add("vp-section-host");
-      var rec = {
-        id: id,
-        el: el,
-        homeParent: el.parentElement,
-        placeholder: null,
-        grip: null,
-        mode: "home"
-      };
-      records.push(rec);
-      wireGrip(rec);
-    });
+    function collectSections() {
+      SECTION_IDS.forEach(function (id) {
+        var el = document.getElementById(id);
+        if (!el || el.dataset.sectionDockReady === "1") return;
+        el.dataset.sectionDockReady = "1";
+        el.classList.add("vp-section-host");
+        var rec = {
+          id: id,
+          el: el,
+          homeParent: el.parentElement,
+          placeholder: null,
+          grip: null,
+          mode: "home"
+        };
+        records.push(rec);
+        wireGrip(rec);
+      });
+      return records.length;
+    }
 
+    collectSections();
     if (!records.length) return;
 
     layoutDockContainers();
@@ -532,6 +540,18 @@
     });
     window.addEventListener("scroll", scheduleDockLayout, true);
     if (window.ResizeObserver) new ResizeObserver(scheduleDockLayout).observe(canvasPane);
+
+    // Sections such as the layer panel may be injected slightly later by other scripts.
+    [120, 360, 900].forEach(function (delay) {
+      setTimeout(function () {
+        var before = records.length;
+        collectSections();
+        if (records.length !== before) {
+          layoutDockContainers();
+          updateDockVisibility();
+        }
+      }, delay);
+    });
   }
 
   function enableNestedMenuHover() {

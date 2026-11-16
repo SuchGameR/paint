@@ -869,6 +869,20 @@ return null;
             }, bounds);
         }
 
+        // Draw/hit order must follow layer stacking (index 0 = bottom), then object order.
+        function orderedSceneEntries(entries) {
+            if (!entries || entries.length < 2) return entries || [];
+            if (!state.layers || state.layers.length < 2) return entries;
+            const rank = new Map();
+            state.layers.forEach((layer, index) => rank.set(layer.id, index));
+            entries.sort((a, b) => {
+                const la = rank.has(a.obj.layerId) ? rank.get(a.obj.layerId) : 0;
+                const lb = rank.has(b.obj.layerId) ? rank.get(b.obj.layerId) : 0;
+                return la - lb || a.order - b.order;
+            });
+            return entries;
+        }
+
         function queryFrameObjectsInBounds(frame, bounds) {
             if (!frame || !Array.isArray(frame.objects)) return [];
             let index = frameObjectIndexes.get(frame);
@@ -906,7 +920,7 @@ return null;
             // raster paint layer under vectors
             drawPaintLayer(ctx, worldViewport());
             state._vp = worldViewport();
-            queryObjectsInBounds(state._vp).forEach(entry => drawObject(entry.obj));
+            orderedSceneEntries(queryObjectsInBounds(state._vp)).forEach(entry => drawObject(entry.obj));
             if (state.pixelGrid && state.zoom >= 8) {
                 ctx.save();
                 ctx.strokeStyle = 'rgba(128,128,128,0.35)';
@@ -2402,7 +2416,7 @@ return null;
                     }
                 }
                 let hit = null;
-                const candidates = queryObjectsInBounds({ x: world.x, y: world.y, w: 0, h: 0 });
+                const candidates = orderedSceneEntries(queryObjectsInBounds({ x: world.x, y: world.y, w: 0, h: 0 }));
                 for (let i = candidates.length - 1; i >= 0; i--) {
                     const cand = candidates[i].obj;
                     if (isLayerLocked(cand.layerId)) continue;
@@ -4756,7 +4770,7 @@ return null;
             const prevFilter = null;
             const objects = objectIds
                 ? state.objects.filter(obj => objectIds.has(obj.id))
-                : queryObjectsInBounds({ x, y, w, h }).map(entry => entry.obj);
+                : orderedSceneEntries(queryObjectsInBounds({ x, y, w, h })).map(entry => entry.obj);
             objects.forEach(obj => {
                 __drawObjectTo(cx, obj);
             });
@@ -7154,6 +7168,9 @@ return null;
         function invalidateScene() {
             state.sceneCacheDirty = true;
         }
+        // Exposed so the shell/bridge can refresh stacking after layer changes.
+        window.VersePaintInvalidateScene = invalidateScene;
+        window.VersePaintInvalidateObjectIndex = invalidateObjectIndex;
         function ensureSceneCache() {
             const w = canvas.width, h = canvas.height;
             if (!state.sceneCache || state.sceneCache.width !== w || state.sceneCache.height !== h) {
@@ -7177,7 +7194,7 @@ return null;
             if (state.mode === 'anim' && state.onionSkin && state.animFrames && state.animFrames.length) {
                 drawOnionFrames(sctx);
             }
-            queryObjectsInBounds(state._vp).forEach(({ obj }) => {
+            orderedSceneEntries(queryObjectsInBounds(state._vp)).forEach(({ obj }) => {
                 if (obj === state.currentObj || obj === state._penObj) return;
                 if (state._transformPreviewIds && state._transformPreviewIds.has(obj.id)) return;
                 try { __drawObjectTo(sctx, obj); } catch (e) {

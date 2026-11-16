@@ -23,6 +23,13 @@
     }
   }
 
+  function invalidateSceneCaches() {
+    try {
+      if (typeof window.VersePaintInvalidateScene === 'function') window.VersePaintInvalidateScene();
+      if (typeof window.VersePaintInvalidateObjectIndex === 'function') window.VersePaintInvalidateObjectIndex();
+    } catch (e) {}
+  }
+
   function hideChrome() {
     document.body.classList.add('engine-embedded');
     [
@@ -277,8 +284,13 @@
     var st = getState();
     if (!st) return;
     try {
+      var layerCounts = {};
+      (st.objects || []).forEach(function (obj) {
+        if (!obj || !obj.layerId) return;
+        layerCounts[obj.layerId] = (layerCounts[obj.layerId] || 0) + 1;
+      });
       var layers = (st.layers || []).map(function (L) {
-        return { id: L.id, name: L.name, visible: L.visible !== false, locked: !!L.locked, type: L.type || 'layer' };
+        return { id: L.id, name: L.name, visible: L.visible !== false, locked: !!L.locked, type: L.type || 'layer', count: layerCounts[L.id] || 0 };
       });
       var regions = (st.regions || []).map(function (r) {
         return { id: r.id, name: r.name || r.id };
@@ -318,6 +330,7 @@
         var state = getState();
         if (data.method === 'addLayer') {
           click($('btn-add-layer'));
+          invalidateSceneCaches();
           postState();
         } else if (data.method === 'setActiveLayer' && state) {
           if ((state.layers || []).some(function (layer) { return layer.id === data.id; })) {
@@ -329,6 +342,7 @@
           var visibleLayer = (state.layers || []).find(function (layer) { return layer.id === data.id; });
           if (visibleLayer) {
             visibleLayer.visible = visibleLayer.visible === false;
+            invalidateSceneCaches();
             postState();
             redraw();
           }
@@ -346,6 +360,24 @@
             var movedLayer = state.layers[layerIndex];
             state.layers[layerIndex] = state.layers[nextIndex];
             state.layers[nextIndex] = movedLayer;
+            invalidateSceneCaches();
+            postState();
+            redraw();
+          }
+        } else if (data.method === 'setLayerOrder' && state) {
+          var requestedOrder = Array.isArray(data.order) ? data.order : null;
+          if (requestedOrder && requestedOrder.length) {
+            var byId = {};
+            (state.layers || []).forEach(function (layer) { byId[layer.id] = layer; });
+            var nextLayers = [];
+            requestedOrder.forEach(function (id) {
+              if (byId[id]) { nextLayers.push(byId[id]); delete byId[id]; }
+            });
+            (state.layers || []).forEach(function (layer) {
+              if (byId[layer.id]) { nextLayers.push(layer); delete byId[layer.id]; }
+            });
+            state.layers = nextLayers;
+            invalidateSceneCaches();
             postState();
             redraw();
           }
