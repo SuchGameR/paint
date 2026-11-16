@@ -132,14 +132,16 @@
       docks.right.style.right = right + "px";
     }
 
-    function zoneRect(edge) {
-      var r = canvasRect();
+    function zoneRects(r) {
+      r = r || canvasRect();
       var inset = 4;
       var band = Math.round(clamp(Math.min(r.width, r.height) * 0.3, 96, 170));
-      if (edge === "top") return { left: r.left + inset, top: r.top + inset, width: r.width - inset * 2, height: band };
-      if (edge === "bottom") return { left: r.left + inset, top: r.bottom - inset - band, width: r.width - inset * 2, height: band };
-      if (edge === "left") return { left: r.left + inset, top: r.top + inset, width: band, height: r.height - inset * 2 };
-      return { left: r.right - inset - band, top: r.top + inset, width: band, height: r.height - inset * 2 };
+      return {
+        top: { left: r.left + inset, top: r.top + inset, width: r.width - inset * 2, height: band },
+        right: { left: r.right - inset - band, top: r.top + inset, width: band, height: r.height - inset * 2 },
+        bottom: { left: r.left + inset, top: r.bottom - inset - band, width: r.width - inset * 2, height: band },
+        left: { left: r.left + inset, top: r.top + inset, width: band, height: r.height - inset * 2 }
+      };
     }
 
     function placeZone(zone, rect) {
@@ -261,17 +263,23 @@
       });
     }
 
-    function showZones(rec, target) {
+    function showZones(rec, target, dragGeometry) {
       var activeEdge = target && target.indexOf("dock-") === 0 ? target.slice(5) : null;
+      var rects = dragGeometry ? dragGeometry.zones : zoneRects();
       EDGES.forEach(function (edge) {
         var zone = zoneEls[edge];
-        placeZone(zone, zoneRect(edge));
+        placeZone(zone, rects[edge]);
         zone.classList.add("is-visible");
         zone.classList.toggle("is-active", edge === activeEdge);
       });
       var homeActive = target === "home";
       homeSnap.classList.toggle("is-active", homeActive);
-      if (homeActive) placeZone(homeSnap, (rec.homeParent || properties).getBoundingClientRect());
+      if (homeActive) {
+        var homeRect = dragGeometry
+          ? dragGeometry.home
+          : (rec.homeParent || properties).getBoundingClientRect();
+        placeZone(homeSnap, homeRect);
+      }
       if (rec.placeholder) rec.placeholder.classList.toggle("is-target", homeActive);
     }
 
@@ -288,20 +296,27 @@
       return x >= rect.left - pad && x <= rectRight(rect) + pad && y >= rect.top - pad && y <= rectBottom(rect) + pad;
     }
 
-    function findTarget(rec, x, y) {
+    function findTarget(rec, x, y, dragGeometry) {
+      var rects = dragGeometry ? dragGeometry.zones : zoneRects();
       for (var i = 0; i < EDGES.length; i++) {
         var edge = EDGES[i];
-        if (pointInRect(x, y, zoneRect(edge), 0)) return "dock-" + edge;
+        if (pointInRect(x, y, rects[edge], 0)) return "dock-" + edge;
       }
-      var homeRect = (rec.homeParent || properties).getBoundingClientRect();
+      var homeRect = dragGeometry
+        ? dragGeometry.home
+        : (rec.homeParent || properties).getBoundingClientRect();
       if (pointInRect(x, y, homeRect, 0)) return "home";
       return null;
     }
 
     function setGripTitle(rec) {
       if (!rec.grip) return;
-      rec.grip.title = rec.mode === "home" ? "Drag to float / double-click to float" : "Drag to dock / double-click to return";
-      rec.grip.setAttribute("aria-label", rec.mode === "home" ? "Float section" : "Return section to sidebar");
+      rec.grip.title = rec.mode === "home"
+        ? "ドラッグしてキャンバスの上下左右にドッキング"
+        : "ドラッグして上下左右へ移動・ダブルクリックで元の位置に戻す";
+      rec.grip.setAttribute("aria-label", rec.mode === "home"
+        ? "セクションを上下左右にドッキング"
+        : "セクションを移動または元の位置に戻す");
     }
 
     function wireGrip(rec) {
@@ -339,6 +354,7 @@
         var started = false;
         var target = null;
         var frame = null;
+        var dragGeometry = null;
         var lastPoint = { x: startX, y: startY };
         var tx = 0;
         var ty = 0;
@@ -349,8 +365,12 @@
           document.body.classList.add("vp-section-dragging");
           if (rec.mode !== "float") floatSection(rec, startLeft, startTop, dragWidth, dragHeight);
           rec.el.style.transform = "none";
-          target = findTarget(rec, startX, startY);
-          showZones(rec, target);
+          dragGeometry = {
+            zones: zoneRects(canvasRect()),
+            home: (rec.homeParent || properties).getBoundingClientRect()
+          };
+          target = findTarget(rec, startX, startY, dragGeometry);
+          showZones(rec, target, dragGeometry);
         }
 
         function applyMove() {
@@ -372,10 +392,10 @@
           startDrag();
           lastPoint.x = moveEvent.clientX;
           lastPoint.y = moveEvent.clientY;
-          var nextTarget = findTarget(rec, lastPoint.x, lastPoint.y);
+          var nextTarget = findTarget(rec, lastPoint.x, lastPoint.y, dragGeometry);
           if (nextTarget !== target) {
             target = nextTarget;
-            showZones(rec, target);
+            showZones(rec, target, dragGeometry);
           }
           if (!frame) frame = requestAnimationFrame(applyMove);
         }
@@ -391,7 +411,21 @@
           hideZones(rec);
         }
 
-        function finish() {
+        function finish(finishEvent) {
+          if (started && finishEvent) {
+            lastPoint.x = finishEvent.clientX;
+            lastPoint.y = finishEvent.clientY;
+            var nextTarget = findTarget(rec, lastPoint.x, lastPoint.y, dragGeometry);
+            if (nextTarget !== target) {
+              target = nextTarget;
+              showZones(rec, target, dragGeometry);
+            }
+            if (frame) {
+              cancelAnimationFrame(frame);
+              frame = null;
+            }
+            applyMove();
+          }
           cleanup();
           if (!started) return;
           if (target === "home") {

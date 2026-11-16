@@ -23,7 +23,8 @@
               <li><button class="menu-command" type="button" data-act="open">開く…</button></li>
               <li><button class="menu-command" type="button" data-act="insert">画像を挿入</button></li>
               <li class="menu-divider"></li>
-              <li><button class="menu-command" type="button" data-act="export">書き出し (PNG/SVG)</button></li>
+              <li><button class="menu-command" type="button" data-act="export">PNGを書き出し</button></li>
+              <li><button class="menu-command" type="button" data-act="export-svg">SVGを書き出し</button></li>
               <li><button class="menu-command" type="button" data-act="export-region">範囲を書き出し…</button></li>
               <li><button class="menu-command" type="button" data-act="save-project">プロジェクト保存</button></li>
               <li class="menu-divider"></li>

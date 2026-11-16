@@ -21,24 +21,44 @@
     }
 
     var idMap = {
-      undo: 'btn-undo', redo: 'btn-redo', export: 'btn-export', clear: 'btn-clear',
+      undo: 'btn-undo', redo: 'btn-redo', clear: 'btn-clear',
       open: 'btn-load-project', insert: 'btn-insert-image', grid: 'btn-grid-toggle',
       'flip-h': 'btn-flip-h', 'flip-v': 'btn-flip-v',
       group: 'btn-group', ungroup: 'btn-ungroup',
       mask: 'btn-use-mask', 'clear-mask': 'btn-clear-mask',
       delete: 'btn-delete-selected', 'add-layer': 'btn-add-layer',
       settings: 'btn-settings', 'region-save': 'btn-region-save',
-      'export-region': 'btn-export-region-menu',
       'panel-brush': 'btn-brush-panel-toggle', 'panel-props': 'btn-props-toggle',
       'mode-vector': 'mode-vector-btn', 'mode-paint': 'mode-paint-btn'
     };
+    if (action === 'export') {
+      if (!clickSel('[data-export="png"]')) console.error('PNG export is unavailable in the drawing engine.');
+      return;
+    }
+    if (action === 'export-svg') {
+      if (!clickSel('[data-export="svg"]')) console.error('SVG export is unavailable in the drawing engine.');
+      return;
+    }
+    if (action === 'save-project') {
+      if (!clickSel('[data-export="project"]')) console.error('Project export is unavailable in the drawing engine.');
+      return;
+    }
+    if (action === 'export-region') {
+      var exportModal = $('export-region-modal');
+      if (!exportModal || !$('btn-export-region-menu')) {
+        console.error('Region export is unavailable in the drawing engine.');
+        return;
+      }
+      exportModal.style.display = '';
+      clickId('btn-export-region-menu');
+      return;
+    }
     if (idMap[action] && clickId(idMap[action])) return;
 
     if (action === 'new') {
       if (confirm('新規キャンバスにしますか？')) clickId('btn-clear');
       return;
     }
-    if (action === 'save-project') { clickId('btn-export'); return; }
     if (action === 'select-all') { key('a', { ctrlKey: true }); return; }
     if (action === 'deselect') {
       var st = getState();

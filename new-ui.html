@@ -3427,6 +3427,10 @@
                 const initialStyle = panel.getAttribute("style");
                 const wasFloating = panel.classList.contains("panel-floating");
                 let started = false;
+                let moveFrame = null;
+                let latestPointer = { x: event.clientX, y: event.clientY };
+                let currentPosition = { left: rect.left, top: rect.top };
+                let activeSnapEdges = [];
 
                 const startDragging = () => {
                     if (started) {
@@ -3447,25 +3451,45 @@
                     panel.style.margin = "0";
                 };
 
+                const updateSnapHints = (edges) => {
+                    if (edges.length === activeSnapEdges.length && edges.every((edge, index) => edge === activeSnapEdges[index])) {
+                        return;
+                    }
+                    activeSnapEdges = edges;
+                    setEdgeSnapHints(edges);
+                };
+
+                const applyMove = () => {
+                    moveFrame = null;
+                    const width = rect.width;
+                    const height = rect.height;
+                    const minLeft = 8;
+                    const maxLeft = Math.max(minLeft, window.innerWidth - width - 8);
+                    const minTop = panelMinTop(panel);
+                    const maxTop = Math.max(minTop, window.innerHeight - height - 8);
+                    const left = Math.round((latestPointer.x - offsetX) / panelSnapStep) * panelSnapStep;
+                    const top = Math.round((latestPointer.y - offsetY) / panelSnapStep) * panelSnapStep;
+                    currentPosition.left = Math.min(Math.max(minLeft, left), maxLeft);
+                    currentPosition.top = Math.min(Math.max(minTop, top), maxTop);
+                    panel.style.transform = `translate3d(${currentPosition.left - rect.left}px, ${currentPosition.top - rect.top}px, 0)`;
+                    updateSnapHints(getEdgeSnap(
+                        currentPosition.left,
+                        currentPosition.top,
+                        width,
+                        height,
+                        minTop
+                    ).edges);
+                };
+
                 const movePanel = (moveEvent) => {
                     if (!started && Math.hypot(moveEvent.clientX - startX, moveEvent.clientY - startY) < 4) {
                         return;
                     }
                     startDragging();
-                    const width = panel.getBoundingClientRect().width;
-                    const height = panel.getBoundingClientRect().height;
-                    const minLeft = 8;
-                    const maxLeft = Math.max(minLeft, window.innerWidth - width - 8);
-                    const minTop = panelMinTop(panel);
-                    const maxTop = Math.max(minTop, window.innerHeight - height - 8);
-                    const left = Math.round((moveEvent.clientX - offsetX) / panelSnapStep) * panelSnapStep;
-                    const top = Math.round((moveEvent.clientY - offsetY) / panelSnapStep) * panelSnapStep;
-                    const finalLeft = Math.min(Math.max(minLeft, left), maxLeft);
-                    const finalTop = Math.min(Math.max(minTop, top), maxTop);
-                    panel.style.left = `${finalLeft}px`;
-                    panel.style.top = `${finalTop}px`;
-                    const snap = getEdgeSnap(finalLeft, finalTop, width, height, minTop);
-                    setEdgeSnapHints(snap.edges);
+                    latestPointer = { x: moveEvent.clientX, y: moveEvent.clientY };
+                    if (!moveFrame) {
+                        moveFrame = requestAnimationFrame(applyMove);
+                    }
                 };
 
                 const cleanup = () => {
@@ -3473,6 +3497,10 @@
                     handle.removeEventListener("pointerup", finishDrag);
                     handle.removeEventListener("pointercancel", cancelDrag);
                     handle.removeEventListener("keydown", cancelOnEscape);
+                    if (moveFrame) {
+                        cancelAnimationFrame(moveFrame);
+                        moveFrame = null;
+                    }
                     if (handle.hasPointerCapture(event.pointerId)) {
                         handle.releasePointerCapture(event.pointerId);
                     }
@@ -3480,20 +3508,24 @@
 
                 const finishDrag = (finishEvent) => {
                     if (started) {
-                        movePanel(finishEvent);
-                        const rect = panel.getBoundingClientRect();
-                        const snap = getEdgeSnap(rect.left, rect.top, rect.width, rect.height, panelMinTop(panel));
-                        if (snap.edges.length) {
-                            panel.classList.add("panel-snapping");
-                            panel.style.left = `${snap.left}px`;
-                            panel.style.top = `${snap.top}px`;
-                            window.setTimeout(() => {
-                                panel.classList.remove("panel-snapping");
-                                setEdgeSnapHints([]);
-                            }, 220);
-                        } else {
-                            setEdgeSnapHints([]);
+                        latestPointer = { x: finishEvent.clientX, y: finishEvent.clientY };
+                        if (moveFrame) {
+                            cancelAnimationFrame(moveFrame);
+                            moveFrame = null;
                         }
+                        applyMove();
+                        const snap = getEdgeSnap(
+                            currentPosition.left,
+                            currentPosition.top,
+                            rect.width,
+                            rect.height,
+                            panelMinTop(panel)
+                        );
+                        currentPosition = { left: snap.left, top: snap.top };
+                        panel.style.left = `${snap.left}px`;
+                        panel.style.top = `${snap.top}px`;
+                        panel.style.transform = "none";
+                        updateSnapHints([]);
                     }
                     cleanup();
                 };

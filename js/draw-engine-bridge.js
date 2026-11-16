@@ -315,13 +315,53 @@
         break;
       case 'api':
         if (data.method === 'click' && data.id) click($(data.id));
-        if (data.method === 'addLayer') click($('btn-add-layer'));
-        if (data.method === 'setActiveLayer' && getState()) {
-          getState().activeLayerId = data.id; postState(); redraw();
-        }
-        if (data.method === 'toggleLayerVis' && getState()) {
-          var L = (getState().layers || []).find(function (x) { return x.id === data.id; });
-          if (L) { L.visible = L.visible === false ? true : false; redraw(); postState(); }
+        var state = getState();
+        if (data.method === 'addLayer') {
+          click($('btn-add-layer'));
+          postState();
+        } else if (data.method === 'setActiveLayer' && state) {
+          if ((state.layers || []).some(function (layer) { return layer.id === data.id; })) {
+            state.activeLayerId = data.id;
+            postState();
+            redraw();
+          }
+        } else if (data.method === 'toggleLayerVis' && state) {
+          var visibleLayer = (state.layers || []).find(function (layer) { return layer.id === data.id; });
+          if (visibleLayer) {
+            visibleLayer.visible = visibleLayer.visible === false;
+            postState();
+            redraw();
+          }
+        } else if (data.method === 'toggleLayerLock' && state) {
+          var lockedLayer = (state.layers || []).find(function (layer) { return layer.id === data.id; });
+          if (lockedLayer) {
+            lockedLayer.locked = !lockedLayer.locked;
+            postState();
+            redraw();
+          }
+        } else if (data.method === 'moveLayer' && state) {
+          var layerIndex = (state.layers || []).findIndex(function (layer) { return layer.id === data.id; });
+          var nextIndex = layerIndex + Number(data.direction);
+          if (layerIndex >= 0 && nextIndex >= 0 && nextIndex < state.layers.length) {
+            var movedLayer = state.layers[layerIndex];
+            state.layers[layerIndex] = state.layers[nextIndex];
+            state.layers[nextIndex] = movedLayer;
+            postState();
+            redraw();
+          }
+        } else if (data.method === 'renameLayer' && state) {
+          var renamedLayer = (state.layers || []).find(function (layer) { return layer.id === data.id; });
+          var nextName = typeof data.name === 'string' ? data.name.trim() : '';
+          if (renamedLayer && nextName) {
+            renamedLayer.name = nextName;
+            (state.animFrames || []).forEach(function (frame) {
+              (frame.layers || []).forEach(function (layer) {
+                if (layer.id === data.id) layer.name = nextName;
+              });
+            });
+            postState();
+            redraw();
+          }
         }
         break;
       case 'ping':
