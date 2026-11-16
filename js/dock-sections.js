@@ -557,44 +557,107 @@
   function enableNestedMenuHover() {
     if (document.documentElement.dataset.nestedHoverReady === "1") return;
     document.documentElement.dataset.nestedHoverReady = "1";
-    var openTimer = null;
-    var closeTimer = null;
+    var openTimers = new WeakMap();
+    var closeTimers = new WeakMap();
 
     function nestedOf(target) {
       return target instanceof Element ? target.closest("details.nav-nested") : null;
     }
 
+    function topOf(target) {
+      return target instanceof Element ? target.closest("details.navigation-submenu") : null;
+    }
+
+    function cancelOpen(el) {
+      var timer = openTimers.get(el);
+      if (timer) { clearTimeout(timer); openTimers.delete(el); }
+    }
+
+    function cancelClose(el) {
+      var timer = closeTimers.get(el);
+      if (timer) { clearTimeout(timer); closeTimers.delete(el); }
+    }
+
+    function scheduleOpen(el, isTop) {
+      cancelOpen(el);
+      cancelClose(el);
+      openTimers.set(el, setTimeout(function () {
+        openTimers.delete(el);
+        if (!el.isConnected) return;
+        if (isTop) {
+          var menu = document.querySelector("details.main-navigation, #main-navigation");
+          if (menu && !menu.open) return;
+          document.querySelectorAll("details.navigation-submenu[open]").forEach(function (other) {
+            if (other !== el) other.open = false;
+          });
+        } else {
+          var scope = el.closest("details.navigation-submenu") || document;
+          scope.querySelectorAll("details.nav-nested[open]").forEach(function (other) {
+            if (other !== el && !el.contains(other) && !other.contains(el)) other.open = false;
+          });
+        }
+        el.open = true;
+      }, isTop ? 60 : 65));
+    }
+
+    function scheduleClose(el) {
+      cancelOpen(el);
+      cancelClose(el);
+      closeTimers.set(el, setTimeout(function () {
+        closeTimers.delete(el);
+        if (el.isConnected) el.open = false;
+      }, 160));
+    }
+
     document.addEventListener("pointerover", function (event) {
       if (event.pointerType === "touch") return;
       var nested = nestedOf(event.target);
-      var top = event.target instanceof Element ? event.target.closest("details.navigation-submenu") : null;
+      var top = topOf(event.target);
       if (!nested && !top) return;
-      if (nested && event.relatedTarget instanceof Node && nested.contains(event.relatedTarget)) return;
-      if (!nested && event.relatedTarget instanceof Node && top && top.contains(event.relatedTarget)) return;
-      clearTimeout(openTimer);
-      clearTimeout(closeTimer);
-      openTimer = setTimeout(function () {
-        if (nested && nested.isConnected) {
-          nested.open = true;
-        } else if (top && top.isConnected) {
-          var menu = document.querySelector("details.main-navigation, #main-navigation");
-          if (menu && !menu.open) return;
-          top.open = true;
-        }
-      }, 65);
+      if (nested) {
+        cancelClose(nested);
+        if (event.relatedTarget instanceof Node && nested.contains(event.relatedTarget)) return;
+        scheduleOpen(nested, false);
+        return;
+      }
+      cancelClose(top);
+      if (event.relatedTarget instanceof Node && top.contains(event.relatedTarget)) return;
+      scheduleOpen(top, true);
     });
 
     document.addEventListener("pointerout", function (event) {
       if (event.pointerType === "touch") return;
       var nested = nestedOf(event.target);
-      if (!nested) return;
-      if (event.relatedTarget instanceof Node && nested.contains(event.relatedTarget)) return;
-      clearTimeout(openTimer);
-      clearTimeout(closeTimer);
-      closeTimer = setTimeout(function () {
-        if (nested.isConnected) nested.open = false;
-      }, 170);
+      var top = topOf(event.target);
+      if (nested) {
+        if (event.relatedTarget instanceof Node && nested.contains(event.relatedTarget)) return;
+        scheduleClose(nested);
+        return;
+      }
+      if (top && !(event.relatedTarget instanceof Node && top.contains(event.relatedTarget))) {
+        scheduleClose(top);
+      }
     });
+
+    function closeAll() {
+      document.querySelectorAll("details.navigation-submenu[open], details.nav-nested[open]").forEach(function (el) {
+        cancelOpen(el);
+        scheduleClose(el);
+      });
+    }
+
+    function bindLeave() {
+      var nav = document.querySelector("details.main-navigation, #main-navigation");
+      if (!nav) return setTimeout(bindLeave, 120);
+      if (nav.dataset.nestedLeaveReady === "1") return;
+      nav.dataset.nestedLeaveReady = "1";
+      nav.addEventListener("pointerleave", function (event) {
+        if (event.pointerType === "touch") return;
+        closeAll();
+      });
+    }
+
+    bindLeave();
   }
 
   function boot() {
