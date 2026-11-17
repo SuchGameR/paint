@@ -279,6 +279,174 @@
     });
   }
 
+  var layerThumbCache = { sig: '', map: {} };
+  var THUMB_SIZE = 40;
+
+  function objBounds(obj) {
+    if (!obj) return null;
+    if (obj.type === 'path' && obj.points && obj.points.length) {
+      var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      for (var i = 0; i < obj.points.length; i++) {
+        var p = obj.points[i];
+        if (p.x < minX) minX = p.x; if (p.y < minY) minY = p.y;
+        if (p.x > maxX) maxX = p.x; if (p.y > maxY) maxY = p.y;
+      }
+      if (!isFinite(minX)) return null;
+      return { x: minX, y: minY, w: Math.max(1, maxX - minX), h: Math.max(1, maxY - minY) };
+    }
+    if (obj.type === 'bezier' && obj.anchors && obj.anchors.length) {
+      var bminX = Infinity, bminY = Infinity, bmaxX = -Infinity, bmaxY = -Infinity;
+      obj.anchors.forEach(function (a) {
+        [[a.x, a.y], [a.x + (a.inX || 0), a.y + (a.inY || 0)], [a.x + (a.outX || 0), a.y + (a.outY || 0)]].forEach(function (pt) {
+          if (pt[0] < bminX) bminX = pt[0]; if (pt[1] < bminY) bminY = pt[1];
+          if (pt[0] > bmaxX) bmaxX = pt[0]; if (pt[1] > bmaxY) bmaxY = pt[1];
+        });
+      });
+      if (!isFinite(bminX)) return null;
+      return { x: bminX, y: bminY, w: Math.max(1, bmaxX - bminX), h: Math.max(1, bmaxY - bminY) };
+    }
+    if (obj.type === 'line' || obj.type === 'arrow') {
+      return {
+        x: Math.min(obj.x1, obj.x2), y: Math.min(obj.y1, obj.y2),
+        w: Math.max(1, Math.abs(obj.x2 - obj.x1)), h: Math.max(1, Math.abs(obj.y2 - obj.y1))
+      };
+    }
+    if (obj.w != null || obj.h != null || obj.x != null) {
+      var w = Math.abs(obj.w || 0) || 1;
+      var h = Math.abs(obj.h || obj.w || 0) || 1;
+      return { x: Math.min(obj.x || 0, (obj.x || 0) + (obj.w || 0)), y: Math.min(obj.y || 0, (obj.y || 0) + (obj.h || 0)), w: w, h: h };
+    }
+    return null;
+  }
+
+  function drawThumbObject(ctx, obj, scale, ox, oy) {
+    if (!obj) return;
+    ctx.save();
+    ctx.globalAlpha = obj.opacity != null ? obj.opacity : 1;
+    ctx.strokeStyle = obj.color || '#222';
+    ctx.fillStyle = obj.fill || obj.color || '#222';
+    ctx.lineWidth = Math.max(0.75, (obj.strokeWidth || 2) * scale);
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    function tx(v) { return (v - ox) * scale; }
+    function ty(v) { return (v - oy) * scale; }
+    if (obj.type === 'path' && obj.points && obj.points.length) {
+      ctx.beginPath();
+      obj.points.forEach(function (pt, idx) {
+        if (idx) ctx.lineTo(tx(pt.x), ty(pt.y)); else ctx.moveTo(tx(pt.x), ty(pt.y));
+      });
+      if (obj.closed) ctx.closePath();
+      if (obj.fill) ctx.fill();
+      ctx.stroke();
+    } else if (obj.type === 'bezier' && obj.anchors && obj.anchors.length) {
+      var anchors = obj.anchors;
+      ctx.beginPath();
+      ctx.moveTo(tx(anchors[0].x), ty(anchors[0].y));
+      for (var i = 1; i < anchors.length; i++) {
+        var a = anchors[i - 1], b = anchors[i];
+        ctx.bezierCurveTo(
+          tx(a.x + (a.outX || 0)), ty(a.y + (a.outY || 0)),
+          tx(b.x + (b.inX || 0)), ty(b.y + (b.inY || 0)),
+          tx(b.x), ty(b.y)
+        );
+      }
+      if (obj.closed) ctx.closePath();
+      if (obj.fill) ctx.fill();
+      ctx.stroke();
+    } else if (obj.type === 'circle') {
+      var cx = tx((obj.x || 0) + (obj.w || 0) / 2);
+      var cy = ty((obj.y || 0) + (obj.h || obj.w || 0) / 2);
+      var rx = Math.max(0.5, Math.abs(obj.w || 0) / 2 * scale);
+      var ry = Math.max(0.5, Math.abs(obj.h || obj.w || 0) / 2 * scale);
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+      if (obj.fill) ctx.fill();
+      ctx.stroke();
+    } else if (obj.type === 'rect' || obj.type === 'roundrect' || obj.type === 'image' || obj.type === 'triangle' || obj.type === 'star' || obj.type === 'hexagon') {
+      var x = tx(Math.min(obj.x || 0, (obj.x || 0) + (obj.w || 0)));
+      var y = ty(Math.min(obj.y || 0, (obj.y || 0) + (obj.h || 0)));
+      var ww = Math.abs(obj.w || 0) * scale;
+      var hh = Math.abs(obj.h || 0) * scale;
+      ctx.beginPath();
+      ctx.rect(x, y, Math.max(1, ww), Math.max(1, hh));
+      if (obj.fill || obj.type === 'image') ctx.fill();
+      ctx.stroke();
+    } else if (obj.type === 'line' || obj.type === 'arrow') {
+      ctx.beginPath();
+      ctx.moveTo(tx(obj.x1), ty(obj.y1));
+      ctx.lineTo(tx(obj.x2), ty(obj.y2));
+      ctx.stroke();
+    } else if (obj.type === 'text') {
+      ctx.fillStyle = obj.color || '#222';
+      ctx.font = Math.max(6, (obj.fontSize || 16) * scale * 0.6) + 'px sans-serif';
+      ctx.fillText(String(obj.text || 'T').slice(0, 8), tx(obj.x || 0), ty(obj.y || 0));
+    } else if (obj.type === 'group' && Array.isArray(obj.children)) {
+      obj.children.forEach(function (child) { drawThumbObject(ctx, child, scale, ox, oy); });
+    }
+    ctx.restore();
+  }
+
+  function makeLayerThumb(st, layerId) {
+    var objs = (st.objects || []).filter(function (o) { return o && o.layerId === layerId; });
+    var canvas = document.createElement('canvas');
+    canvas.width = THUMB_SIZE;
+    canvas.height = THUMB_SIZE;
+    var ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#d4d4d4';
+    ctx.fillRect(0, 0, THUMB_SIZE, THUMB_SIZE);
+    ctx.fillStyle = '#ececec';
+    for (var y = 0; y < THUMB_SIZE; y += 6) {
+      for (var x = 0; x < THUMB_SIZE; x += 6) {
+        if (((x + y) / 6) % 2 === 0) ctx.fillRect(x, y, 6, 6);
+      }
+    }
+    if (!objs.length) {
+      // raster paint is shared; show a hint on the active layer when paint exists
+      if (layerId === st.activeLayerId && st.paintChunks instanceof Map && st.paintChunks.size) {
+        ctx.fillStyle = '#94a3b8';
+        ctx.fillRect(8, 8, THUMB_SIZE - 16, THUMB_SIZE - 16);
+        ctx.fillStyle = '#64748b';
+        ctx.font = '9px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('paint', THUMB_SIZE / 2, THUMB_SIZE / 2 + 3);
+      }
+      return canvas.toDataURL('image/png');
+    }
+    var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    objs.forEach(function (obj) {
+      var b = objBounds(obj);
+      if (!b) return;
+      if (b.x < minX) minX = b.x; if (b.y < minY) minY = b.y;
+      if (b.x + b.w > maxX) maxX = b.x + b.w; if (b.y + b.h > maxY) maxY = b.y + b.h;
+    });
+    if (!isFinite(minX)) return canvas.toDataURL('image/png');
+    var pad = 4;
+    var bw = Math.max(1, maxX - minX);
+    var bh = Math.max(1, maxY - minY);
+    var scale = Math.min((THUMB_SIZE - pad * 2) / bw, (THUMB_SIZE - pad * 2) / bh);
+    var ox = minX - ((THUMB_SIZE / scale) - bw) / 2;
+    var oy = minY - ((THUMB_SIZE / scale) - bh) / 2;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, THUMB_SIZE, THUMB_SIZE);
+    ctx.clip();
+    objs.forEach(function (obj) { drawThumbObject(ctx, obj, scale, ox, oy); });
+    ctx.restore();
+    return canvas.toDataURL('image/png');
+  }
+
+  function layerThumbSignature(st, layerCounts) {
+    var parts = [(st.paintRevision || 0), st.activeLayerId || ''];
+    (st.layers || []).forEach(function (L) {
+      parts.push(L.id, layerCounts[L.id] || 0);
+    });
+    (st.objects || []).forEach(function (o) {
+      if (!o) return;
+      parts.push(o.id, o.layerId || '', o.type || '', Math.round(o.x || 0), Math.round(o.y || 0), Math.round(o.w || 0), Math.round(o.h || 0));
+    });
+    return parts.join('|');
+  }
+
   function postState() {
     if (!window.parent || window.parent === window) return;
     var st = getState();
@@ -289,8 +457,24 @@
         if (!obj || !obj.layerId) return;
         layerCounts[obj.layerId] = (layerCounts[obj.layerId] || 0) + 1;
       });
+      var sig = layerThumbSignature(st, layerCounts);
+      if (sig !== layerThumbCache.sig) {
+        layerThumbCache.sig = sig;
+        layerThumbCache.map = {};
+        (st.layers || []).forEach(function (L) {
+          try { layerThumbCache.map[L.id] = makeLayerThumb(st, L.id); } catch (err) { layerThumbCache.map[L.id] = ''; }
+        });
+      }
       var layers = (st.layers || []).map(function (L) {
-        return { id: L.id, name: L.name, visible: L.visible !== false, locked: !!L.locked, type: L.type || 'layer', count: layerCounts[L.id] || 0 };
+        return {
+          id: L.id,
+          name: L.name,
+          visible: L.visible !== false,
+          locked: !!L.locked,
+          type: L.type || 'layer',
+          count: layerCounts[L.id] || 0,
+          thumb: layerThumbCache.map[L.id] || ''
+        };
       });
       var regions = (st.regions || []).map(function (r) {
         return { id: r.id, name: r.name || r.id };
@@ -377,10 +561,26 @@
               if (byId[layer.id]) { nextLayers.push(layer); delete byId[layer.id]; }
             });
             state.layers = nextLayers;
+            (state.animFrames || []).forEach(function (frame) {
+              if (!frame || !Array.isArray(frame.layers)) return;
+              var frameById = {};
+              frame.layers.forEach(function (layer) { frameById[layer.id] = layer; });
+              var nextFrameLayers = [];
+              requestedOrder.forEach(function (id) {
+                if (frameById[id]) { nextFrameLayers.push(frameById[id]); delete frameById[id]; }
+              });
+              frame.layers.forEach(function (layer) {
+                if (frameById[layer.id]) { nextFrameLayers.push(layer); delete frameById[layer.id]; }
+              });
+              frame.layers = nextFrameLayers;
+            });
+            layerThumbCache.sig = '';
             invalidateSceneCaches();
             postState();
             redraw();
           }
+        } else if (data.method === 'moveLayer' && state) {
+          // keep existing handler below; no-op duplicate guard
         } else if (data.method === 'renameLayer' && state) {
           var renamedLayer = (state.layers || []).find(function (layer) { return layer.id === data.id; });
           var nextName = typeof data.name === 'string' ? data.name.trim() : '';
