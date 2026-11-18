@@ -335,12 +335,14 @@
         }
         rec.mode = "home";
         rec.slot = "properties";
+        applyCompactMode(rec, "properties");
       } else {
         if (rec.el.parentElement === rec.homeParent) ensurePlaceholder(rec, false);
         host.appendChild(rec.el);
         rec.el.classList.add("vp-section-docked-slot");
         rec.mode = "slot";
         rec.slot = slotId;
+        applyCompactMode(rec, slotId);
         ensurePlaceholder(rec, false);
       }
       if (animate !== false) {
@@ -357,6 +359,7 @@
       ensurePlaceholder(rec, false);
       rec.el.classList.remove("vp-section-docked-slot", "is-dragging");
       rec.el.classList.add("vp-section-floating");
+      applyCompactMode(rec, "float");
       rec.mode = "float";
       rec.slot = null;
       var w = Math.max(220, Math.round(width || rect.width));
@@ -483,6 +486,9 @@
         function startDrag() {
           if (started) return;
           started = true;
+          closeCompact(rec);
+          rec.el.classList.remove("vp-compact-slot");
+          if (rec.toggle) { rec.toggle.remove(); rec.toggle = null; }
           document.body.classList.add("vp-section-dragging");
           if (rec.el.parentElement === rec.homeParent) {
             ensurePlaceholder(rec, true);
@@ -578,6 +584,7 @@
           rec.el.style.transform = "none";
           rec.el.classList.remove("vp-section-docked-slot", "is-dragging");
           rec.el.classList.add("vp-section-floating");
+          applyCompactMode(rec, "float");
           rec.mode = "float";
           rec.slot = null;
           ensurePlaceholder(rec, false);
@@ -669,13 +676,21 @@
 
     document.addEventListener("pointerdown", function (event) {
       if (dockMenu && !dockMenu.contains(event.target)) closeDockMenu();
+      if (openCompactRec) {
+        if (openCompactRec.el.contains(event.target) || (openCompactRec.toggle && openCompactRec.toggle.contains(event.target))) return;
+        closeCompact(openCompactRec);
+      }
     }, true);
     document.addEventListener("keydown", function (event) {
-      if (event.key === "Escape") closeDockMenu();
+      if (event.key === "Escape") {
+        closeDockMenu();
+        if (openCompactRec) closeCompact(openCompactRec);
+      }
     }, true);
     window.addEventListener("blur", closeDockMenu);
     window.addEventListener("resize", function () {
       closeDockMenu();
+      if (openCompactRec) closeCompact(openCompactRec);
       records.forEach(function (rec) {
         if (rec.mode !== "float") return;
         var rect = rec.el.getBoundingClientRect();
@@ -684,7 +699,10 @@
         rec.el.style.top = pos.top + "px";
       });
     });
-    window.addEventListener("scroll", closeDockMenu, true);
+    window.addEventListener("scroll", function () {
+      closeDockMenu();
+      if (openCompactRec) closeCompact(openCompactRec);
+    }, true);
 
     [120, 360, 900].forEach(function (delay) {
       setTimeout(function () {
