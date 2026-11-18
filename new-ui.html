@@ -357,7 +357,7 @@
             min-width: 180px;
             min-height: 240px;
             max-width: min(65vw, 480px);
-            max-height: calc(100vh - 100px);
+            max-height: calc(100vh - 80px);
         }
 
         .tool-preview-section {
@@ -2651,7 +2651,7 @@
             </section>
             <section class="settings-modal-section" aria-labelledby="panel-settings-title">
                 <h3 id="panel-settings-title">パネル配置</h3>
-                <p class="settings-modal-description">ヘッダー・プロパティ・ツール・フッターのグリップで自由に移動できます（スナップなし・画面内に収まります）。セクションは各領域へドロップできます。</p>
+                <p class="settings-modal-description">ヘッダー・プロパティ・ツール・フッターは固定されています。各セクションのグリップをクリックするとクイック配置メニュー、ドラッグすると各領域へのドッキングができます。空のフッターは自動で非表示になります。</p>
                 <button class="settings-reset" id="panel-layout-reset" type="button">パネル配置をリセット</button>
             </section>
         </div>
@@ -3376,8 +3376,19 @@
             scheduleCanvasResize();
         }
 
+        const lockedPanelKeys = new Set(["header", "footer", "properties", "tools"]);
+
         function enablePanelDragging(handle) {
-            const panel = panelNodes[handle.dataset.panelGrip];
+            const key = handle.dataset.panelGrip;
+            if (lockedPanelKeys.has(key)) {
+                handle.hidden = true;
+                handle.style.display = "none";
+                handle.setAttribute("aria-hidden", "true");
+                handle.tabIndex = -1;
+                handle.dataset.panelDragReady = "1";
+                return;
+            }
+            const panel = panelNodes[key];
             if (!panel || handle.dataset.panelDragReady === "1") {
                 return;
             }

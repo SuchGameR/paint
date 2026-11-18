@@ -258,16 +258,20 @@
             };
         }
 
+        function importVPBData(parsed, silent) {
+            const brush = sanitizeVPB(parsed);
+            if (!brush) throw new Error('invalid');
+            state.customBrushes.push(brush);
+            applyToState(brush.id);
+            if (!silent) alert(`ブラシ「${brush.name}」を読み込みました`);
+            return brush;
+        }
+
         function importVPB(file) {
             const reader = new FileReader();
             reader.onload = () => {
                 try {
-                    const parsed = JSON.parse(String(reader.result));
-                    const brush = sanitizeVPB(parsed);
-                    if (!brush) throw new Error('invalid');
-                    state.customBrushes.push(brush);
-                    applyToState(brush.id);
-                    alert(`ブラシ「${brush.name}」を読み込みました`);
+                    importVPBData(JSON.parse(String(reader.result)));
                 } catch (error) {
                     alert('VPBの読み込みに失敗しました。VersePaint VPB(JSON)形式を選択してください。');
                 }
@@ -296,7 +300,14 @@
 
         state.brushConfig = configOf(state.brushId);
         renderAll();
-        return { renderAll, applyToState, configOf, exportVPB, refreshPreview: () => renderAll(), BUILTINS };
+        const api = {
+            renderAll, applyToState, configOf, exportVPB, importVPB, importVPBData,
+            refreshPreview: () => renderAll(), BUILTINS,
+            exportPayload: (id) => ({ format: 'vpb', version: 1, engine: 'raster', name: find(id || state.brushId).name, author: 'VersePaint', config: configOf(id || state.brushId) }),
+            list: () => all().map(b => ({ id: b.id, name: b.name, custom: !!b.custom }))
+        };
+        global.__VP_BRUSH_STORE = api;
+        return api;
     }
 
     global.VersePaintBrushStore = { initialize, BUILTINS, DEFAULT_CONFIG };

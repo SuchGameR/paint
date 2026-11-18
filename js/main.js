@@ -3167,11 +3167,12 @@ return null;
             setTimeout(() => URL.revokeObjectURL(link.href), 1000);
         }
 
-        function saveProject() {
+        function projectData() {
             if (state.animFrames.length) saveCurrentAnimFrame();
-            const data = {
-                version: 2,
+            return {
+                version: 3,
                 app: 'VersePaint',
+                savedAt: new Date().toISOString(),
                 canvasBg: state.canvasBg,
                 gridMode: state.gridMode,
                 objects: state.objects,
@@ -3184,14 +3185,92 @@ return null;
                 infiniteCanvas: state.infiniteCanvas,
                 canvasWidth: state.canvasWidth,
                 canvasHeight: state.canvasHeight,
-                paintData: serializePaintLayer()
+                paintData: serializePaintLayer(),
+                paintOrigin: state.paintOrigin || null,
+                customBrushes: state.customBrushes || [],
+                brushId: state.brushId || state.paintPreset || 'pen',
+                brushConfig: state.brushConfig || null,
+                settings: {
+                    strokeWidth: state.strokeWidth,
+                    color: state.color,
+                    opacity: state.opacity,
+                    paintPreset: state.paintPreset,
+                    stabilize: state.stabilize,
+                    hardness: state.hardness,
+                    pixelGrid: state.pixelGrid,
+                    pixelSnap: state.pixelSnap
+                }
             };
-            const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
-            const link = document.createElement('a');
-            link.download = 'versepaint-project.json';
+        }
+
+        function projectPreviewDataUrl() {
+            try {
+                render();
+                var w = canvas.width || 1;
+                var scale = Math.min(1, 720 / Math.max(1, w));
+                var tmp = document.createElement('canvas');
+                tmp.width = Math.max(1, Math.round(canvas.width * scale));
+                tmp.height = Math.max(1, Math.round(canvas.height * scale));
+                var t = tmp.getContext('2d');
+                t.fillStyle = state.canvasBg || '#ffffff';
+                t.fillRect(0, 0, tmp.width, tmp.height);
+                t.drawImage(canvas, 0, 0, tmp.width, tmp.height);
+                return tmp.toDataURL('image/png');
+            } catch (e) {
+                return '';
+            }
+        }
+
+        function downloadBlob(blob, name) {
+            var link = document.createElement('a');
+            link.download = name;
             link.href = URL.createObjectURL(blob);
+            document.body.appendChild(link);
             link.click();
-            setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+            link.remove();
+            setTimeout(function () { URL.revokeObjectURL(link.href); }, 1000);
+        }
+
+        function saveProject() {
+            var data = projectData();
+            var preview = projectPreviewDataUrl();
+            var files = {
+                'project.json': JSON.stringify(data, null, 2),
+                'meta.json': JSON.stringify({
+                    app: 'VersePaint',
+                    format: 'vpc',
+                    version: 1,
+                    savedAt: data.savedAt,
+                    canvas: { width: state.canvasWidth, height: state.canvasHeight }
+                }, null, 2),
+                'README.txt': 'VersePaintCanvas (.vpc)\nproject.json にキャンバスデータ、preview.png にプレビュー、brushes/ にカスタムブラシを収録しています。'
+            };
+            (state.customBrushes || []).forEach(function (brush, index) {
+                var safe = String(brush.name || ('brush-' + (index + 1))).replace(/[^\w\u3040-\u30ff\u4e00-\u9faf-]+/g, '_');
+                files['brushes/' + String(index + 1).padStart(2, '0') + '-' + safe + '.vpb'] = JSON.stringify({
+                    format: 'vpb', version: 1, engine: 'raster',
+                    name: brush.name, author: brush.author || 'VersePaint', config: brush.config || {}
+                }, null, 2);
+            });
+            if (preview) {
+                try {
+                    var base64 = preview.split(',')[1] || '';
+                    var bin = atob(base64);
+                    var bytes = new Uint8Array(bin.length);
+                    for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+                    files['preview.png'] = bytes;
+                } catch (e) {}
+            }
+            try {
+                if (window.VersePaintZip) {
+                    var zip = window.VersePaintZip.write(files);
+                    downloadBlob(new Blob([zip], { type: 'application/zip' }), 'versepaint-project.vpc');
+                } else {
+                    downloadBlob(new Blob([JSON.stringify(data)], { type: 'application/json' }), 'versepaint-project.json');
+                }
+            } catch (err) {
+                alert('プロジェクトの保存に失敗しました: ' + err.message);
+            }
         }
 
         function loadProjectFile(file) {
@@ -6522,6 +6601,26 @@ return null;
         state.effectTime0 = performance.now();
         let effectRaf = null;
 
+        function findEffectMoreCode(o) {
+            if (!o) return null;
+            if (o.effectMore && o.effectMore.code) return o.effectMore.code;
+            if (o.type === 'group' && Array.isArray(o.children)) {
+                for (const child of o.children) {
+                    const code = findEffectMoreCode(child);
+                    if (code) return code;
+                }
+            }
+            return null;
+        }
+        function clearEffectsRecursive(o) {
+            if (!o) return;
+            if (o._effectBase) restoreEffectBase(o);
+            delete o.effectMore;
+            delete o._effectBase;
+            if (o.type === 'group' && Array.isArray(o.children)) {
+                o.children.forEach(clearEffectsRecursive);
+            }
+        }
         function openEffectMore() {
             const targets = selectedObjects();
             if (!targets.length) {
@@ -6533,9 +6632,9 @@ return null;
             const ta = document.getElementById('effect-more-code');
             const err = document.getElementById('effect-more-err');
             if (err) { err.classList.add('hidden'); err.textContent = ''; }
-            // load existing code from first selected
-            const existing = targets.find(t => t.effectMore && t.effectMore.code);
-            if (ta) ta.value = existing ? existing.effectMore.code : 'wiggle(3);';
+            // load existing code from selection, including effects inside groups
+            const existing = targets.map(findEffectMoreCode).find(Boolean);
+            if (ta) ta.value = existing || 'wiggle(3);';
             if (sheet) {
                 sheet.classList.remove('hidden');
                 sheet.classList.add('flex');
@@ -6659,24 +6758,41 @@ return null;
             if (o.x1 != null) { o.x1 += dx; o.y1 += dy; o.x2 += dx; o.y2 += dy; }
             if (o.children) o.children.forEach(ch => translateObject(ch, dx, dy));
         }
-        function scaleObjectAboutCenter(o, s) {
-            const b = getBounds(o);
-            if (!b) return;
-            const cx = b.x + b.w / 2, cy = b.y + b.h / 2;
-            const sc = (px, py) => ({ x: cx + (px - cx) * s, y: cy + (py - cy) * s });
-            if (o.points) o.points = o.points.map(p => sc(p.x, p.y));
+        function scaleObjectAboutPoint(o, cx, cy, s) {
+            if (!o) return;
+            const scalePoint = (p) => ({ x: cx + (p.x - cx) * s, y: cy + (p.y - cy) * s });
+            if (o.type === 'group' && Array.isArray(o.children)) {
+                o.children.forEach(child => scaleObjectAboutPoint(child, cx, cy, s));
+                if (o.x != null) o.x = cx + (o.x - cx) * s;
+                if (o.y != null) o.y = cy + (o.y - cy) * s;
+                if (o.w != null) o.w *= s;
+                if (o.h != null) o.h *= s;
+                return;
+            }
+            if (o.points) o.points = o.points.map(scalePoint);
             if (o.anchors) o.anchors.forEach(a => {
-                const p = sc(a.x, a.y);
+                const p = scalePoint(a);
                 a.x = p.x; a.y = p.y;
                 a.inX = (a.inX || 0) * s; a.inY = (a.inY || 0) * s;
                 a.outX = (a.outX || 0) * s; a.outY = (a.outY || 0) * s;
             });
-            if (['rect','roundrect','circle','triangle','star','hexagon','image','group'].includes(o.type)) {
-                o.w = (o._effectBase.w || o.w) * s;
-                o.h = (o._effectBase.h || o.h) * s;
-                o.x = cx - o.w / 2;
-                o.y = cy - o.h / 2;
+            if (o.x != null) {
+                const p = scalePoint(o);
+                o.x = p.x; o.y = p.y;
+                if (o.w != null) o.w *= s;
+                if (o.h != null) o.h *= s;
             }
+            if (o.x1 != null) {
+                const p1 = scalePoint({ x: o.x1, y: o.y1 });
+                const p2 = scalePoint({ x: o.x2, y: o.y2 });
+                o.x1 = p1.x; o.y1 = p1.y; o.x2 = p2.x; o.y2 = p2.y;
+            }
+            if (o.type === 'text' && o.fontSize != null) o.fontSize *= s;
+        }
+        function scaleObjectAboutCenter(o, s) {
+            const b = getBounds(o);
+            if (!b) return;
+            scaleObjectAboutPoint(o, b.x + b.w / 2, b.y + b.h / 2, s);
         }
         function wiggleObject(o, t, amp, freq) {
             const phase = t * freq * Math.PI * 2;
@@ -6725,6 +6841,21 @@ return null;
             }
             translateObject(o, 0, Math.sin(phase) * amp);
         }
+        function applyEffectsRecursive(o, t) {
+            if (!o) return false;
+            const self = !!(o.effectMore && o.effectMore.enabled);
+            let any = false;
+            if (self) {
+                applyEffectsAtTime(o, t);
+                any = true;
+            }
+            if (o.type === 'group' && Array.isArray(o.children) && !self) {
+                o.children.forEach(ch => {
+                    if (applyEffectsRecursive(ch, t)) any = true;
+                });
+            }
+            return any;
+        }
         function tickEffects() {
             if (!state.effectMoreLive) {
                 effectRaf = null;
@@ -6733,10 +6864,7 @@ return null;
             const t = (performance.now() - state.effectTime0) / 1000;
             let any = false;
             state.objects.forEach(o => {
-                if (o.effectMore && o.effectMore.enabled) {
-                    applyEffectsAtTime(o, t);
-                    any = true;
-                }
+                if (applyEffectsRecursive(o, t)) any = true;
             });
             if (any) render();
             effectRaf = requestAnimationFrame(tickEffects);
@@ -6813,10 +6941,7 @@ return null;
                 else if (act === 'effect-more') openEffectMore();
                 else if (act === 'clear-effects') {
                     pushHistory();
-                    selectedObjects().forEach(o => {
-                        if (o._effectBase) restoreEffectBase(o);
-                        delete o.effectMore; delete o._effectBase;
-                    });
+                    selectedObjects().forEach(clearEffectsRecursive);
                     render();
                 }
                 else if (act === 'zoom-in') document.getElementById('zoom-in')?.click();
@@ -7028,18 +7153,8 @@ return null;
             if (!o.effectMore || !o.effectMore.enabled || !o.effectMore.effects) return;
             if (!o._effectBase) o._effectBase = snapshotEffectBase(o);
             restoreEffectBase(o);
-            o.effectMore.effects.forEach(ef => {
-                const a = ef.args || [];
-                const name = ef.name;
-                if (name === 'wiggle' || name === 'wave' || name === 'pulse' || name === 'spin' || name === 'drift') {
-                    // use original single-effect path via temporary
-                    const tmp = { effectMore: { enabled: true, effects: [ef] }, _effectBase: o._effectBase };
-                    Object.assign(tmp, JSON.parse(JSON.stringify(o._effectBase)));
-                    tmp.type = o.type; tmp.points = o.points; tmp.anchors = o.anchors;
-                    // call original helpers
-                }
-            });
-            // Full rewrite of effect application
+            // Groups are handled by the recursive geometry helpers below, so
+            // effects work on the whole group and on selected grouped layers.
             o.effectMore.effects.forEach(ef => {
                 const a = ef.args || [];
                 if (ef.name === 'wiggle') wiggleObject(o, t, a[0]??3, a[1]??1.5);
