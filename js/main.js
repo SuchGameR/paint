@@ -3273,44 +3273,104 @@ return null;
             }
         }
 
+        function applyProjectData(data) {
+            if (!data || typeof data !== 'object') throw new Error('プロジェクトデータが空です');
+            state.objects = data.objects || [];
+            activateObjectIndex(null);
+            invalidateScene();
+            invalidateObjectIndex();
+            state.layers = data.layers || [{ id: 'layer-1', name: 'Layer 1', visible: true }];
+            state.activeLayerId = data.activeLayerId || state.layers[0].id;
+            if (data.canvasBg) state.canvasBg = data.canvasBg;
+            if (data.gridMode) state.gridMode = data.gridMode;
+            if (data.regions) state.regions = data.regions;
+            if (data.activeRegionId) state.activeRegionId = data.activeRegionId;
+            if (data.animFps) {
+                state.animFps = Math.max(1, Math.min(60, Number(data.animFps) || 12));
+                const fpsInput = document.getElementById('anim-fps');
+                if (fpsInput) fpsInput.value = String(state.animFps);
+            }
+            state.animFrames = Array.isArray(data.animFrames) ? data.animFrames : [];
+            animIndex = 0;
+            updateAnimUI({ rebuild: true });
+            if (data.infiniteCanvas != null) state.infiniteCanvas = data.infiniteCanvas;
+            if (data.canvasWidth) state.canvasWidth = data.canvasWidth;
+            if (data.canvasHeight) state.canvasHeight = data.canvasHeight;
+            if (Array.isArray(data.customBrushes)) state.customBrushes = data.customBrushes;
+            if (data.brushId) state.brushId = data.brushId;
+            if (data.brushConfig) state.brushConfig = data.brushConfig;
+            if (data.settings) {
+                ['strokeWidth', 'color', 'opacity', 'paintPreset', 'stabilize', 'hardness', 'pixelGrid', 'pixelSnap'].forEach(function (key) {
+                    if (data.settings[key] != null) state[key] = data.settings[key];
+                });
+            }
+            restorePaintLayer(data.paintData, data.paintOrigin);
+            if (typeof renderRegionList === 'function') renderRegionList();
+            state.selectedIds.clear();
+            state.undoStack = [];
+            state.redoStack = [];
+            pushHistory();
+            updateHistoryButtons();
+            updateSelectionUI();
+            renderLayerList();
+            if (window.__VP_BRUSH_STORE) { try { window.__VP_BRUSH_STORE.renderAll(); } catch (e) {} }
+            render();
+            return true;
+        }
+
+        function loadProjectText(text, name) {
+            var trimmed = String(text || '').trim();
+            if ((name || '').toLowerCase().endsWith('.svg') || trimmed.startsWith('<')) {
+                parseSVG(text);
+                return;
+            }
+            applyProjectData(JSON.parse(text));
+        }
+
+        function loadProjectBuffer(buffer, name) {
+            if (!window.VersePaintZip) {
+                alert('ZIPプロジェクトの読み込みに対応していません');
+                return Promise.reject(new Error('zip unsupported'));
+            }
+            return window.VersePaintZip.read(buffer).then(function (files) {
+                var projectFile = files['project.json'] || files['versepaint-project.json'];
+                if (!projectFile) {
+                    var candidate = Object.keys(files).find(function (key) { return /project\.json$/i.test(key); });
+                    if (candidate) projectFile = files[candidate];
+                }
+                if (!projectFile) throw new Error('project.json が見つかりません');
+                var data = JSON.parse(projectFile.text());
+                if (!Array.isArray(data.customBrushes) || !data.customBrushes.length) {
+                    data.customBrushes = Object.keys(files).filter(function (key) {
+                        return /\.vpb$/i.test(key);
+                    }).map(function (key) {
+                        try { return JSON.parse(files[key].text()); } catch (e) { return null; }
+                    }).filter(Boolean);
+                }
+                applyProjectData(data);
+            }).catch(function (err) {
+                alert('プロジェクトの読み込みに失敗しました: ' + err.message);
+                throw err;
+            });
+        }
+
         function loadProjectFile(file) {
+            const name = (file && file.name ? file.name : '').toLowerCase();
+            const isZip = name.endsWith('.vpc') || name.endsWith('.vpcz') || name.endsWith('.zip');
+            if (isZip) {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    loadProjectBuffer(reader.result, file.name).catch(function () {});
+                };
+                reader.readAsArrayBuffer(file);
+                return;
+            }
             const reader = new FileReader();
             reader.onload = () => {
                 const text = reader.result;
                 try {
-                    if (file.name.endsWith('.json') || text.trim().startsWith('{')) {
-                        const data = JSON.parse(text);
-                        state.objects = data.objects || [];
-                        activateObjectIndex(null);
-                        invalidateScene();
-                        invalidateObjectIndex();
-                        state.layers = data.layers || [{ id: 'layer-1', name: 'Layer 1', visible: true }];
-                        state.activeLayerId = data.activeLayerId || state.layers[0].id;
-                        if (data.canvasBg) state.canvasBg = data.canvasBg;
-                        if (data.gridMode) state.gridMode = data.gridMode;
-                        if (data.regions) state.regions = data.regions;
-                        if (data.activeRegionId) state.activeRegionId = data.activeRegionId;
-                        if (data.animFps) {
-                            state.animFps = Math.max(1, Math.min(60, Number(data.animFps) || 12));
-                            const fpsInput = document.getElementById('anim-fps');
-                            if (fpsInput) fpsInput.value = String(state.animFps);
-                        }
-                        state.animFrames = Array.isArray(data.animFrames) ? data.animFrames : [];
-                        animIndex = 0;
-                        updateAnimUI({ rebuild: true });
-                        if (data.infiniteCanvas != null) state.infiniteCanvas = data.infiniteCanvas;
-                        if (data.canvasWidth) state.canvasWidth = data.canvasWidth;
-                        if (data.canvasHeight) state.canvasHeight = data.canvasHeight;
-                        restorePaintLayer(data.paintData, data.paintOrigin);
-                        if (typeof renderRegionList === 'function') renderRegionList();
-                        state.selectedIds.clear();
-                        state.undoStack = [];
-                        state.redoStack = [];
-                        pushHistory();
-                        updateHistoryButtons();
-                        updateSelectionUI();
-                        renderLayerList();
-                        render();
+                    if (name.endsWith('.json') || String(text).trim().startsWith('{')) {
+                        loadProjectText(text, file.name);
                     } else {
                         // SVG
                         parseSVG(text);
@@ -3321,6 +3381,99 @@ return null;
             };
             reader.readAsText(file);
         }
+
+        // ===== AUTOSAVE (.vpc is self-contained; autosave uses IndexedDB) =====
+        var AUTOSAVE_DB = 'versepaint-autosave';
+        var AUTOSAVE_STORE = 'projects';
+        var AUTOSAVE_KEY = 'current';
+        var autosaveEnabled = localStorage.getItem('verse.vp.autosave') !== 'false';
+        var autosaveBusy = false;
+
+        function openAutosaveDB() {
+            return new Promise(function (resolve, reject) {
+                if (!window.indexedDB) return reject(new Error('IndexedDB unavailable'));
+                var req = indexedDB.open(AUTOSAVE_DB, 1);
+                req.onupgradeneeded = function () {
+                    var db = req.result;
+                    if (!db.objectStoreNames.contains(AUTOSAVE_STORE)) db.createObjectStore(AUTOSAVE_STORE);
+                };
+                req.onsuccess = function () { resolve(req.result); };
+                req.onerror = function () { reject(req.error || new Error('IndexedDB error')); };
+            });
+        }
+
+        function autosaveWrite(data) {
+            return openAutosaveDB().then(function (db) {
+                return new Promise(function (resolve, reject) {
+                    var tx = db.transaction(AUTOSAVE_STORE, 'readwrite');
+                    tx.objectStore(AUTOSAVE_STORE).put(data, AUTOSAVE_KEY);
+                    tx.oncomplete = function () { db.close(); resolve(true); };
+                    tx.onerror = function () { db.close(); reject(tx.error || new Error('autosave write failed')); };
+                });
+            });
+        }
+
+        function autosaveRead() {
+            return openAutosaveDB().then(function (db) {
+                return new Promise(function (resolve, reject) {
+                    var tx = db.transaction(AUTOSAVE_STORE, 'readonly');
+                    var req = tx.objectStore(AUTOSAVE_STORE).get(AUTOSAVE_KEY);
+                    req.onsuccess = function () { resolve(req.result || null); };
+                    req.onerror = function () { reject(req.error || new Error('autosave read failed')); };
+                    tx.oncomplete = function () { db.close(); };
+                });
+            }).catch(function () { return null; });
+        }
+
+        function autosaveNow() {
+            if (!autosaveEnabled || autosaveBusy) return Promise.resolve(false);
+            autosaveBusy = true;
+            var data;
+            try { data = projectData(); } catch (e) { autosaveBusy = false; return Promise.resolve(false); }
+            return autosaveWrite(data).then(function () {
+                autosaveBusy = false;
+                window.dispatchEvent(new CustomEvent('versepaint:autosaved', { detail: { savedAt: data.savedAt } }));
+                return true;
+            }).catch(function () { autosaveBusy = false; return false; });
+        }
+
+        window.__VP_SAVE_PROJECT = saveProject;
+        window.__VP_LOAD_PROJECT_BUFFER = loadProjectBuffer;
+        window.__VP_LOAD_PROJECT_DATA = applyProjectData;
+        window.__VP_GET_AUTOSAVE = autosaveRead;
+        window.__VP_AUTOSAVE_NOW = autosaveNow;
+        window.__VP_RESTORE_AUTOSAVE = function () {
+            return autosaveRead().then(function (data) {
+                if (!data) return false;
+                applyProjectData(data);
+                return true;
+            });
+        };
+        window.__VP_SET_AUTOSAVE = function (enabled) {
+            autosaveEnabled = !!enabled;
+            localStorage.setItem('verse.vp.autosave', autosaveEnabled ? 'true' : 'false');
+            if (autosaveEnabled) autosaveNow();
+            return autosaveEnabled;
+        };
+        window.__VP_GET_AUTOSAVE_ENABLED = function () { return autosaveEnabled; };
+
+        setInterval(autosaveNow, 30000);
+        setTimeout(autosaveNow, 6000);
+        window.addEventListener('pagehide', function () { autosaveNow(); });
+        document.addEventListener('visibilitychange', function () {
+            if (document.visibilityState === 'hidden') autosaveNow();
+        });
+        setTimeout(function () {
+            var hasContent = (state.objects && state.objects.length) || (state.paintChunks && state.paintChunks.size);
+            if (hasContent) return;
+            autosaveRead().then(function (data) {
+                if (!data || !data.savedAt) return;
+                var age = Date.now() - Date.parse(data.savedAt);
+                if (!isFinite(age) || age < 0 || age > 7 * 24 * 60 * 60 * 1000) return;
+                applyProjectData(data);
+                window.dispatchEvent(new CustomEvent('versepaint:autorestore'));
+            });
+        }, 4200);
 
         function parseSVG(text) {
             const parser = new DOMParser();
@@ -3719,7 +3872,7 @@ return null;
                 const reader = new FileReader();
                 reader.onload = () => parseSVG(reader.result);
                 reader.readAsText(file);
-            } else if (name.endsWith('.json') || type.includes('json')) {
+            } else if (name.endsWith('.json') || name.endsWith('.vpc') || name.endsWith('.vpcz') || name.endsWith('.zip') || type.includes('json') || type.includes('zip')) {
                 loadProjectFile(file);
             } else if (type.startsWith('image/') || /\.(png|jpe?g|gif|webp|bmp)$/i.test(name)) {
                 importImageFile(file);
@@ -4260,6 +4413,15 @@ return null;
         const propsClose = document.getElementById('btn-props-close');
         const brushPanel = document.getElementById('left-paint-panel');
         const brushPanelUI = window.VersePaintBrushPanel?.initialize();
+        if (window.VersePaintBrushStore && !window.__VP_BRUSH_STORE) {
+            try {
+                window.VersePaintBrushStore.initialize({ state, save: function () {
+                    if (typeof scheduleSaveSettings === 'function') scheduleSaveSettings();
+                } });
+            } catch (error) {
+                console.warn('brush store init failed', error);
+            }
+        }
         function openProps() {
             propsPanel.classList.remove('hidden');
             propsPanel.classList.add('flex', 'open');

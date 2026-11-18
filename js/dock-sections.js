@@ -23,6 +23,13 @@
     "tool-context-section": "ツール設定",
     "swatch-palette-section": "色見本"
   };
+  var SECTION_ICONS = {
+    "layers-section": '<path d="M3 7.5 8 4l5 3.5L8 11 3 7.5Z"/><path d="m3 10.5 5 3.5 5-3.5"/>',
+    "tool-preview-section": '<path d="M1.8 8s2.3-4.2 6.2-4.2S14.2 8 14.2 8 11.9 12.2 8 12.2 1.8 8 1.8 8Z"/><circle cx="8" cy="8" r="1.8"/>',
+    "color-palette-section": '<path d="M8 1.8a6.2 6.2 0 1 0 0 12.4h1.1a1.2 1.2 0 0 0 .8-2.1 1.2 1.2 0 0 1 .8-2.1h1.1A2.4 2.4 0 0 0 14.2 7.6 6.2 6.2 0 0 0 8 1.8Z"/><circle cx="5.1" cy="6.2" r=".7" fill="currentColor" stroke="none"/><circle cx="7.8" cy="4.4" r=".7" fill="currentColor" stroke="none"/><circle cx="10.6" cy="5.6" r=".7" fill="currentColor" stroke="none"/>',
+    "tool-context-section": '<path d="M2.2 4h11.6M2.2 8h11.6M2.2 12h11.6"/><circle cx="5.4" cy="4" r="1.5"/><circle cx="10.2" cy="8" r="1.5"/><circle cx="6.5" cy="12" r="1.5"/>',
+    "swatch-palette-section": '<rect x="2" y="2" width="5" height="5" rx="1.2"/><rect x="9" y="2" width="5" height="5" rx="1.2"/><rect x="2" y="9" width="5" height="5" rx="1.2"/><rect x="9" y="9" width="5" height="5" rx="1.2"/>'
+  };
 
   var style = document.createElement("style");
   style.textContent = [
@@ -36,6 +43,15 @@
     ".vp-section-floating{position:fixed!important;z-index:70!important;width:280px!important;min-width:220px!important;max-height:calc(100vh - 24px)!important;margin:0!important;overflow:auto!important;resize:both;border:1px solid #35443b!important;border-radius:12px!important;background:#121713!important;box-shadow:0 16px 40px #000a!important;padding:12px!important;}",
     ".vp-section-floating.is-dragging{pointer-events:none!important;contain:layout paint;box-shadow:0 8px 18px #0008!important;will-change:transform;}",
     ".vp-section-docked-slot{position:relative!important;flex:0 0 auto!important;margin:0!important;border:1px solid #2f3d34!important;border-radius:10px!important;background:#121713!important;padding:10px!important;overflow:auto!important;max-height:100%;}",
+    ".vp-compact-slot{padding:3px!important;overflow:visible!important;max-height:none!important;border-color:#2c3b32!important;background:#101511!important;}",
+    ".vp-compact-slot:not(.vp-compact-open)>:not(.vp-compact-toggle):not(.vp-section-grip){display:none!important;}",
+    ".vp-compact-toggle{display:grid;place-items:center;width:34px;height:34px;padding:0;border:0;border-radius:8px;background:transparent;color:#9eaaa1;cursor:pointer;}",
+    ".vp-compact-toggle:hover,.vp-compact-toggle:focus-visible{outline:none;background:#22c55e22;color:#dff7e6;}",
+    ".vp-compact-toggle svg{width:17px;height:17px;display:block;}",
+    ".vp-compact-slot.vp-compact-open{position:fixed!important;z-index:96!important;width:min(312px,calc(100vw - 20px))!important;max-height:min(72vh,560px)!important;padding:12px!important;overflow:auto!important;border-color:#3c5545!important;background:#111712f5!important;box-shadow:0 18px 48px #000c!important;backdrop-filter:blur(10px);}",
+    ".vp-compact-slot.vp-compact-open .vp-compact-toggle{position:absolute;top:5px;right:5px;width:24px;height:24px;z-index:3;}",
+    ".vp-compact-slot.vp-compact-open .vp-section-grip{right:33px;top:5px;}",
+    "#tools .vp-compact-slot{width:100%!important;}",
     "header.vp-drop-host,footer#app-footer.vp-drop-host{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}",
     "header.vp-drop-host>.vp-section-docked-slot,footer#app-footer.vp-drop-host>.vp-section-docked-slot{max-width:min(360px,46vw);max-height:46vh;}",
     "#tools.vp-drop-host{display:flex;flex-direction:column;gap:8px;}",
@@ -133,6 +149,83 @@
       ["position", "left", "top", "right", "bottom", "width", "height", "max-height", "margin", "z-index", "resize", "transform", "will-change"].forEach(function (property) {
         el.style.removeProperty(property);
       });
+    }
+
+    var advancedPrefs = {};
+    try { advancedPrefs = JSON.parse(localStorage.getItem("verse.vpAdvanced") || "{}") || {}; } catch (error) { advancedPrefs = {}; }
+    var compactEnabled = advancedPrefs.compactDock !== false;
+    var openCompactRec = null;
+
+    function ensureCompactToggle(rec) {
+      if (rec.toggle && rec.toggle.isConnected) return rec.toggle;
+      var button = document.createElement("button");
+      button.type = "button";
+      button.className = "vp-compact-toggle";
+      button.setAttribute("aria-label", (SECTION_LABELS[rec.id] || "セクション") + "を開く");
+      button.setAttribute("aria-expanded", "false");
+      button.innerHTML = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+        (SECTION_ICONS[rec.id] || SECTION_ICONS["tool-context-section"]) + '</svg>';
+      button.addEventListener("pointerdown", function (event) { event.stopPropagation(); });
+      button.addEventListener("click", function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        if (rec.el.classList.contains("vp-compact-open")) closeCompact(rec);
+        else openCompact(rec);
+      });
+      rec.el.appendChild(button);
+      rec.toggle = button;
+      return button;
+    }
+
+    function positionCompact(rec) {
+      if (!rec.anchorRect) return;
+      var width = Math.min(312, window.innerWidth - 20);
+      var margin = 8;
+      var gap = 6;
+      var rect = rec.anchorRect;
+      var left = Math.min(Math.max(margin, rect.left), window.innerWidth - width - margin);
+      rec.el.style.width = width + "px";
+      rec.el.style.left = left + "px";
+      var card = rec.el.getBoundingClientRect();
+      var top = rect.bottom + gap;
+      if (top + card.height > window.innerHeight - margin) top = Math.max(margin, rect.top - card.height - gap);
+      if (top < margin) top = margin;
+      rec.el.style.top = top + "px";
+      rec.el.style.maxHeight = Math.min(560, window.innerHeight - margin * 2) + "px";
+    }
+
+    function openCompact(rec) {
+      if (!compactEnabled || !rec.el.classList.contains("vp-compact-slot")) return;
+      if (openCompactRec && openCompactRec !== rec) closeCompact(openCompactRec);
+      var anchor = rec.toggle || ensureCompactToggle(rec);
+      rec.anchorRect = anchor.getBoundingClientRect();
+      rec.el.classList.add("vp-compact-open");
+      if (rec.toggle) rec.toggle.setAttribute("aria-expanded", "true");
+      requestAnimationFrame(function () { positionCompact(rec); });
+      openCompactRec = rec;
+    }
+
+    function closeCompact(rec) {
+      if (!rec || !rec.el.classList.contains("vp-compact-open")) return;
+      rec.el.classList.remove("vp-compact-open");
+      rec.el.style.removeProperty("left");
+      rec.el.style.removeProperty("top");
+      rec.el.style.removeProperty("width");
+      rec.el.style.removeProperty("max-height");
+      if (rec.toggle) rec.toggle.setAttribute("aria-expanded", "false");
+      if (openCompactRec === rec) openCompactRec = null;
+    }
+
+    function applyCompactMode(rec, slotId) {
+      var compact = compactEnabled && slotId !== "properties";
+      rec.el.classList.toggle("vp-compact-slot", compact);
+      closeCompact(rec);
+      if (compact) {
+        ensureCompactToggle(rec);
+      } else if (rec.toggle) {
+        rec.toggle.remove();
+        rec.toggle = null;
+      }
     }
 
     function saveLayout() {

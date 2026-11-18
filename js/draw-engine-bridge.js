@@ -596,6 +596,49 @@
           }
         }
         break;
+      case 'project':
+        if (data.action === 'save' && typeof window.__VP_SAVE_PROJECT === 'function') {
+          window.__VP_SAVE_PROJECT();
+        } else if (data.action === 'open-file' && data.buffer && typeof window.__VP_LOAD_PROJECT_BUFFER === 'function') {
+          window.__VP_LOAD_PROJECT_BUFFER(data.buffer, data.name || 'project.vpc').then(function () {
+            invalidateSceneCaches();
+            postState();
+            redraw();
+          }).catch(function () {});
+        } else if (data.action === 'restore-autosave' && typeof window.__VP_RESTORE_AUTOSAVE === 'function') {
+          window.__VP_RESTORE_AUTOSAVE().then(function (ok) {
+            if (ev.source) ev.source.postMessage({ source: 'verse-engine', type: 'autosave-restored', ok: !!ok }, '*');
+            invalidateSceneCaches();
+            postState();
+            redraw();
+          });
+        } else if (data.action === 'autosave-now' && typeof window.__VP_AUTOSAVE_NOW === 'function') {
+          window.__VP_AUTOSAVE_NOW();
+        }
+        break;
+      case 'brush':
+        if (!window.__VP_BRUSH_STORE) break;
+        if (data.action === 'import' && data.brush) {
+          try {
+            var imported = window.__VP_BRUSH_STORE.importVPBData(data.brush, true);
+            if (ev.source) ev.source.postMessage({ source: 'verse-engine', type: 'brush-imported', name: imported && imported.name }, '*');
+          } catch (err) {
+            if (ev.source) ev.source.postMessage({ source: 'verse-engine', type: 'brush-error', message: err.message }, '*');
+          }
+        } else if (data.action === 'export') {
+          try {
+            var payload = window.__VP_BRUSH_STORE.exportPayload(data.id);
+            if (ev.source) ev.source.postMessage({ source: 'verse-engine', type: 'brush-export', payload: payload }, '*');
+          } catch (err) {}
+        } else if (data.action === 'apply' && data.id) {
+          window.__VP_BRUSH_STORE.applyToState(data.id);
+        }
+        break;
+      case 'settings':
+        if (data.autosave != null && typeof window.__VP_SET_AUTOSAVE === 'function') {
+          window.__VP_SET_AUTOSAVE(!!data.autosave);
+        }
+        break;
       case 'ping':
         postState();
         if (ev.source) ev.source.postMessage({ source: 'verse-engine', type: 'pong', ready: true }, '*');
