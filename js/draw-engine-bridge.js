@@ -616,6 +616,21 @@
           window.__VP_AUTOSAVE_NOW();
         }
         break;
+      case 'brushPreset':
+        var presetMap = {
+          'soft-round': 'airbrush', 'hard-round': 'pen', 'flat-wash': 'marker', 'grain': 'spray'
+        };
+        var preset = presetMap[data.preset] || data.preset;
+        if (window.__VP_BRUSH_STORE && data.preset) {
+          try { window.__VP_BRUSH_STORE.applyToState(preset); } catch (e) {}
+        } else if (getState() && data.preset) {
+          var stPreset = getState();
+          stPreset.paintPreset = preset;
+          stPreset.brushId = preset;
+        }
+        redraw();
+        postState();
+        break;
       case 'brush':
         if (!window.__VP_BRUSH_STORE) break;
         if (data.action === 'import' && data.brush) {

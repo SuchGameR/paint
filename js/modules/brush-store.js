@@ -57,10 +57,22 @@
             return { ...DEFAULT_CONFIG, ...(brush.config || {}) };
         }
 
+        function inferPreset(cfg) {
+            if (cfg.pixel) return 'pixel';
+            if ((cfg.scatter || 0) > 0.4) return 'spray';
+            if ((cfg.flow || 1) < 0.28) return (cfg.hardness || 0) < 0.32 ? 'watercolor' : 'airbrush';
+            if ((cfg.jitter || 0) > 0.1) return (cfg.hardness || 0) < 0.5 ? 'charcoal' : 'pencil';
+            if ((cfg.hardness || 0) < 0.25) return 'airbrush';
+            if ((cfg.opacity || 1) < 0.55) return 'highlighter';
+            if ((cfg.spacing || 0.18) > 0.35) return 'crayon';
+            return 'pen';
+        }
+
         function applyToState(id) {
             const brush = find(id);
             state.brushId = brush.id;
-            if (BUILTINS.some(b => b.id === brush.id) || brush.custom) state.paintPreset = brush.id;
+            if (brush.custom) state.paintPreset = inferPreset(configOf(brush.id));
+            else if (BUILTINS.some(b => b.id === brush.id)) state.paintPreset = brush.id;
             state.brushConfig = configOf(brush.id);
             if (state.brushConfig && state.brushConfig.opacity != null) {
                 state.opacity = Math.max(0.05, Math.min(1, state.brushConfig.opacity));
